@@ -52,6 +52,7 @@ La CI (`.github/workflows/ci.yml`) lance tout cela à chaque pull request.
 ## Staging et production (à faire)
 
 1. Deux projets Supabase en région UE (Francfort) : `sapios-staging`, `sapios-prod`.
+   Déploiement : `.github/workflows/deploy.yml` (staging après une CI verte sur `main`, production à la main). Secrets par environnement GitHub `staging` et `production` : `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD`.
 2. Secrets des Edge Functions (`supabase secrets set`) : `ANTHROPIC_API_KEY`, `EXPO_ACCESS_TOKEN`, `SAPIOS_INTERNAL_SECRET`.
 3. Secrets Vault `project_url` et `internal_secret` : voir l'en-tête de `supabase/seed.sql`.
 4. Auth : URL de redirection `https://<domaine>/admin/auth/callback` et `sapios://`, fournisseurs Apple et Google, SMTP.
