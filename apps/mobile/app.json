@@ -1,0 +1,85 @@
+{
+  "expo": {
+    "name": "Sapios",
+    "slug": "sapios",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "sapios",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#0B0B0B",
+    "primaryColor": "#0B0B0B",
+    "ios": {
+      "bundleIdentifier": "app.sapios.mobile",
+      "supportsTablet": false,
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Sapios utilise l'appareil photo pour photographier votre diplôme.",
+        "NSPhotoLibraryUsageDescription": "Sapios accède à vos photos pour votre profil et votre diplôme.",
+        "NSLocationWhenInUseUsageDescription": "Sapios utilise une position arrondie (environ 1 km) pour afficher des distances approximatives."
+      }
+    },
+    "android": {
+      "package": "app.sapios.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B0B",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "monochromeImage": "./assets/images/adaptive-icon.png"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "bundler": "metro",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0B0B0B",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 220
+        }
+      ],
+      "expo-font",
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-apple-authentication",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sapios accède à vos photos pour votre profil et votre diplôme.",
+          "cameraPermission": "Sapios utilise l'appareil photo pour photographier votre diplôme.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Sapios utilise une position arrondie (environ 1 km) pour afficher des distances approximatives."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#0B0B0B"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

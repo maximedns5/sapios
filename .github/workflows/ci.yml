@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  database:
+    name: Base (migrations, RLS, pgTAP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Démarrer la stack locale
+        run: supabase start -x studio,logflare,vector,imgproxy,mailpit
+      - name: Reconstruire la base (migrations + seed)
+        run: supabase db reset
+      - name: Tests pgTAP
+        run: supabase test db
+
+  edge-functions:
+    name: Edge Functions (Deno)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck
+        working-directory: supabase/functions
+        run: for fn in */index.ts; do deno check --config "$(dirname "$fn")/deno.json" "$fn"; done
+      - name: Lint
+        working-directory: supabase/functions
+        run: deno lint --config process-diploma/deno.json _shared submit-diploma process-diploma review-diploma notify delete-account purge-diplomas
+      - name: Tests unitaires
+        working-directory: supabase/functions
+        run: deno test --config process-diploma/deno.json --allow-read --allow-env _shared/*_test.ts process-diploma/*_test.ts
+
+  apps:
+    name: Web et mobile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint et typecheck web
+        run: pnpm --filter web lint && pnpm --filter web typecheck
+      - name: Build web
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      - name: Typecheck mobile
+        run: pnpm --filter @sapios/mobile typecheck

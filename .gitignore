@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.expo/
+dist/
+build/
+*.log
+.env
+.env.*
+!.env.example
+supabase/.branches
+supabase/.temp
+supabase/.env
+.pnpm.lock

@@ -1,0 +1,116 @@
+-- Helpers communs aux tests pgTAP, inclus par `\ir _helpers.psql` dans chaque fichier.
+-- Tout vit dans pg_temp et dans la transaction du test (rollback à la fin).
+-- Les données sont préparées en tant que postgres ; les assertions d'accès se font toujours
+-- après pg_temp.login(...) (rôle authenticated + request.jwt.claims), pg_temp.login_anon()
+-- ou pg_temp.login_service().
+
+create extension if not exists pgtap with schema extensions;
+
+-- Identifiants déterministes : aaaaaaaa-0000-4000-8000-0000000000NN.
+create function pg_temp.uid(p_n int)
+returns uuid
+language sql
+immutable
+as $$
+  select ('aaaaaaaa-0000-4000-8000-' || lpad(p_n::text, 12, '0'))::uuid;
+$$;
+
+create function pg_temp.new_user(p_n int)
+returns uuid
+language plpgsql
+as $$
+declare
+  v uuid := pg_temp.uid(p_n);
+begin
+  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+                          raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+  values ('00000000-0000-0000-0000-000000000000', v, 'authenticated', 'authenticated',
+          'pgtap-' || p_n || '@sapios.test', '', now(),
+          '{"provider": "email", "providers": ["email"]}', '{}', now(), now());
+  return v;
+end;
+$$;
+
+-- Membre prêt à l'emploi (profil complet, 2 photos approuvées, palier). Par défaut à Reykjavik,
+-- loin des membres seedés à Paris, pour que le feed ne voie que les comptes du test.
+create function pg_temp.new_member(
+  p_n int,
+  p_tier public.access_tier,
+  p_gender public.gender default 'woman',
+  p_seeking public.gender[] default '{man}',
+  p_age int default 30,
+  p_age_min int default 18,
+  p_age_max int default 99,
+  p_lat double precision default 64.1466,
+  p_lng double precision default -21.9426,
+  p_status public.profile_status default 'active'
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  v uuid := pg_temp.new_user(p_n);
+begin
+  update public.profiles
+     set display_name = 'Membre ' || p_n, gender = p_gender, seeking_genders = p_seeking,
+         age_min = p_age_min, age_max = p_age_max, city = 'Reykjavik',
+         location = extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography,
+         status = p_status
+   where id = v;
+  update public.profile_private
+     set legal_name = 'Membre Test ' || p_n,
+         birthdate = ((now() at time zone 'Europe/Paris')::date - make_interval(years => p_age) - interval '10 days')::date,
+         consent_sensitive_at = now(), consent_version = 'test'
+   where user_id = v;
+  insert into public.profile_photos (user_id, storage_path, position, moderation_status)
+  values (v, v::text || '/a.jpg', 0, 'approved'), (v, v::text || '/b.jpg', 1, 'approved');
+  if p_tier is not null then
+    insert into public.user_access (user_id, level, tier, copy_key)
+    values (v, case p_tier when 'unlimited' then 8 when 'standard' then 7 when 'waitlist' then 6 else 5 end,
+            p_tier, 'verdict.' || p_tier::text);
+  end if;
+  return v;
+end;
+$$;
+
+create function pg_temp.login(p_uid uuid)
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', p_uid, 'role', 'authenticated', 'aud', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+end;
+$$;
+
+create function pg_temp.login_anon()
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims', '{"role": "anon"}', true);
+  perform set_config('role', 'anon', true);
+end;
+$$;
+
+create function pg_temp.login_service()
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims', '{"role": "service_role"}', true);
+  perform set_config('role', 'service_role', true);
+end;
+$$;
+
+-- Retour à postgres (préparation de données uniquement).
+create function pg_temp.logout()
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('role', 'postgres', true);
+end;
+$$;

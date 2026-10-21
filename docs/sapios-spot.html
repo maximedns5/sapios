@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sapios — Spot 10″</title>
+<style>
+  :root{
+    --k:#0b0b0b;
+    --w:#f4f3ef;
+    --serif:"Didot","Bodoni 72",serif;
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --mono:Menlo,"Andale Mono",monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;background:#000;overflow:hidden}
+  #stage{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:hidden;background:var(--k);color:var(--w);font-family:var(--sans);-webkit-font-smoothing:antialiased;isolation:isolate;transform-origin:0 0}
+  .scene{position:absolute;inset:0;overflow:hidden}
+  .mask{display:block;overflow:hidden;padding:.04em .1em .1em;margin:-.04em -.1em -.1em}
+  .mask > *{display:inline-block}
+  .word,.char{display:inline-block}
+  .mono{font-family:var(--mono);font-size:22px;letter-spacing:.2em;text-transform:uppercase}
+  .center{text-align:center}
+  em{font-style:italic}
+
+  /* 01 — intro */
+  #sA{background:var(--k);color:var(--w)}
+  .a-wrap{position:absolute;inset:0}
+  .a-label{position:absolute;top:598px;left:0;right:0}
+  .a-rule{position:absolute;top:662px;left:170px;width:740px;height:2px;background:var(--w)}
+  .logo{position:absolute;top:690px;left:0;right:0;font-family:var(--serif);font-weight:400;font-size:236px;line-height:1;letter-spacing:.03em}
+  .logo .word{overflow:hidden;padding:0 .04em .03em;vertical-align:top}
+  .a-tag{position:absolute;top:1060px;left:0;right:0}
+  .t1,.t3{font-size:64px;font-weight:300;letter-spacing:-.01em;line-height:1.1}
+  .t2{position:relative;font-family:var(--serif);font-style:italic;font-size:156px;line-height:1.02}
+  .ul{position:absolute;left:3%;right:3%;bottom:.12em;height:4px;background:var(--w);transform-origin:left center}
+
+  /* 02 — vérification */
+  #sB{background:var(--w);color:var(--k);clip-path:inset(100% 0% 0% 0%)}
+  .shake{position:absolute;inset:0}
+  .b-step{position:absolute;top:214px;left:130px;right:130px;display:flex;justify-content:space-between}
+  .b-step > span{display:inline-block}
+  .b-title{position:absolute;top:268px;left:130px;font-family:var(--serif);font-weight:400;font-size:128px;line-height:1}
+  .card{position:absolute;top:600px;left:130px;width:820px;height:560px;background:var(--w);border:2px solid var(--k);padding:46px 56px 40px;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between}
+  .card::before{content:"";position:absolute;inset:12px;border:1px solid var(--k);pointer-events:none}
+  .c-top{display:flex;justify-content:space-between;font-size:15px;letter-spacing:.18em}
+  .c-mid{text-align:center}
+  .c-kicker{font-size:17px;letter-spacing:.36em}
+  .c-deg{font-family:var(--serif);font-size:124px;line-height:1;letter-spacing:.07em;margin:12px 0 14px}
+  .c-sub{font-family:var(--serif);font-size:29px;line-height:1.35}
+  .c-bot{display:flex;justify-content:space-between;align-items:flex-end}
+  .seal{width:104px;height:104px;border:2px solid var(--k);border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-size:20px;letter-spacing:.12em;box-shadow:inset 0 0 0 7px var(--w),inset 0 0 0 8px var(--k)}
+  .sign{width:250px;text-align:center}
+  .sign svg{display:block;width:230px;height:62px;margin:0 auto 6px}
+  .sign .mono{font-size:12px;letter-spacing:.2em;border-top:1px solid var(--k);padding-top:8px}
+  .scan{position:absolute;left:0;right:0;top:0;height:150px;background:#fff;mix-blend-mode:difference}
+  .stamp{position:absolute;left:540px;top:880px;border:10px solid var(--k);background:var(--w);color:var(--k);padding:24px 46px 20px;text-align:center;box-shadow:inset 0 0 0 6px var(--w),inset 0 0 0 9px var(--k)}
+  .stamp b{display:block;font-weight:700;font-size:146px;line-height:.9;letter-spacing:.03em}
+  .stamp i{display:block;font-style:normal;font-family:var(--mono);font-size:22px;letter-spacing:.32em;margin-top:16px;text-transform:uppercase}
+  .prog{position:absolute;top:1212px;left:130px;width:820px}
+  .p-row{display:flex;justify-content:space-between;align-items:baseline}
+  .pct{font-family:var(--mono);font-size:40px;letter-spacing:.04em}
+  .bar{position:relative;height:3px;margin-top:12px;background:rgba(11,11,11,.12)}
+  .bar i{position:absolute;inset:0;background:var(--k);transform-origin:left center;transform:scaleX(0)}
+  .logs{position:absolute;top:1318px;left:130px;width:820px;font-family:var(--mono);font-size:26px;line-height:1}
+  .log{display:flex;align-items:baseline;height:50px;white-space:nowrap}
+  .log .dots{flex:1;margin:0 14px;border-bottom:3px dotted rgba(11,11,11,.35);transform:translateY(-6px)}
+  .log b{font-weight:700}
+  .log b.bad{background:var(--k);color:var(--w);padding:4px 10px 3px}
+  .verdict{position:absolute;inset:0;background:var(--k);color:var(--w);clip-path:inset(1520px 100% 110px 0px)}
+  .v-in{position:absolute;top:1560px;left:130px;right:130px}
+  .v-in .mono{margin-bottom:20px}
+  .v1{font-size:56px;font-weight:700;letter-spacing:-.02em;line-height:1.05}
+  .v2{font-family:var(--serif);font-size:78px;line-height:1.05}
+
+  /* 03 — admission */
+  #sC{background:var(--k);color:var(--w);visibility:hidden}
+  .c-head{position:absolute;top:214px;left:130px;right:130px;display:flex;justify-content:space-between}
+  .c-head > span{display:inline-block}
+  .c-title{position:absolute;top:268px;left:130px;font-family:var(--serif);font-weight:400;font-size:120px;line-height:1}
+  .rows{position:absolute;top:590px;left:130px;width:820px}
+  .rw{position:relative;height:196px;display:flex;align-items:center;justify-content:space-between}
+  .rw .ln{position:absolute;left:0;right:0;top:0;height:2px;background:currentColor;transform-origin:left center}
+  .rw .fill{position:absolute;left:-40px;right:-40px;top:0;bottom:0;background:var(--w);transform-origin:left center;transform:scaleX(0)}
+  .lv{position:relative;font-family:var(--serif);font-size:108px;line-height:1}
+  .strike{position:absolute;left:-10px;right:-10px;top:54%;height:7px;background:currentColor;transform-origin:left center;transform:scaleX(0)}
+  .rt{position:relative;display:flex;align-items:center;gap:30px}
+  .st{font-family:var(--mono);font-size:24px;letter-spacing:.18em;text-transform:uppercase}
+  .ic{width:46px;height:46px}
+  .ic svg{display:block;width:100%;height:100%;stroke:currentColor;stroke-width:3.5;fill:none}
+
+  /* 04 — règle */
+  #sD1{background:var(--w);color:var(--k);clip-path:inset(0% 100% 0% 0%)}
+  .d-label{position:absolute;top:640px;left:112px}
+  .d-txt{position:absolute;top:700px;left:104px;font-weight:700;font-size:196px;line-height:.9;letter-spacing:-.045em}
+  #sD2{background:var(--k);color:var(--w);visibility:hidden}
+  .d2-wrap{position:absolute;inset:0}
+  .d2-txt{position:absolute;top:700px;left:104px}
+  .d2-pas{font-weight:700;font-size:196px;line-height:.9;letter-spacing:-.045em}
+  .d2-txt .big{font-family:var(--serif);font-style:italic;font-size:236px;line-height:1}
+
+  /* 05 — end card */
+  #sE{background:var(--k);color:var(--w);visibility:hidden}
+  .e-logo{top:560px;font-size:210px}
+  .e-rule{position:absolute;top:830px;left:490px;width:100px;height:2px;background:var(--w)}
+  .e-l1{position:absolute;top:900px;left:0;right:0;font-size:60px;font-weight:300}
+  .e-l2{position:absolute;top:975px;left:0;right:0;font-family:var(--serif);font-size:170px;line-height:1}
+  .e-cta{position:absolute;top:1330px;left:0;right:0;line-height:1.9}
+  .e-fine{position:absolute;top:1690px;left:0;right:0;font-family:var(--mono);font-size:16px;line-height:1.7;opacity:.5}
+
+  /* overlay */
+  #ov{position:absolute;inset:0;z-index:20;pointer-events:none;mix-blend-mode:difference;color:#fff}
+  #ov .mono{font-size:19px;letter-spacing:.16em}
+  .ov-tl{position:absolute;top:62px;left:66px;font-weight:700;font-size:24px;letter-spacing:.28em}
+  .ov-tl sup{font-size:.5em;letter-spacing:0;vertical-align:top;margin-left:-.2em}
+  .ov-tr{position:absolute;top:64px;right:66px}
+  .ov-bl{position:absolute;bottom:66px;left:66px}
+  .ov-br{position:absolute;bottom:66px;right:66px}
+  .crop{position:absolute;width:26px;height:26px;border:0 solid #fff}
+  .crop.tl{top:34px;left:34px;border-width:2px 0 0 2px}
+  .crop.tr{top:34px;right:34px;border-width:2px 2px 0 0}
+  .crop.bl{bottom:34px;left:34px;border-width:0 0 2px 2px}
+  .crop.br{bottom:34px;right:34px;border-width:0 2px 2px 0}
+  .ov-prog{position:absolute;left:66px;right:66px;bottom:46px;height:2px;background:#fff;transform-origin:left center;transform:scaleX(0)}
+  #grain{position:absolute;left:0;top:0;width:1080px;height:1920px;z-index:30;pointer-events:none;opacity:.05}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <section class="scene" id="sA">
+    <div class="a-wrap">
+      <div class="a-label mono center"><span class="mask"><span>Application de rencontre</span></span></div>
+      <div class="a-rule"></div>
+      <h1 class="logo center" data-splitting>SAPIOS</h1>
+      <div class="a-tag center">
+        <span class="mask"><span class="t1">pour les gens</span></span>
+        <span class="mask"><span class="t2">vraiment<i class="ul"></i></span></span>
+        <span class="mask"><span class="t3">intelligents.</span></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="sB">
+    <div class="shake">
+      <div class="b-step mono"><span>Étape 01 / 01</span><span>Vérification obligatoire</span></div>
+      <h2 class="b-title">
+        <span class="mask"><span>Validez votre</span></span>
+        <span class="mask"><em>diplôme.</em></span>
+      </h2>
+      <div class="card">
+        <div class="c-top mono"><span>Université de Quelque Part</span><span>N° 0042-B</span></div>
+        <div class="c-mid">
+          <div class="mono c-kicker">Diplôme national de</div>
+          <div class="c-deg">LICENCE</div>
+          <div class="c-sub">Spécialité « Communication »<br>Mention : <em>Passable</em></div>
+        </div>
+        <div class="c-bot">
+          <div class="seal"><span>U·Q·P</span></div>
+          <div class="sign">
+            <svg viewBox="0 0 230 62"><path d="M6 46 C 26 6, 40 64, 62 30 S 96 8, 104 40 S 132 58, 150 22 S 186 34, 200 28 S 218 24, 226 30" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            <div class="mono">Le président du jury</div>
+          </div>
+        </div>
+        <div class="scan"></div>
+      </div>
+      <div class="stamp"><b>REFUSÉ</b><i>QI insuffisant</i></div>
+      <div class="prog">
+        <div class="p-row"><span class="mono">Analyse du profil</span><span class="pct" id="pct">000%</span></div>
+        <div class="bar"><i></i></div>
+      </div>
+      <div class="logs">
+        <div class="log"><span>› Authenticité du diplôme</span><span class="dots"></span><b>OK</b></div>
+        <div class="log"><span>› Niveau (Bac+5 requis)</span><span class="dots"></span><b class="bad">BAC+3</b></div>
+        <div class="log"><span>› Comparaison avec Einstein</span><span class="dots"></span><b class="bad">ÉCHEC</b></div>
+      </div>
+    </div>
+    <div class="verdict">
+      <div class="v-in">
+        <div class="mono"><span class="mask"><span>Résultat de l’analyse</span></span></div>
+        <div class="v1"><span class="mask"><span>Diplôme non validé =</span></span></div>
+        <div class="v2"><span class="mask"><em>pas assez intelligent.</em></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="sC">
+    <div class="c-head mono"><span>Grille d’admission</span><span>Saison 2026</span></div>
+    <h2 class="c-title">
+      <span class="mask"><span>Qui a le droit</span></span>
+      <span class="mask"><em>d’aimer&nbsp;?</em></span>
+    </h2>
+    <div class="rows">
+      <div class="rw"><i class="ln"></i><i class="fill"></i><span class="lv">Bac+8<i class="strike"></i></span><span class="rt"><span class="st">Accès illimité</span><span class="ic"><svg viewBox="0 0 46 46"><path d="M8 24 L19 35 L39 11"/></svg></span></span></div>
+      <div class="rw"><i class="ln"></i><i class="fill"></i><span class="lv">Bac+5<i class="strike"></i></span><span class="rt"><span class="st">Accès toléré</span><span class="ic"><svg viewBox="0 0 46 46"><path d="M8 24 L19 35 L39 11"/></svg></span></span></div>
+      <div class="rw"><i class="ln"></i><i class="fill"></i><span class="lv">Bac+3<i class="strike"></i></span><span class="rt"><span class="st">Liste d’attente</span><span class="ic"><svg viewBox="0 0 46 46"><path d="M9 23 H37"/></svg></span></span></div>
+      <div class="rw"><i class="ln"></i><i class="fill"></i><span class="lv">Bac<i class="strike"></i></span><span class="rt"><span class="st">Refusé</span><span class="ic"><svg viewBox="0 0 46 46"><path d="M11 11 L35 35 M35 11 L11 35"/></svg></span></span></div>
+      <div class="rw"><i class="ln"></i><i class="fill"></i><span class="lv">Brevet<i class="strike"></i></span><span class="rt"><span class="st">Désinstallez.</span><span class="ic"><svg viewBox="0 0 46 46"><path d="M11 11 L35 35 M35 11 L11 35"/></svg></span></span></div>
+    </div>
+  </section>
+
+  <section class="scene" id="sD1">
+    <div class="d-label mono"><span class="mask"><span>Règle n°1</span></span></div>
+    <div class="d-txt">
+      <span class="mask"><span>Pas de</span></span>
+      <span class="mask"><span>diplôme&nbsp;?</span></span>
+    </div>
+  </section>
+
+  <section class="scene" id="sD2">
+    <div class="d2-wrap">
+      <div class="d-label mono"><span class="mask"><span>Donc</span></span></div>
+      <div class="d2-txt">
+        <span class="mask"><span class="d2-pas">Pas</span></span>
+        <span class="mask big" data-splitting>d’amour.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="sE">
+    <h1 class="logo e-logo center" data-splitting>SAPIOS</h1>
+    <div class="e-rule"></div>
+    <div class="e-l1 center"><span class="mask"><span>L’amour est aveugle.</span></span></div>
+    <div class="e-l2 center"><span class="mask"><em>Nous, non.</em></span></div>
+    <div class="e-cta mono center">
+      <span class="mask"><span>Bientôt disponible</span></span>
+      <span class="mask"><span>pour 2 % de la population</span></span>
+    </div>
+    <div class="e-fine center">* Sapios décline toute responsabilité en cas de coup de foudre<br>pour un titulaire de BTS. Les sentiments ne sont pas vérifiés.</div>
+  </section>
+
+  <div id="ov">
+    <i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i>
+    <div class="ov-tl">SAPIOS<sup>®</sup></div>
+    <div class="ov-tr mono" id="tc">00:00:00:00</div>
+    <div class="ov-bl mono">QI ≥ 130 — Bac+5 min.</div>
+    <div class="ov-br mono" id="sc">01 / Intro</div>
+    <i class="ov-prog" id="pg"></i>
+  </div>
+  <canvas id="grain" width="540" height="960"></canvas>
+</div>
+
+<script src="lib/gsap.min.js"></script>
+<script src="lib/splitting.min.js"></script>
+<script>
+  const RENDER = new URLSearchParams(location.search).has('render');
+  const FPS = 60, DURATION = 10;
+  const T = {B:1.8, BC:5.15, D1:7.0, D2:7.65, E:8.5};
+  window.__DURATION = DURATION;
+  window.__FPS = FPS;
+
+  Splitting({target: document.querySelectorAll('[data-splitting]'), by: 'chars'});
+  gsap.defaults({ease: 'expo.out', duration: .8});
+
+  const $ = s => document.querySelector(s);
+  const stage = $('#stage');
+  const P = {p: 0};
+  const tl = gsap.timeline({paused: true});
+
+  gsap.set('.stamp', {xPercent: -50, yPercent: -50, rotation: -9});
+  gsap.set('.scan', {y: -170});
+
+  // 01 — intro
+  tl.from('#ov', {autoAlpha: 0, duration: .5, ease: 'none'}, 0)
+    .fromTo('#sA .a-wrap', {scale: 1.05}, {scale: 1, duration: 2.1, ease: 'power3.out'}, 0)
+    .fromTo('.a-rule', {scaleX: 0}, {scaleX: 1, duration: .8, ease: 'expo.inOut'}, .05)
+    .from('.a-label .mask > *', {yPercent: 110, duration: .7}, .3)
+    .from('#sA .logo .char', {yPercent: 118, duration: 1.05, stagger: .045}, .32)
+    .from('.a-tag .mask > *', {yPercent: 112, duration: .8, stagger: .09}, .82)
+    .fromTo('.a-tag .ul', {scaleX: 0}, {scaleX: 1, duration: .55, ease: 'expo.inOut'}, 1.2);
+
+  // 02 — vérification du diplôme
+  const b = T.B;
+  tl.fromTo('#sB', {clipPath: 'inset(100% 0% 0% 0%)'}, {clipPath: 'inset(0% 0% 0% 0%)', duration: .6, ease: 'expo.inOut'}, b)
+    .to('#sA .a-wrap', {yPercent: -6, duration: .6, ease: 'expo.inOut'}, b)
+    .from('.b-step > span', {yPercent: 120, opacity: 0, duration: .6, stagger: .06}, b + .3)
+    .from('.b-title .mask > *', {yPercent: 112, duration: .85, stagger: .08}, b + .28)
+    .from('.card', {y: 1350, rotation: 8, duration: .9}, b + .3)
+    .from('.prog', {opacity: 0, y: 24, duration: .6}, b + .5);
+
+  const s = b + .7;
+  tl.to('.scan', {y: 560, duration: .45, ease: 'power2.inOut'}, s)
+    .to('.scan', {y: -170, duration: .45, ease: 'power2.inOut'}, s + .45)
+    .to(P, {p: 100, duration: .95, ease: 'power1.inOut'}, s)
+    .fromTo('.bar i', {scaleX: 0}, {scaleX: 1, duration: .95, ease: 'power1.inOut'}, s);
+  document.querySelectorAll('.log').forEach((el, i) => {
+    const t = s + .1 + i * .28;
+    tl.fromTo(el, {clipPath: 'inset(0% 100% 0% 0%)'}, {clipPath: 'inset(0% 0% 0% 0%)', duration: .22, ease: 'steps(24)'}, t)
+      .from(el.querySelector('b'), {autoAlpha: 0, duration: .01}, t + .26);
+  });
+
+  const st = s + 1.05;
+  tl.fromTo('.stamp', {autoAlpha: 0, scale: 2.8}, {autoAlpha: 1, scale: 1, duration: .16, ease: 'power4.in'}, st)
+    .set('#sB .shake', {filter: 'invert(1)'}, st + .16)
+    .set('#sB .shake', {filter: 'none'}, st + .21)
+    .to('#sB .shake', {keyframes: [
+      {x: -24, y: 14, duration: .035}, {x: 20, y: -12, duration: .035}, {x: -14, y: 8, duration: .04},
+      {x: 9, y: -5, duration: .045}, {x: -4, y: 2, duration: .05}, {x: 0, y: 0, duration: .06}
+    ], ease: 'none'}, st + .16);
+
+  const v = st + .25;
+  tl.fromTo('.verdict', {clipPath: 'inset(1520px 100% 110px 0px)'}, {clipPath: 'inset(1520px 0% 110px 0px)', duration: .5, ease: 'expo.inOut'}, v)
+    .from('.v-in .mask > *', {yPercent: 112, duration: .7, stagger: .07}, v + .18)
+    .to('.v-in', {autoAlpha: 0, duration: .15, ease: 'none'}, T.BC)
+    .to('.verdict', {clipPath: 'inset(0px 0% 0px 0px)', duration: .5, ease: 'expo.inOut'}, T.BC);
+
+  // 03 — grille d'admission
+  const c = T.BC + .45;
+  tl.set('#sC', {visibility: 'visible'}, c)
+    .from('.c-head > span', {yPercent: 120, opacity: 0, duration: .6, stagger: .06}, c)
+    .from('.c-title .mask > *', {yPercent: 112, duration: .8, stagger: .08}, c);
+  document.querySelectorAll('.rw').forEach((rw, i) => {
+    const t = c + .12 + i * .08;
+    tl.fromTo(rw.querySelector('.ln'), {scaleX: 0}, {scaleX: 1, duration: .6, ease: 'expo.inOut'}, t)
+      .from(rw.querySelectorAll('.lv, .rt'), {y: 60, opacity: 0, duration: .6, stagger: .04}, t + .08);
+  });
+  const rows = document.querySelectorAll('.rw');
+  tl.fromTo(rows[3].querySelector('.strike'), {scaleX: 0}, {scaleX: 1, duration: .3, ease: 'expo.inOut'}, c + .62)
+    .fromTo(rows[4].querySelector('.strike'), {scaleX: 0}, {scaleX: 1, duration: .3, ease: 'expo.inOut'}, c + .68)
+    .fromTo(rows[4].querySelector('.fill'), {scaleX: 0}, {scaleX: 1, duration: .36, ease: 'expo.inOut'}, c + .75)
+    .to(rows[4], {color: '#0b0b0b', duration: .15, ease: 'none'}, c + .83);
+
+  // 04 — règle n°1
+  tl.fromTo('#sD1', {clipPath: 'inset(0% 100% 0% 0%)'}, {clipPath: 'inset(0% 0% 0% 0%)', duration: .24, ease: 'expo.inOut'}, T.D1)
+    .from('#sD1 .mask > *', {yPercent: 112, duration: .45, stagger: .04}, T.D1 + .04)
+    .set('#sD2', {visibility: 'visible'}, T.D2)
+    .fromTo('.d2-wrap', {scale: 1.08}, {scale: 1, duration: .7, ease: 'power3.out'}, T.D2)
+    .from('#sD2 .d-label .mask > *, .d2-pas', {yPercent: 112, duration: .45}, T.D2)
+    .from('.d2-txt .char', {yPercent: 112, duration: .55, stagger: .025}, T.D2 + .05);
+
+  // 05 — end card
+  const e = T.E;
+  tl.to('.d2-wrap', {yPercent: -10, autoAlpha: 0, duration: .25, ease: 'power3.in'}, e)
+    .set('#sE', {visibility: 'visible'}, e + .15)
+    .from('#sE .logo .char', {yPercent: 118, duration: .9, stagger: .035}, e + .15)
+    .fromTo('.e-rule', {scaleX: 0}, {scaleX: 1, duration: .6, ease: 'expo.inOut'}, e + .33)
+    .from('.e-l1 .mask > *', {yPercent: 112, duration: .7}, e + .38)
+    .from('.e-l2 .mask > *', {yPercent: 112, duration: .75}, e + .48)
+    .from('.e-cta .mask > *', {yPercent: 112, duration: .6, stagger: .06}, e + .68)
+    .from('.e-fine', {opacity: 0, duration: .4, ease: 'none'}, e + .78)
+    .set({}, {}, DURATION);
+
+  // Per-frame bits that GSAP doesn't tween directly
+  const pctEl = $('#pct'), tcEl = $('#tc'), scEl = $('#sc'), pgEl = $('#pg');
+  const LABELS = [[0, '01 / Intro'], [T.B + .3, '02 / Vérification'], [T.BC + .45, '03 / Admission'], [T.D1 + .1, '04 / Règle n°1'], [T.E + .22, '05 / Sapios']];
+  const pad = n => String(n).padStart(2, '0');
+
+  const g = $('#grain').getContext('2d');
+  const grain = [];
+  let seed = 7;
+  const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; };
+  for (let k = 0; k < 6; k++) {
+    const img = g.createImageData(540, 960);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = rnd() * 255;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = n;
+      img.data[i + 3] = 255;
+    }
+    grain.push(img);
+  }
+
+  function sync(t) {
+    const f = Math.round(t * FPS);
+    pctEl.textContent = String(Math.round(P.p)).padStart(3, '0') + '%';
+    tcEl.textContent = `00:00:${pad(Math.floor(f / FPS))}:${pad(f % FPS)}`;
+    scEl.textContent = LABELS.filter(([at]) => t >= at).pop()[1];
+    pgEl.style.transform = `scaleX(${Math.min(t / DURATION, 1)})`;
+    g.putImageData(grain[Math.floor(f / 2) % grain.length], 0, 0);
+  }
+
+  window.__seek = f => { const t = f / FPS; tl.seek(t, false); sync(t); };
+
+  if (!RENDER) {
+    const fit = () => {
+      const k = Math.min(innerWidth / 1080, innerHeight / 1920);
+      stage.style.transform = `translate(${(innerWidth - 1080 * k) / 2}px, ${(innerHeight - 1920 * k) / 2}px) scale(${k})`;
+    };
+    fit();
+    addEventListener('resize', fit);
+    const t0 = performance.now();
+    gsap.ticker.add(() => {
+      const t = Math.min(((performance.now() - t0) / 1000) % (DURATION + 1), DURATION);
+      tl.seek(t, false);
+      sync(t);
+    });
+  } else {
+    window.__seek(0);
+  }
+</script>
+</body>
+</html>
