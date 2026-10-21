@@ -6,15 +6,41 @@ import { AppState, Platform } from 'react-native';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './env';
 import { chunkedSecureStore } from './secureStorage';
 
+// Session web dans localStorage : elle survit au rechargement et à la fermeture de l'onglet.
+// Navigation privée stricte ou stockage plein : on retombe sur une session en mémoire.
+const memory = new Map<string, string>();
 const webStorage = {
-  getItem: (key: string) => (typeof window === 'undefined' ? null : window.localStorage.getItem(key)),
+  getItem: (key: string) => {
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return memory.get(key) ?? null;
+    }
+  },
   setItem: (key: string, value: string) => {
-    if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      memory.set(key, value);
+    }
   },
   removeItem: (key: string) => {
-    if (typeof window !== 'undefined') window.localStorage.removeItem(key);
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // rien à effacer
+    }
+    memory.delete(key);
   },
 };
+
+const missing = [
+  ['EXPO_PUBLIC_SUPABASE_URL', SUPABASE_URL],
+  ['EXPO_PUBLIC_SUPABASE_ANON_KEY', SUPABASE_ANON_KEY],
+].filter(([, v]) => !v);
+if (missing.length) {
+  throw new Error(`Variable(s) manquante(s) : ${missing.map(([k]) => k).join(', ')} (voir apps/mobile/.env.example).`);
+}
 
 /** Client typé par les types générés depuis la base locale (packages/shared/src/database.types.ts). */
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
