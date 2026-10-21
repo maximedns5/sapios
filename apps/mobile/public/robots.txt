@@ -1,0 +1,3 @@
+# App membre Sapios : rien à indexer (la landing est sur le site principal).
+User-agent: *
+Disallow: /

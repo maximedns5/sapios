@@ -10,6 +10,7 @@ import { useApp } from '@/lib/app-state';
 import { CONSENT_VERSION, CONTACT_EMAIL } from '@/lib/env';
 import { errorMessage } from '@/lib/errors';
 import { exportMyData } from '@/lib/exportData';
+import { useLayout } from '@/lib/layout';
 import { loadOwnProfile } from '@/lib/profile';
 import { pushPermission, PUSH_SUPPORTED, registerForPush } from '@/lib/push';
 import { PAPER, space } from '@/lib/theme';
@@ -38,8 +39,8 @@ function Row({ title, hint, onPress, testID, danger }: { title: string; hint?: s
   return (
     <>
       <Pressable testID={testID} accessibilityRole="button" disabled={!onPress} onPress={onPress}>
-        {({ pressed }) => {
-          const inv = pressed || danger;
+        {({ pressed, hovered }) => {
+          const inv = pressed || hovered || danger;
           return (
             <View
               style={{
@@ -78,6 +79,7 @@ export function AccountScreen({ standalone }: { standalone?: boolean }) {
   const { state, userId, refresh, signOut } = useApp();
   const { confirm, toast } = useOverlay();
   const insets = useSafeAreaInsets();
+  const { wide, column } = useLayout();
   const [name, setName] = useState<string | null>(null);
   const [push, setPush] = useState<string>('unavailable');
 
@@ -159,8 +161,8 @@ export function AccountScreen({ standalone }: { standalone?: boolean }) {
 
   return (
     <ToneProvider tone="light">
-      <View style={{ flex: 1, backgroundColor: PAPER, paddingTop: insets.top }} testID="account">
-        <View style={{ width: '100%', maxWidth: 560, alignSelf: 'center', flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: PAPER, paddingTop: insets.top + (wide ? 24 : 0) }} testID="account">
+        <View style={{ width: '100%', maxWidth: column, alignSelf: 'center', flex: 1 }}>
           {standalone ? <TopBar left={{ label: '← Retour', onPress: () => (router.canGoBack() ? router.back() : router.replace('/')) }} right="Compte" /> : null}
           <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingTop: standalone ? 4 : 14, paddingBottom: insets.bottom + space.xl }}>
             {!standalone ? (
@@ -206,7 +208,11 @@ export function AccountScreen({ standalone }: { standalone?: boolean }) {
               <Section title="Notifications">
                 <Row title={push === 'granted' ? 'Notifications activées' : 'Activer les notifications'} hint="Match, message, verdict" onPress={push === 'granted' ? undefined : enablePush} />
               </Section>
-            ) : null}
+            ) : (
+              <Section title="Notifications">
+                <Row title="Dans l’app, pas de push" hint="Bandeau, compteur sur Messages et dans le titre de l’onglet" />
+              </Section>
+            )}
 
             <Section title="Donnée sensible">
               <Row title={consent ? 'Consentement donné' : 'Consentement non donné'} hint="Genres recherchés — art. 9 RGPD" />

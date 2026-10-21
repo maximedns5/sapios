@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { api } from './api';
 import { AppError } from './errors';
 import { MAX_DIPLOMA_BYTES, readBytes, toJpeg, uploadToBucket, type LocalFile } from './media';
+import { isImage, isPdf, pickWebFiles, readWebImage, webPdf } from './webFiles';
 
 const EXTRACTION_MAX_BYTES = 7 * 1024 * 1024;
 
@@ -33,13 +34,34 @@ export async function pickFromCamera(): Promise<DiplomaPick | null> {
   return fromImageAsset(res.assets[0], 'photo-diplome.jpg');
 }
 
+/**
+ * Fichier venu du navigateur (sélecteur ou glisser-déposer) : PDF tel quel, image décodée d'abord
+ * (le HEIC n'est lisible que dans Safari, message explicite ailleurs).
+ */
+export async function diplomaFromFile(file: File): Promise<DiplomaPick> {
+  if (isPdf(file)) {
+    if (file.size > MAX_DIPLOMA_BYTES) throw new AppError('too_large');
+    return { kind: 'pdf', ...webPdf(file) };
+  }
+  if (!isImage(file)) throw new AppError('invalid_type');
+  return { kind: 'image', ...(await readWebImage(file)) };
+}
+
 export async function pickFromLibrary(): Promise<DiplomaPick | null> {
+  if (Platform.OS === 'web') {
+    const [file] = await pickWebFiles('image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif');
+    return file ? diplomaFromFile(file) : null;
+  }
   const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
   if (res.canceled || !res.assets[0]) return null;
   return fromImageAsset(res.assets[0], 'diplome.jpg');
 }
 
 export async function pickPdf(): Promise<DiplomaPick | null> {
+  if (Platform.OS === 'web') {
+    const [file] = await pickWebFiles('application/pdf,.pdf');
+    return file ? diplomaFromFile(file) : null;
+  }
   const res = await DocumentPicker.getDocumentAsync({ type: ['application/pdf'], copyToCacheDirectory: true, multiple: false });
   if (res.canceled || !res.assets[0]) return null;
   const a = res.assets[0];

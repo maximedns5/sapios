@@ -15,6 +15,8 @@ import { Reveal } from '@/components/Reveal';
 import { Stamp } from '@/components/Stamp';
 import { Body, Em, Label, Strong, Title } from '@/components/Text';
 import { ToneProvider } from '@/components/Tone';
+import { CropMarks } from '@/components/CropMarks';
+import { useLayout } from '@/lib/layout';
 import { useApp } from '@/lib/app-state';
 import { splitVerdict, useCopy } from '@/lib/copy';
 import { currentVerdict, submissionVerdictKey, tierVerdictKey } from '@/lib/routing';
@@ -48,6 +50,7 @@ export default function Verdict() {
   const { state, seen, markSeen } = useApp();
   const { t } = useCopy();
   const insets = useSafeAreaInsets();
+  const { wide, column } = useLayout();
   const policy = usePolicy();
   const { style: shakeStyle, trigger: shake } = useShake(0.45);
 
@@ -126,8 +129,8 @@ export default function Verdict() {
     <ToneProvider tone={tone}>
       <StatusBar style={tone === 'light' ? 'dark' : 'light'} />
       <View testID={`verdict-${variant}`} style={{ flex: 1, backgroundColor: bg }}>
-        <Animated.View style={[{ flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center' }, shakeStyle]}>
-          <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: insets.bottom + space.l, flexGrow: 1 }}>
+        <Animated.View style={[{ flex: 1, width: '100%', maxWidth: column, alignSelf: 'center' }, shakeStyle]}>
+          <ScrollView contentContainerStyle={{ paddingTop: insets.top + (wide ? 32 : 0), paddingBottom: insets.bottom + (wide ? 48 : space.l), flexGrow: 1 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: space.gutter, height: 52, alignItems: 'center' }}>
               <Reveal delay={100 * k}>
                 <Label>{plan.grid ? 'Grille d’admission' : 'Vérification'}</Label>
@@ -240,6 +243,7 @@ export default function Verdict() {
             </View>
           </ScrollView>
         </Animated.View>
+        {wide ? <CropMarks /> : null}
       </View>
     </ToneProvider>
   );

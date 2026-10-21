@@ -14,7 +14,6 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -22,18 +21,13 @@ import { OverlayProvider } from '@/components/Overlay';
 import { Gate } from '@/components/Gate';
 import { AppStateProvider, useApp } from '@/lib/app-state';
 import { CopyProvider } from '@/lib/copy';
+import { InboxProvider } from '@/lib/inbox';
 import { INK, PAPER } from '@/lib/theme';
+import { installWebChrome } from '@/lib/web';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SystemUI.setBackgroundColorAsync(INK).catch(() => {});
-
-if (Platform.OS === 'web' && typeof document !== 'undefined') {
-  // Fond de page hors colonne mobile, et pas de surlignage bleu au tap.
-  document.body.style.backgroundColor = INK;
-  const style = document.createElement('style');
-  style.textContent = `* { -webkit-tap-highlight-color: transparent; } ::selection { background: ${INK}; color: ${PAPER}; }`;
-  document.head.appendChild(style);
-}
+installWebChrome();
 
 function WithCopy({ children }: { children: React.ReactNode }) {
   const { userId } = useApp();
@@ -67,12 +61,14 @@ export default function RootLayout() {
         <AppStateProvider>
           <WithCopy>
             <OverlayProvider>
-              <Gate />
-              <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: PAPER } }}>
-                <Stack.Screen name="index" options={{ contentStyle: { backgroundColor: INK } }} />
-                <Stack.Screen name="match/[matchId]" options={{ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } }} />
-                <Stack.Screen name="report/[userId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-              </Stack>
+              <InboxProvider>
+                <Gate />
+                <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: PAPER } }}>
+                  <Stack.Screen name="index" options={{ contentStyle: { backgroundColor: INK } }} />
+                  <Stack.Screen name="match/[matchId]" options={{ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } }} />
+                  <Stack.Screen name="report/[userId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+                </Stack>
+              </InboxProvider>
             </OverlayProvider>
           </WithCopy>
         </AppStateProvider>

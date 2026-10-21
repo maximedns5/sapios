@@ -10,8 +10,12 @@ import { supabase } from './supabase';
 
 WebBrowser.maybeCompleteAuthSession();
 
-/** Retour d'authentification : sapios://auth/callback sur natif, /auth/callback sur le web. */
-export const OAUTH_REDIRECT = Linking.createURL('auth/callback');
+/**
+ * Retour d'authentification (lien magique, Google) : sapios://auth/callback sur natif ; sur le web, l'origine
+ * de la page (préproduction, production ou local), à déclarer dans les Redirect URLs de Supabase.
+ */
+export const OAUTH_REDIRECT =
+  Platform.OS === 'web' && typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : Linking.createURL('auth/callback');
 
 export type Providers = { apple: boolean; google: boolean; email: boolean };
 

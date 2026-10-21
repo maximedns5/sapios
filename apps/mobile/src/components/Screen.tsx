@@ -3,7 +3,9 @@ import type { ReactNode, RefObject } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View, type ScrollViewInstance, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useLayout } from '@/lib/layout';
 import { palette, space, type Tone } from '@/lib/theme';
+import { CropMarks } from './CropMarks';
 import { Label } from './Text';
 import { ToneProvider, useTone } from './Tone';
 
@@ -21,15 +23,26 @@ type Props = {
   scrollRef?: RefObject<ScrollViewInstance | null>;
 };
 
+/**
+ * Page de parcours. Grand écran : colonne centrée de 600 px sous les repères de cadrage, actions placées
+ * juste après le contenu (et non collées au bas d'une fenêtre de 900 px).
+ */
 export function Screen({ tone = 'light', scroll, header, footer, children, bottomInset = true, contentStyle, testID, overlay, scrollRef }: Props) {
   const insets = useSafeAreaInsets();
+  const { wide, column } = useLayout();
   const { bg } = palette(tone);
   const bottom = bottomInset ? insets.bottom : 0;
+  const inlineFooter = wide && scroll && footer;
+  const footerBlock = footer ? (
+    <View style={{ paddingHorizontal: inlineFooter ? 0 : space.gutter, paddingTop: inlineFooter ? space.xl : 12, paddingBottom: inlineFooter ? 0 : bottom + space.m, gap: 10 }}>
+      {footer}
+    </View>
+  ) : null;
   return (
     <ToneProvider tone={tone}>
       <StatusBar style={tone === 'light' ? 'dark' : 'light'} />
       <View testID={testID} style={{ flex: 1, backgroundColor: bg }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center', paddingTop: insets.top }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: column, alignSelf: 'center', paddingTop: insets.top + (wide ? 40 : 0) }}>
           {header}
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
             {scroll ? (
@@ -37,21 +50,20 @@ export function Screen({ tone = 'light', scroll, header, footer, children, botto
                 ref={scrollRef}
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={[
-                  { paddingHorizontal: space.gutter, paddingTop: space.m, paddingBottom: footer ? space.l : bottom + space.xl },
+                  { paddingHorizontal: space.gutter, paddingTop: space.m, paddingBottom: footer && !inlineFooter ? space.l : bottom + (wide ? 64 : space.xl) },
                   contentStyle,
                 ]}
               >
                 {children}
+                {inlineFooter ? footerBlock : null}
               </ScrollView>
             ) : (
               <View style={[{ flex: 1, paddingHorizontal: space.gutter }, contentStyle]}>{children}</View>
             )}
-            {footer ? (
-              <View style={{ paddingHorizontal: space.gutter, paddingTop: 12, paddingBottom: bottom + space.m, gap: 10 }}>{footer}</View>
-            ) : null}
+            {inlineFooter ? null : footerBlock}
           </KeyboardAvoidingView>
         </View>
-        {overlay}
+        {overlay ?? (wide ? <CropMarks /> : null)}
       </View>
     </ToneProvider>
   );
@@ -66,7 +78,7 @@ export function TopBar({ left, right, center }: { left?: BarItem | string; right
     if (typeof item === 'string') return <Label style={{ textAlign: align }}>{item}</Label>;
     return (
       <Pressable testID={item.testID} onPress={item.onPress} hitSlop={12} accessibilityRole="button">
-        {({ pressed }) => <Label style={{ opacity: pressed ? 0.5 : 1, textAlign: align }}>{item.label}</Label>}
+        {({ pressed, hovered }) => <Label style={{ opacity: pressed ? 0.5 : 1, textAlign: align, textDecorationLine: hovered ? 'underline' : 'none' }}>{item.label}</Label>}
       </Pressable>
     );
   };

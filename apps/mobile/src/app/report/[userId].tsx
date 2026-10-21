@@ -71,10 +71,10 @@ export default function Report() {
             return (
               <View key={code}>
                 <Pressable testID={`reason-${code}`} accessibilityRole="radio" accessibilityState={{ checked: active }} onPress={() => setReason(code)}>
-                  {({ pressed }) => (
-                    <View style={{ paddingVertical: 13, paddingHorizontal: 10, backgroundColor: active || pressed ? INK : PAPER, flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Body color={active || pressed ? PAPER : INK}>{label}</Body>
-                      <Label color={active || pressed ? PAPER : INK}>{active ? '●' : '○'}</Label>
+                  {({ pressed, hovered }) => (
+                    <View style={{ paddingVertical: 13, paddingHorizontal: 10, backgroundColor: active || pressed || hovered ? INK : PAPER, flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Body color={active || pressed || hovered ? PAPER : INK}>{label}</Body>
+                      <Label color={active || pressed || hovered ? PAPER : INK}>{active ? '●' : '○'}</Label>
                     </View>
                   )}
                 </Pressable>

@@ -15,6 +15,8 @@ import { useShake } from '@/components/motion';
 import { api } from '@/lib/api';
 import { useApp } from '@/lib/app-state';
 import { splitTitle, useCopy } from '@/lib/copy';
+import { noteOwnMatch, useInbox } from '@/lib/inbox';
+import { openChat } from '@/lib/nav';
 import { loadPhotos } from '@/lib/profile';
 import { ease, INK, PAPER, space } from '@/lib/theme';
 
@@ -22,6 +24,7 @@ import { ease, INK, PAPER, space } from '@/lib/theme';
 export default function MatchScreen() {
   const params = useLocalSearchParams<{ matchId: string; name?: string; photo?: string }>();
   const { userId } = useApp();
+  const { markOpened } = useInbox();
   const { t } = useCopy();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -32,6 +35,10 @@ export default function MatchScreen() {
   const { style: shakeStyle, trigger } = useShake(0.25);
 
   useEffect(() => {
+    if (params.matchId) {
+      noteOwnMatch(params.matchId);
+      markOpened(params.matchId);
+    }
     if (userId) loadPhotos(userId).then((list) => setMyPhoto(list[0]?.storage_path ?? null)).catch(() => {});
     if (!params.name) {
       api
@@ -45,7 +52,7 @@ export default function MatchScreen() {
         })
         .catch(() => {});
     }
-  }, [params.matchId, params.name, userId]);
+  }, [markOpened, params.matchId, params.name, userId]);
 
   const left = useSharedValue(0);
   const right = useSharedValue(0);
@@ -123,7 +130,7 @@ export default function MatchScreen() {
 
           <Reveal delay={1450}>
             <View style={{ gap: 10 }}>
-              <Button testID="match-write" label={name ? `Écrire à ${name}` : 'Écrire'} trailing="→" onPress={() => router.replace({ pathname: '/chat/[matchId]', params: { matchId: params.matchId } })} />
+              <Button testID="match-write" label={name ? `Écrire à ${name}` : 'Écrire'} trailing="→" onPress={() => openChat(params.matchId, { replace: true })} />
               <Button testID="match-later" label="Continuer la découverte" variant="outline" onPress={() => (router.canGoBack() ? router.back() : router.replace('/feed'))} />
             </View>
           </Reveal>

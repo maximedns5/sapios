@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { router, usePathname } from 'expo-router';
+import { router, useGlobalSearchParams, usePathname } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import { useApp } from '@/lib/app-state';
@@ -8,16 +8,19 @@ import { decide, isAllowed, SIGNED_OUT } from '@/lib/routing';
 
 /**
  * Portail de routage : l'écran affiché découle de la session et de get_my_state().
- * On ne redirige que si l'écran courant n'est pas autorisé pour l'état.
+ * On ne redirige que si l'écran courant n'est pas autorisé pour l'état, ou si le verdict affiché est périmé.
  */
 export function Gate() {
   const { ready, session, state, stateError, seen, userId, refresh } = useApp();
   const pathname = usePathname();
+  const { v: shownVerdict } = useGlobalSearchParams<{ v?: string }>();
   const pendingPush = useRef<string | null>(null);
+  const verdictSig = useRef<string | null>(null);
 
   useEffect(() => {
     if (!ready) return;
     if (!session) {
+      verdictSig.current = null;
       if (!isAllowed(pathname, SIGNED_OUT.allowed)) router.replace(SIGNED_OUT.target);
       return;
     }
@@ -26,6 +29,12 @@ export function Gate() {
       return;
     }
     const route = decide(state, seen);
+    // Palier, niveau ou soumission changés côté serveur (relus au focus ou périodiquement) pendant qu'un
+    // verdict est affiché : on montre le nouveau. Un simple « vu » ne compte pas.
+    const sub = state.latest_submission;
+    const sig = `${userId}|${state.tier}|${state.level}|${state.copy_key}|${sub?.id}|${sub?.status}`;
+    const changed = verdictSig.current !== null && verdictSig.current !== sig;
+    verdictSig.current = sig;
     if (pendingPush.current) {
       const target = pendingPush.current;
       pendingPush.current = null;
@@ -34,8 +43,9 @@ export function Gate() {
         return;
       }
     }
-    if (pathname === '/' || !isAllowed(pathname, route.allowed)) router.replace(route.target);
-  }, [ready, session, state, stateError, seen, pathname]);
+    const staleVerdict = changed && pathname === '/verdict' && route.target.startsWith('/verdict?v=') && route.target !== `/verdict?v=${shownVerdict ?? ''}`;
+    if (pathname === '/' || staleVerdict || !isAllowed(pathname, route.allowed)) router.replace(route.target);
+  }, [ready, session, state, stateError, seen, pathname, shownVerdict, userId]);
 
   // Jeton push : enregistré sans redemander la permission dès que le profil est actif.
   useEffect(() => {

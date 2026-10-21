@@ -1,5 +1,5 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect, useIsFocused } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,10 +17,13 @@ import { useApp } from '@/lib/app-state';
 import { onCandidateDropped, rememberCandidates } from '@/lib/candidates';
 import { useCopy } from '@/lib/copy';
 import { AppError, errorCode, errorMessage } from '@/lib/errors';
+import { noteOwnMatch } from '@/lib/inbox';
+import { useLayout } from '@/lib/layout';
 import { PAPER, space } from '@/lib/theme';
 import type { Candidate } from '@/lib/types';
+import { useKeyboardShortcuts } from '@/lib/web';
 
-function ActionButton({ kind, onPress, disabled }: { kind: Direction; onPress: () => void; disabled?: boolean }) {
+function ActionButton({ kind, onPress, disabled, hint }: { kind: Direction; onPress: () => void; disabled?: boolean; hint?: string }) {
   const { fg, bg } = useTone();
   const solid = kind === 'like';
   return (
@@ -28,6 +31,7 @@ function ActionButton({ kind, onPress, disabled }: { kind: Direction; onPress: (
       testID={kind === 'like' ? 'like' : 'pass'}
       accessibilityRole="button"
       accessibilityLabel={kind === 'like' ? 'J’aime' : 'Passer'}
+      accessibilityHint={hint ? `Raccourci clavier : ${hint}` : undefined}
       disabled={disabled}
       onPress={() => {
         tapFeedback();
@@ -35,8 +39,8 @@ function ActionButton({ kind, onPress, disabled }: { kind: Direction; onPress: (
       }}
       style={{ flex: 1 }}
     >
-      {({ pressed }) => {
-        const filled = solid ? !pressed : pressed;
+      {({ pressed, hovered }) => {
+        const filled = solid ? !(pressed || hovered) : pressed || hovered;
         const ink = filled ? bg : fg;
         return (
           <View
@@ -56,6 +60,13 @@ function ActionButton({ kind, onPress, disabled }: { kind: Direction; onPress: (
             <Label color={ink} size={12}>
               {kind === 'like' ? 'J’aime' : 'Passer'}
             </Label>
+            {hint ? (
+              <View style={{ borderWidth: 1, borderColor: ink, paddingHorizontal: 5, opacity: 0.7 }}>
+                <Label color={ink} size={10} style={{ letterSpacing: 0 }}>
+                  {hint}
+                </Label>
+              </View>
+            ) : null}
           </View>
         );
       }}
@@ -69,6 +80,8 @@ export default function Feed() {
   const { t } = useCopy();
   const { toast } = useOverlay();
   const insets = useSafeAreaInsets();
+  const { wide } = useLayout();
+  const isFocused = useIsFocused();
   const [queue, setQueue] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +155,7 @@ export default function Feed() {
         const res = await api.swipe(card.id, direction);
         if (direction === 'like' && !unlimited) setLikesLeft((n) => Math.max(0, (n ?? 1) - 1));
         if (res.matched && res.match_id) {
+          noteOwnMatch(res.match_id);
           router.push({
             pathname: '/match/[matchId]',
             params: { matchId: res.match_id, name: card.display_name, photo: card.photo_paths?.[0] ?? '' },
@@ -168,10 +182,20 @@ export default function Feed() {
   const next = queue[1];
   const locked = !unlimited && (likesLeft ?? 0) <= 0;
 
+  // Clavier : ← passer, → j'aimer (onglet affiché, aucune saisie en cours).
+  const shortcuts = useMemo(
+    () => ({
+      ArrowLeft: () => top.current?.fling('pass'),
+      ArrowRight: () => (locked ? setQuotaHit(true) : top.current?.fling('like')),
+    }),
+    [locked],
+  );
+  useKeyboardShortcuts(shortcuts, isFocused && !!current && !paused && !loading);
+
   return (
     <ToneProvider tone="light">
-      <View style={{ flex: 1, backgroundColor: PAPER, paddingTop: insets.top }} testID="feed">
-        <View style={{ width: '100%', maxWidth: 560, alignSelf: 'center', flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: PAPER, paddingTop: insets.top + (wide ? 20 : 0) }} testID="feed">
+        <View style={{ width: '100%', maxWidth: 560, alignSelf: 'center', flex: 1, paddingBottom: wide ? 12 : 0 }}>
           <View style={{ height: 52, paddingHorizontal: space.gutter, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Label>Découverte</Label>
             <LikesBadge unlimited={unlimited} left={likesLeft} quota={state?.daily_like_quota ?? null} />
@@ -207,9 +231,10 @@ export default function Feed() {
                 <Notice testID="quota-notice" title="Quota atteint" message={errorMessage(new AppError('quota_exceeded'))} />
               ) : null}
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <ActionButton kind="pass" onPress={() => top.current?.fling('pass')} />
+                <ActionButton kind="pass" hint={wide ? '←' : undefined} onPress={() => top.current?.fling('pass')} />
                 <ActionButton
                   kind="like"
+                  hint={wide ? '→' : undefined}
                   disabled={locked}
                   onPress={() => (locked ? setQuotaHit(true) : top.current?.fling('like'))}
                 />

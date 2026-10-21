@@ -4,6 +4,19 @@ const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
 
 const projectRoot = __dirname;
+
+// Build de production (expo export, dont Vercel) : les variables EXPO_PUBLIC_* sont inlinées dans le bundle,
+// leur absence donnerait une page blanche. On échoue tout de suite en nommant la variable.
+if (process.env.NODE_ENV === 'production') {
+  const missing = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'].filter((name) => !process.env[name]);
+  if (missing.length) {
+    throw new Error(
+      `Variable(s) manquante(s) au build : ${missing.join(', ')} (voir apps/mobile/.env.example). ` +
+        'Sur Vercel : Settings → Environment Variables, puis Redeploy.',
+    );
+  }
+}
+
 const config = getDefaultConfig(projectRoot);
 
 const SINGLETONS = [
