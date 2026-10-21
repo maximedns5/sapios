@@ -36,7 +36,8 @@ export interface PushDeps {
   accessToken?: string;
 }
 
-function fill(template: string, vars: Record<string, string>): string {
+/** Remplace `{nom}` par `vars.nom` ; une variable inconnue reste telle quelle. */
+export function fill(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (all, name: string) => vars[name] ?? all).trim();
 }
 

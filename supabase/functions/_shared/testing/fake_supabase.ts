@@ -134,8 +134,27 @@ export class FakeSupabase {
   ops: RecordedOp[] = [];
   rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
   storageOps: { bucket: string; action: string; path: string }[] = [];
+  /** Comptes d'authentification lus par `auth.admin.getUserById`. */
+  users: Record<string, Row> = {};
+  authCalls: string[] = [];
 
   constructor(private rpcHandlers: Record<string, RpcHandler> = {}) {}
+
+  get auth() {
+    return {
+      admin: {
+        getUserById: (id: string) => {
+          this.authCalls.push(id);
+          const user = this.users[id];
+          return Promise.resolve(
+            user
+              ? { data: { user: structuredClone(user) }, error: null }
+              : { data: { user: null }, error: { message: "User not found", status: 404, code: "user_not_found" } },
+          );
+        },
+      },
+    };
+  }
 
   from(table: string) {
     return new FakeQuery(this, table);
