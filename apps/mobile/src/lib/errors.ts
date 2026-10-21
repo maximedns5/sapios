@@ -72,6 +72,9 @@ const MESSAGES: Record<string, string> = {
   already_verified_higher: 'Vous avez déjà un niveau validé égal ou supérieur.',
   upload_failed: 'L’envoi du fichier a échoué. Réessayez.',
   file_unreadable: 'Fichier illisible. Choisissez-en un autre.',
+  heic_unsupported: 'Ce navigateur ne lit pas le format HEIC (iPhone). Envoyez votre diplôme en JPEG, PNG ou PDF.',
+  heic_unsupported_photo: 'Ce navigateur ne lit pas le format HEIC (iPhone). Choisissez une photo JPEG ou PNG.',
+  photo_type: 'Format refusé : choisissez une photo JPEG, PNG ou WEBP.',
   // Messages
   message_too_long: '2000 caractères maximum. Soyez brillant, pas bavard.',
   chat_closed: 'Cette conversation est fermée.',

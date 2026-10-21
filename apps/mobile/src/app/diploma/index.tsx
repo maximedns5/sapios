@@ -11,8 +11,10 @@ import { Rule, Screen, TopBar } from '@/components/Screen';
 import { Body, Em, Label, Mono, Title } from '@/components/Text';
 import { useTone } from '@/components/Tone';
 import { useApp } from '@/lib/app-state';
-import { CAMERA_AVAILABLE, formatBytes, pickFromCamera, pickFromLibrary, pickPdf, submitDiploma, type DiplomaPick, type SubmitStep } from '@/lib/diploma';
+import { DropTarget } from '@/components/DropTarget';
+import { CAMERA_AVAILABLE, diplomaFromFile, formatBytes, pickFromCamera, pickFromLibrary, pickPdf, submitDiploma, type DiplomaPick, type SubmitStep } from '@/lib/diploma';
 import { AppError, errorMessage } from '@/lib/errors';
+import { useLayout } from '@/lib/layout';
 import { loadLegalName } from '@/lib/profile';
 
 const STEP_LABEL: Record<SubmitStep, string> = { convert: 'Conversion…', upload: 'Envoi…', submit: 'Soumission…' };
@@ -21,7 +23,7 @@ function Option({ title, hint, onPress, disabled, testID }: { title: string; hin
   const { fg, bg } = useTone();
   return (
     <Pressable testID={testID} accessibilityRole="button" disabled={disabled} onPress={onPress}>
-      {({ pressed }) => (
+      {({ pressed, hovered }) => (
         <View
           style={{
             flexDirection: 'row',
@@ -30,19 +32,19 @@ function Option({ title, hint, onPress, disabled, testID }: { title: string; hin
             paddingVertical: 16,
             paddingHorizontal: 8,
             marginHorizontal: -8,
-            backgroundColor: pressed ? fg : bg,
+            backgroundColor: pressed || hovered ? fg : bg,
             opacity: disabled ? 0.35 : 1,
           }}
         >
           <View style={{ gap: 4, flex: 1 }}>
-            <Title size={26} color={pressed ? bg : fg}>
+            <Title size={26} color={pressed || hovered ? bg : fg}>
               {title}
             </Title>
-            <Label color={pressed ? bg : fg} style={{ opacity: 0.7 }}>
+            <Label color={pressed || hovered ? bg : fg} style={{ opacity: 0.7 }}>
               {hint}
             </Label>
           </View>
-          <ArrowIcon color={pressed ? bg : fg} />
+          <ArrowIcon color={pressed || hovered ? bg : fg} />
         </View>
       )}
     </Pressable>
@@ -53,6 +55,7 @@ function Option({ title, hint, onPress, disabled, testID }: { title: string; hin
 export default function DiplomaUpload() {
   const { userId, state, refresh } = useApp();
   const { fg, bg } = useTone();
+  const { wide } = useLayout();
   const [legalName, setLegalName] = useState<string | null>(null);
   const [pick, setPick] = useState<DiplomaPick | null>(null);
   const [step, setStep] = useState<SubmitStep | null>(null);
@@ -161,21 +164,53 @@ export default function DiplomaUpload() {
             </View>
           </View>
         ) : (
-          <View>
-            <Rule />
-            <Option
-              testID="diploma-camera"
-              title="Photographier"
-              hint={CAMERA_AVAILABLE ? 'Appareil photo' : 'Indisponible sur le web'}
-              disabled={!CAMERA_AVAILABLE || blocked}
-              onPress={() => choose(pickFromCamera)}
-            />
-            <Rule weight={1} />
-            <Option testID="diploma-library" title="Choisir une image" hint="JPEG · PNG · WEBP · HEIC" disabled={blocked} onPress={() => choose(pickFromLibrary)} />
-            <Rule weight={1} />
-            <Option testID="diploma-pdf" title="Choisir un PDF" hint="PDF · 15 Mo max." disabled={blocked} onPress={() => choose(pickPdf)} />
-            <Rule />
-          </View>
+          <DropTarget testID="diploma-drop" disabled={blocked} onFiles={([file]) => choose(() => diplomaFromFile(file))}>
+            {(over) => (
+              <View style={{ gap: 18 }}>
+                {wide ? (
+                  <View
+                    style={{
+                      borderWidth: 1.5,
+                      borderStyle: over ? 'solid' : 'dashed',
+                      borderColor: fg,
+                      backgroundColor: over ? fg : bg,
+                      paddingVertical: 28,
+                      alignItems: 'center',
+                      gap: 6,
+                      opacity: blocked ? 0.35 : 1,
+                    }}
+                  >
+                    <Label color={over ? bg : fg}>Glisser-déposer</Label>
+                    <Title size={28} color={over ? bg : fg}>
+                      {over ? 'Lâchez le fichier.' : 'Déposez votre diplôme ici'}
+                    </Title>
+                    <Label color={over ? bg : fg} style={{ opacity: 0.7 }}>
+                      PDF · JPEG · PNG · 15 Mo max.
+                    </Label>
+                  </View>
+                ) : null}
+                <View>
+                  <Rule />
+                  {CAMERA_AVAILABLE ? (
+                    <>
+                      <Option testID="diploma-camera" title="Photographier" hint="Appareil photo" disabled={blocked} onPress={() => choose(pickFromCamera)} />
+                      <Rule weight={1} />
+                    </>
+                  ) : null}
+                  <Option
+                    testID="diploma-library"
+                    title="Choisir une image"
+                    hint={CAMERA_AVAILABLE ? 'JPEG · PNG · WEBP · HEIC' : 'JPEG · PNG · WEBP'}
+                    disabled={blocked}
+                    onPress={() => choose(pickFromLibrary)}
+                  />
+                  <Rule weight={1} />
+                  <Option testID="diploma-pdf" title="Choisir un PDF" hint="PDF · 15 Mo max." disabled={blocked} onPress={() => choose(pickPdf)} />
+                  <Rule />
+                </View>
+              </View>
+            )}
+          </DropTarget>
         )}
 
         {error ? <Notice testID="diploma-error" title="Envoi refusé" message={error} /> : null}
