@@ -3,9 +3,17 @@ export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 export function assertSupabaseEnv(): void {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  const missing = [
+    ["NEXT_PUBLIC_SUPABASE_URL", SUPABASE_URL],
+    ["NEXT_PUBLIC_SUPABASE_ANON_KEY", SUPABASE_ANON_KEY],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+  if (missing.length) {
+    // Variables NEXT_PUBLIC_* : lues au build, un redéploiement est nécessaire après les avoir ajoutées.
     throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY sont requis (voir apps/web/.env.example).",
+      `Variable(s) manquante(s) au build : ${missing.join(", ")} (voir apps/web/.env.example). ` +
+        "Sur Vercel : Settings → Environment Variables, puis Redeploy.",
     );
   }
 }
