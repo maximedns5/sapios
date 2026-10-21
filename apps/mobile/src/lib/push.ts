@@ -30,6 +30,9 @@ let activeChatId: string | null = null;
 export function setActiveChat(matchId: string | null) {
   activeChatId = matchId;
 }
+export function getActiveChat(): string | null {
+  return activeChatId;
+}
 
 export async function pushPermission(): Promise<'granted' | 'denied' | 'undetermined' | 'unavailable'> {
   if (!PUSH_SUPPORTED) return 'unavailable';

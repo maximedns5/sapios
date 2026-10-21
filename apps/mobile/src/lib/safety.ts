@@ -10,8 +10,11 @@ type Overlay = {
   toast: (m: string) => void;
 };
 
-/** Bloquer : effet symétrique (feed et chat) et dé-match automatique côté serveur. */
-export async function blockUser(overlay: Overlay, userId: string, name: string, after: '/feed' | '/likes' | '/messages') {
+/**
+ * Bloquer : effet symétrique (feed et chat) et dé-match automatique côté serveur.
+ * `onDone` remplace la navigation vers `after` (conversation ouverte dans la colonne de « Messages »).
+ */
+export async function blockUser(overlay: Overlay, userId: string, name: string, after: '/feed' | '/likes' | '/messages', onDone?: () => void) {
   const ok = await overlay.confirm({
     label: 'Sécurité',
     title: `Bloquer ${name} ?`,
@@ -23,7 +26,8 @@ export async function blockUser(overlay: Overlay, userId: string, name: string, 
     await api.block(userId);
     dropCandidate(userId);
     overlay.toast(`${name} est bloqué·e.`);
-    goToTab(after);
+    if (onDone) onDone();
+    else goToTab(after);
     return true;
   } catch (e) {
     overlay.toast(errorMessage(e));
@@ -31,7 +35,7 @@ export async function blockUser(overlay: Overlay, userId: string, name: string, 
   }
 }
 
-export async function unmatchUser(overlay: Overlay, matchId: string, name: string) {
+export async function unmatchUser(overlay: Overlay, matchId: string, name: string, onDone?: () => void) {
   const ok = await overlay.confirm({
     label: 'Sécurité',
     title: `Se dé-matcher de ${name} ?`,
@@ -42,7 +46,8 @@ export async function unmatchUser(overlay: Overlay, matchId: string, name: strin
   try {
     await api.unmatch(matchId);
     overlay.toast('Match supprimé.');
-    goToTab('/messages');
+    if (onDone) onDone();
+    else goToTab('/messages');
     return true;
   } catch (e) {
     overlay.toast(errorMessage(e));

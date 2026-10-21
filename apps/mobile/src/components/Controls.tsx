@@ -19,7 +19,7 @@ export function Choice({ label, active, onPress, testID, flex }: { label: string
       }}
       style={flex ? { flex: 1 } : undefined}
     >
-      {({ pressed }) => (
+      {({ pressed, hovered }) => (
         <View
           style={{
             minHeight: 46,
@@ -28,10 +28,10 @@ export function Choice({ label, active, onPress, testID, flex }: { label: string
             alignItems: 'center',
             borderWidth: 1.5,
             borderColor: fg,
-            backgroundColor: active || pressed ? fg : bg,
+            backgroundColor: active || pressed || hovered ? fg : bg,
           }}
         >
-          <Label color={active || pressed ? bg : fg} size={11} style={{ textAlign: 'center' }}>
+          <Label color={active || pressed || hovered ? bg : fg} size={11} style={{ textAlign: 'center' }}>
             {label}
           </Label>
         </View>
@@ -98,9 +98,9 @@ export function Stepper({
           onChange(Math.min(max, Math.max(min, value + sign)));
         }}
       >
-        {({ pressed }) => (
-          <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? fg : bg, opacity: disabled ? 0.3 : 1 }}>
-            <Mono size={20} color={pressed ? bg : fg}>
+        {({ pressed, hovered }) => (
+          <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed || hovered ? fg : bg, opacity: disabled ? 0.3 : 1 }}>
+            <Mono size={20} color={pressed || hovered ? bg : fg}>
               {sign < 0 ? '−' : '+'}
             </Mono>
           </View>

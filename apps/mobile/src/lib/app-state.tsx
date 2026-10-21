@@ -1,12 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { api } from './api';
 import { AppError } from './errors';
 import { supabase } from './supabase';
 import type { MyState } from './types';
+
+const FOCUS_THROTTLE = 10_000;
+const POLL = 60_000;
 
 type AppContext = {
   /** false tant que la session locale n'a pas été lue. */
@@ -48,9 +51,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  const lastRead = useRef(0);
+
   const refresh = useCallback(async () => {
     if (!userId) return null;
     if (inflight.current) return inflight.current;
+    lastRead.current = Date.now();
     setLoadingState(true);
     const run = api
       .myState()
@@ -82,12 +88,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
   }, [userId, refresh]);
 
+  // Verdict, admission, pause : relus au retour sur l'app (au plus une fois toutes les 10 s) et toutes
+  // les 60 s quand elle est au premier plan. Sur le web, il n'y a pas de push pour annoncer un verdict.
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active') refresh();
-    });
-    return () => sub.remove();
-  }, [refresh]);
+    if (!userId) return;
+    const soft = () => {
+      if (Date.now() - lastRead.current > FOCUS_THROTTLE) refresh();
+    };
+    const sub = AppState.addEventListener('change', (next) => next === 'active' && soft());
+    const onFocus = () => soft();
+    if (Platform.OS === 'web') window.addEventListener('focus', onFocus);
+    const poll = setInterval(() => {
+      if (AppState.currentState === 'active' && Date.now() - lastRead.current >= POLL - 1000) refresh();
+    }, POLL);
+    return () => {
+      sub.remove();
+      clearInterval(poll);
+      if (Platform.OS === 'web') window.removeEventListener('focus', onFocus);
+    };
+  }, [refresh, userId]);
 
   const markSeen = useCallback(
     async (key: string) => {

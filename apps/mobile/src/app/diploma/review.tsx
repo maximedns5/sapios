@@ -121,7 +121,7 @@ export default function Review() {
         <Body>{t('scan.pending')}</Body>
         {!PUSH_SUPPORTED ? (
           <Label size={9} style={{ opacity: 0.6 }}>
-            Notifications push indisponibles sur le web : revenez sur cette page.
+            Pas de notification push sur le web : laissez cette page ouverte, le verdict s’affichera de lui-même.
           </Label>
         ) : null}
         {pushMessage ? <Notice outline message={pushMessage} /> : null}

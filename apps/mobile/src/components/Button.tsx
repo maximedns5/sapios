@@ -54,8 +54,10 @@ export function Button({ label, onPress, variant = 'solid', disabled, loading, s
       disabled={inactive}
       style={style}
     >
-      {({ pressed }) => {
-        const solid = variant === 'solid' ? !pressed : pressed;
+      {({ pressed, hovered }) => {
+        // Survol (web) = inversion, comme l'appui : la charte n'a pas d'autre accent.
+        const on = pressed || (hovered && !inactive);
+        const solid = variant === 'solid' ? !on : on;
         const fill = solid ? fg : variant === 'ghost' ? 'transparent' : bg;
         const ink = solid ? bg : fg;
         return (
@@ -103,8 +105,8 @@ export function TextLink({ label, onPress, testID, color }: { label: string; onP
   const { fg } = useTone();
   return (
     <Pressable testID={testID} accessibilityRole="link" onPress={onPress} hitSlop={8}>
-      {({ pressed }) => (
-        <Label color={color ?? fg} style={{ textDecorationLine: 'underline', opacity: pressed ? 0.5 : 1 }}>
+      {({ pressed, hovered }) => (
+        <Label color={color ?? fg} style={{ textDecorationLine: 'underline', opacity: pressed || hovered ? 0.6 : 1 }}>
           {label}
         </Label>
       )}
