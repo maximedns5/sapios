@@ -57,3 +57,14 @@ La CI (`.github/workflows/ci.yml`) lance tout cela à chaque pull request.
 3. Secrets Vault `project_url` et `internal_secret` : voir l'en-tête de `supabase/seed.sql`.
 4. Auth : URL de redirection `https://<domaine>/admin/auth/callback` et `sapios://`, fournisseurs Apple et Google, SMTP.
 5. Ne jamais exposer la clé `service_role` hors des Edge Functions.
+
+### Back-office et landing sur Vercel
+
+1. Vercel → *Add New → Project* → importer `maximedns5/sapios`.
+2. *Root Directory* : `apps/web` (Next.js est détecté ; laisser « Include files outside the root directory » activé pour `packages/shared`).
+3. Variables d'environnement : `NEXT_PUBLIC_SUPABASE_URL` (`https://<Project ID>.supabase.co`) et `NEXT_PUBLIC_SUPABASE_ANON_KEY` (clé publique `anon`) du projet visé ; facultatif : `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_PRIVACY_EMAIL`.
+4. Supabase → *Authentication → URL Configuration* : *Site URL* = l'URL Vercel, et `https://<url-vercel>/**` dans les *Redirect URLs*.
+
+### Mode manuel
+
+Sans `ANTHROPIC_API_KEY`, chaque diplôme part en revue humaine sans extraction IA (marqueur `manual_review`). Ajouter la clé dans les secrets des Edge Functions réactive l'extraction.

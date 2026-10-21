@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import type { SubmissionStatus } from "@sapios/shared";
+import { MANUAL_REVIEW_SIGNAL, type SubmissionStatus } from "@sapios/shared";
 import { describeError } from "@/lib/admin/errors";
 import { ageFrom, confidenceValue, fmtAgo, fmtDateTime, levelText, pct, STATUS_LABELS } from "@/lib/admin/format";
 import { compareNames, NAME_MATCH_LABELS } from "@/lib/admin/names";
@@ -12,8 +12,14 @@ import { Empty, ErrorNotice, Loading, PageHead, StatusBadge } from "./ui";
 
 const FILTERS: SubmissionStatus[] = ["needs_review", "pending", "processing", "needs_more", "approved", "rejected"];
 
+/** Soumission traitée sans clé API : la vérification se fait à l'œil sur le document. */
+export function isManualReview(row: Pick<SubmissionRow, "signals">): boolean {
+  return (row.signals ?? []).includes(MANUAL_REVIEW_SIGNAL);
+}
+
+// Signaux de fraude seulement : le marqueur de revue manuelle n'en est pas un.
 export function allSignals(row: Pick<SubmissionRow, "signals" | "extracted">): string[] {
-  const own = row.signals ?? [];
+  const own = (row.signals ?? []).filter((s) => s !== MANUAL_REVIEW_SIGNAL);
   const model = (row.extracted?.fraud_signals ?? []).map((s) => `model:${s}`);
   return Array.from(new Set([...own, ...model]));
 }
@@ -21,6 +27,8 @@ export function allSignals(row: Pick<SubmissionRow, "signals" | "extracted">): s
 export default function SubmissionsQueue({ status }: { status: SubmissionStatus }) {
   const [rows, setRows] = useState<SubmissionRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Colonnes de l'extraction IA, masquées quand toute la liste est en revue manuelle.
+  const ai = !rows || rows.some((r) => !isManualReview(r));
 
   const load = useCallback(() => {
     createClient()
@@ -45,7 +53,7 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
             File des <em>diplômes</em>
           </>
         }
-        lead="L’IA propose, un modérateur décide. Les plus anciennes soumissions d’abord."
+        lead="Un modérateur décide, document à l’appui. Les plus anciennes soumissions d’abord."
       />
       <div className="toolbar">
         <nav className="seg" aria-label="Filtrer par statut">
@@ -75,13 +83,15 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
               <tr>
                 <th scope="col">Soumis</th>
                 <th scope="col">Membre</th>
-                <th scope="col">Diplôme extrait</th>
-                <th scope="col">Niveau estimé</th>
-                <th scope="col" className="num">
-                  Confiance
-                </th>
+                <th scope="col">{ai ? "Diplôme extrait" : "Diplôme"}</th>
+                {ai ? <th scope="col">Niveau estimé</th> : null}
+                {ai ? (
+                  <th scope="col" className="num">
+                    Confiance
+                  </th>
+                ) : null}
                 <th scope="col">Signaux</th>
-                <th scope="col">Nom</th>
+                {ai ? <th scope="col">Nom</th> : null}
                 <th scope="col">
                   <span className="sr-only">Action</span>
                 </th>
@@ -119,16 +129,20 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
                         </>
                       ) : (
                         <span className="muted">
-                          {row.status === "pending" || row.status === "processing"
-                            ? "Extraction en cours"
-                            : "Aucune extraction"}
+                          {isManualReview(row)
+                            ? "Revue manuelle"
+                            : row.status === "pending" || row.status === "processing"
+                              ? "Extraction en cours"
+                              : "Aucune extraction"}
                         </span>
                       )}
                     </td>
-                    <td data-label="Niveau estimé">{levelText(ex?.level_estimate)}</td>
-                    <td data-label="Confiance" className="num">
-                      {pct(confidenceValue(row.confidence))}
-                    </td>
+                    {ai ? <td data-label="Niveau estimé">{levelText(ex?.level_estimate)}</td> : null}
+                    {ai ? (
+                      <td data-label="Confiance" className="num">
+                        {pct(confidenceValue(row.confidence))}
+                      </td>
+                    ) : null}
                     <td data-label="Signaux">
                       {signals.length ? (
                         <span className="badge badge--solid">
@@ -138,14 +152,16 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
                         <span className="badge badge--dashed">Aucun</span>
                       )}
                     </td>
-                    <td data-label="Nom">
-                      <span
-                        className={match === "mismatch" ? "badge badge--solid" : match === "match" ? "badge" : "badge badge--dashed"}
-                        title={NAME_MATCH_LABELS[match]}
-                      >
-                        {match === "match" ? "Concordant" : match === "partial" ? "Partiel" : match === "mismatch" ? "Divergent" : "—"}
-                      </span>
-                    </td>
+                    {ai ? (
+                      <td data-label="Nom">
+                        <span
+                          className={match === "mismatch" ? "badge badge--solid" : match === "match" ? "badge" : "badge badge--dashed"}
+                          title={NAME_MATCH_LABELS[match]}
+                        >
+                          {match === "match" ? "Concordant" : match === "partial" ? "Partiel" : match === "mismatch" ? "Divergent" : "—"}
+                        </span>
+                      </td>
+                    ) : null}
                     <td className="span">
                       <Link className="row-link" href={`/admin/diplomes/${row.id}`}>
                         Examiner<span className="sr-only"> la soumission de {row.display_name ?? row.legal_name ?? "ce membre"}</span>

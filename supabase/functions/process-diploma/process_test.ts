@@ -5,7 +5,6 @@ import {
   createClaudeExtractor,
   EXTRACTION_MODEL,
   FALLBACK_BETA,
-  unavailableExtractor,
 } from "../_shared/extractor.ts";
 import type { Extraction } from "../_shared/shared.ts";
 import { FakeSupabase } from "../_shared/testing/fake_supabase.ts";
@@ -173,13 +172,14 @@ Deno.test("diplôme propre : needs_review sans signal, jamais approved", async (
   assertNoAccessWrite(db);
 });
 
-Deno.test("sans ANTHROPIC_API_KEY : needs_review avec extraction_unavailable", async () => {
+Deno.test("sans ANTHROPIC_API_KEY : mode manuel, needs_review avec le seul marqueur manual_review", async () => {
   const { db, queue, store } = setup();
-  assertEquals(await processQueue({ store, extract: unavailableExtractor }), 1);
+  assertEquals(await processQueue({ store, extract: null }), 1);
   assertEquals(row(db).status, "needs_review");
-  assertEquals(row(db).signals, ["extraction_unavailable"]);
+  assertEquals(row(db).signals, ["manual_review"]);
   assertEquals(row(db).extracted, null);
   assertEquals(queue.length, 0);
+  assertEquals(db.storageOps.filter((op) => op.action === "download"), []);
   assertNoAccessWrite(db);
 });
 

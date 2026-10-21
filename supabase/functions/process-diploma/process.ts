@@ -4,7 +4,13 @@
 import { computeSignals, tripletKey } from "../_shared/checks.ts";
 import type { Extractor } from "../_shared/extractor.ts";
 import { isUuid } from "../_shared/http.ts";
-import type { DiplomaMime, DiplomaSignal, Extraction, SubmissionStatus } from "../_shared/shared.ts";
+import {
+  type DiplomaMime,
+  type DiplomaSignal,
+  type Extraction,
+  MANUAL_REVIEW_SIGNAL,
+  type SubmissionStatus,
+} from "../_shared/shared.ts";
 
 export const MAX_ATTEMPTS = 3;
 export const QUEUE_BATCH = 3;
@@ -48,7 +54,8 @@ export interface ProcessStore {
 
 export interface ProcessDeps {
   store: ProcessStore;
-  extract: Extractor;
+  /** null : mode manuel, aucune extraction (ni téléchargement du fichier). */
+  extract: Extractor | null;
   now?: () => Date;
   log?: (msg: string, extra?: unknown) => void;
 }
@@ -69,6 +76,7 @@ const review = (signals: DiplomaSignal[]): ReviewPayload => ({ extracted: null, 
 /** Analyse d'une soumission. Lève une exception pour un échec transitoire. */
 async function analyse(deps: ProcessDeps, sub: SubmissionRow): Promise<ReviewPayload> {
   const { store } = deps;
+  if (!deps.extract) return review([MANUAL_REVIEW_SIGNAL]);
   const bytes = await store.downloadFile(sub.storage_path);
   if (!bytes) return review(["file_missing", "extraction_impossible"]);
 

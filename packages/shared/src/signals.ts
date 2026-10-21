@@ -14,14 +14,18 @@ export const DIPLOMA_SIGNALS = {
   low_confidence: "Confiance de l'extraction faible",
   level_unknown: "Niveau non estimé par le modèle",
   model_refusal: "Le modèle a refusé d'analyser le document",
-  extraction_unavailable: "Extraction IA indisponible (clé API absente ou refusée)",
+  extraction_unavailable: "Clé API Claude refusée : extraction impossible",
   extraction_unparseable: "Réponse du modèle inexploitable",
   extraction_impossible: "Extraction impossible après plusieurs essais",
   file_missing: "Fichier introuvable dans le stockage",
   file_too_large_for_extraction: "Fichier trop lourd pour l'extraction IA",
+  manual_review: "Revue manuelle : aucune extraction IA configurée",
 } as const;
 
 export type DiplomaSignal = keyof typeof DIPLOMA_SIGNALS;
+
+/** Marqueur posé sans clé API : ce n'est pas un signal de fraude, la revue se fait à l'œil. */
+export const MANUAL_REVIEW_SIGNAL = "manual_review" satisfies DiplomaSignal;
 
 /** Les `fraud_signals` du modèle sont repris tels quels, préfixés : `model:<texte>`. */
 export const MODEL_SIGNAL_PREFIX = "model:";

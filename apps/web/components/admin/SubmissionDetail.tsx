@@ -26,7 +26,7 @@ import { compareNames, NAME_MATCH_LABELS } from "@/lib/admin/names";
 import type { PolicyRow, SubmissionRow } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
 import LevelLabel from "@/components/LevelLabel";
-import { allSignals } from "./SubmissionsQueue";
+import { allSignals, isManualReview } from "./SubmissionsQueue";
 import { ErrorNotice, Loading, StatusBadge, SuccessNotice, TierBadge } from "./ui";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -363,7 +363,10 @@ function DecisionForm({
             ) : null}
             <label className="check">
               <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-              <span>J’ai examiné le document original, le nom du titulaire et le niveau. L’extraction IA n’est qu’une proposition.</span>
+              <span>
+                J’ai examiné le document original, le nom du titulaire et le niveau.
+                {isManualReview(row) ? null : " L’extraction IA n’est qu’une proposition."}
+              </span>
             </label>
           </>
         ) : (
@@ -452,6 +455,39 @@ function ModeratorNote({ row }: { row: SubmissionRow }) {
   );
 }
 
+/* ───────────── Revue manuelle (sans clé API) ───────────── */
+
+function ManualChecklist({ birthdate }: { birthdate: string | null }) {
+  return (
+    <section className="panel" aria-labelledby="manual-title">
+      <div className="panel-h">
+        <h2 className="label" id="manual-title">
+          Revue manuelle
+        </h2>
+        <span className="label">Aucune extraction IA</span>
+      </div>
+      <div className="panel-b">
+        <dl className="kv">
+          <dt>Titulaire</dt>
+          <dd>Même personne que le nom légal ci-dessus.</dd>
+          <dt>Document</dt>
+          <dd>Diplôme complet et lisible, établissement et intitulé crédibles, sceau et signature présents.</dd>
+          <dt>Année</dt>
+          <dd>
+            Cohérente avec la date de naissance
+            {birthdate ? ` (${fmtDate(birthdate)})` : ""} : un master se termine rarement avant 22 ans.
+          </dd>
+          <dt>Niveau</dt>
+          <dd>
+            8 doctorat · 7 master, ingénieur, grande école · 6 licence, BUT, M1 · 5 BTS, DUT · 4 bac · 3 et moins : CAP,
+            BEP, brevet.
+          </dd>
+        </dl>
+      </div>
+    </section>
+  );
+}
+
 /* ───────────── Page ───────────── */
 
 export default function SubmissionDetail({ id }: { id: string }) {
@@ -503,6 +539,7 @@ export default function SubmissionDetail({ id }: { id: string }) {
   }
 
   const ex = row.extracted;
+  const manual = isManualReview(row);
   const conf = confidenceValue(row.confidence);
   const age = ageFrom(row.birthdate);
   const match = compareNames(row.legal_name, ex?.holder_full_name);
@@ -535,7 +572,8 @@ export default function SubmissionDetail({ id }: { id: string }) {
       <div className="adm-head" style={{ marginTop: 8 }}>
         <div>
           <p className="label">
-            Soumis le {fmtDateTime(row.created_at)} · {row.attempts} essai{row.attempts > 1 ? "s" : ""} d’extraction
+            Soumis le {fmtDateTime(row.created_at)} ·{" "}
+            {manual ? "revue manuelle" : `${row.attempts} essai${row.attempts > 1 ? "s" : ""} d’extraction`}
           </p>
           <h1>
             {row.display_name ?? "Sans prénom"}
@@ -614,51 +652,62 @@ export default function SubmissionDetail({ id }: { id: string }) {
                 <p className="v">{row.legal_name ?? "—"}</p>
               </div>
               <div>
-                <p className="label">Nom extrait (diplôme)</p>
-                <p className="v">{ex?.holder_full_name ?? "—"}</p>
+                <p className="label">{manual ? "Nom sur le diplôme" : "Nom extrait (diplôme)"}</p>
+                <p className="v">{manual ? "À lire sur le document" : (ex?.holder_full_name ?? "—")}</p>
               </div>
-              <p className={match === "mismatch" ? "names-verdict is-bad" : "names-verdict"}>
-                <span className="label">{match === "mismatch" ? "Attention" : "Comparaison"}</span>
-                <span>{NAME_MATCH_LABELS[match]}</span>
-              </p>
-            </div>
-          </section>
-
-          <section className="panel" aria-labelledby="ex-title">
-            <div className="panel-h">
-              <h2 className="label" id="ex-title">
-                Extraction IA
-              </h2>
-              <span className="label">Proposition, pas décision</span>
-            </div>
-            <div className="panel-b" style={{ display: "grid", gap: 16 }}>
-              <div className="meter">
-                <div className="meter-row">
-                  <span className="label">Confiance</span>
-                  <strong>{pct(conf)}</strong>
-                </div>
-                <div className="meter-track" aria-hidden="true">
-                  <i style={{ width: `${(conf ?? 0) * 100}%` }} />
-                </div>
-              </div>
-              {ex ? (
-                <dl className="kv">
-                  {fields.map(([k, v]) => (
-                    <div key={k} style={{ display: "contents" }}>
-                      <dt>{k}</dt>
-                      <dd className={v == null || v === "" ? "empty" : undefined}>{v == null || v === "" ? "illisible" : v}</dd>
-                    </div>
-                  ))}
-                </dl>
+              {manual ? (
+                <p className="names-verdict">
+                  <span className="label">À vérifier</span>
+                  <span>Le nom du document doit être celui du nom légal (accents et ordre des prénoms mis à part).</span>
+                </p>
               ) : (
-                <p className="no-signal">
-                  {row.status === "pending" || row.status === "processing"
-                    ? "Extraction en cours. La décision reste possible à partir du document."
-                    : "Aucune extraction disponible pour ce document."}
+                <p className={match === "mismatch" ? "names-verdict is-bad" : "names-verdict"}>
+                  <span className="label">{match === "mismatch" ? "Attention" : "Comparaison"}</span>
+                  <span>{NAME_MATCH_LABELS[match]}</span>
                 </p>
               )}
             </div>
           </section>
+
+          {manual ? (
+            <ManualChecklist birthdate={row.birthdate} />
+          ) : (
+            <section className="panel" aria-labelledby="ex-title">
+              <div className="panel-h">
+                <h2 className="label" id="ex-title">
+                  Extraction IA
+                </h2>
+                <span className="label">Proposition, pas décision</span>
+              </div>
+              <div className="panel-b" style={{ display: "grid", gap: 16 }}>
+                <div className="meter">
+                  <div className="meter-row">
+                    <span className="label">Confiance</span>
+                    <strong>{pct(conf)}</strong>
+                  </div>
+                  <div className="meter-track" aria-hidden="true">
+                    <i style={{ width: `${(conf ?? 0) * 100}%` }} />
+                  </div>
+                </div>
+                {ex ? (
+                  <dl className="kv">
+                    {fields.map(([k, v]) => (
+                      <div key={k} style={{ display: "contents" }}>
+                        <dt>{k}</dt>
+                        <dd className={v == null || v === "" ? "empty" : undefined}>{v == null || v === "" ? "illisible" : v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="no-signal">
+                    {row.status === "pending" || row.status === "processing"
+                      ? "Extraction en cours. La décision reste possible à partir du document."
+                      : "Aucune extraction disponible pour ce document."}
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
 
           {open && !result ? (
             <DecisionForm row={row} access={data.access} policies={data.policies} onDecided={onDecided} />

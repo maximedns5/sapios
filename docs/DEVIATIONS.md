@@ -95,3 +95,13 @@ Aucun écart aux noms du contrat (RPC, Storage, Edge Functions, clés `app_copy`
 4. **Images** : photos de profil réencodées en JPEG 1600 px ; diplômes en image réencodés en JPEG 2400 px (2000 px si le
    fichier dépasse 7 Mo, limite de l'extraction), PDF envoyés tels quels après contrôle des 15 Mo. La position est arrondie à
    0,01° sur l'appareil avant `set_location` (la base arrondit ensuite à 3 décimales).
+
+## Mode manuel (décision du porteur du projet, 21 oct. 2026)
+
+Pas de clé API Claude en staging ni en prod pour l'instant : le porteur du projet valide lui-même chaque diplôme.
+
+- Sans `ANTHROPIC_API_KEY`, `process-diploma` ne télécharge pas le fichier et n'appelle aucun modèle : la soumission passe
+  en `needs_review` avec le seul marqueur `manual_review`, qui n'est pas un signal de fraude.
+- `extraction_unavailable` ne signifie plus que « clé présente mais refusée par l'API (401/403) ».
+- Le back-office reconnaît `manual_review` : pas de colonnes ni de panneau IA, une grille de vérification à l'œil à la place.
+- Ajouter une clé suffit à réactiver l'extraction (brief §4.3) pour les soumissions suivantes, sans redéploiement.

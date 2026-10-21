@@ -31,6 +31,7 @@ export interface DiplomaFile {
 /**
  * Issue d'une extraction. Une exception signifie « échec transitoire » (le message de la file
  * réapparaîtra) ; tous les autres cas mènent à la revue humaine avec un signal explicite.
+ * `unavailable` : clé API refusée (401/403). Sans clé du tout, il n'y a pas d'extracteur (mode manuel).
  */
 export type ExtractionOutcome =
   | { kind: "ok"; extraction: Extraction; model: string }
@@ -89,13 +90,10 @@ export function createClaudeExtractor(client: AnthropicLike): Extractor {
   };
 }
 
-/** Sans clé API : jamais d'échec silencieux, la soumission part en revue avec un signal. */
-export const unavailableExtractor: Extractor = () =>
-  Promise.resolve({ kind: "unavailable", detail: "ANTHROPIC_API_KEY absente" });
-
-export function extractorFromEnv(): Extractor {
+/** Sans `ANTHROPIC_API_KEY` : null, c'est le mode manuel (revue à l'œil, marqueur `manual_review`). */
+export function extractorFromEnv(): Extractor | null {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) return unavailableExtractor;
+  if (!apiKey) return null;
   // Délai court : la fonction doit tenir dans le temps d'exécution d'une Edge Function.
   return createClaudeExtractor(new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1 }));
 }
