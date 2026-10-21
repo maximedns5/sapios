@@ -121,6 +121,10 @@ export default function ConfidentialitePage() {
               <td>Notifications push</td>
               <td>Consentement, géré par les réglages de votre appareil</td>
             </tr>
+            <tr>
+              <td>Emails de service : code de connexion, verdict du diplôme, nouveau match</td>
+              <td>Exécution du contrat</td>
+            </tr>
           </tbody>
         </table>
       </section>
@@ -130,8 +134,9 @@ export default function ConfidentialitePage() {
           <span className="label">05</span>Vérification du diplôme et intelligence artificielle
         </h2>
         <p>
-          Le document est déposé dans un espace de stockage privé, inaccessible aux autres membres. Un modèle
-          d’intelligence artificielle en extrait les informations utiles et signale d’éventuelles incohérences. Il
+          Le document est déposé dans un espace de stockage privé, inaccessible aux autres membres. Lorsque
+          l’extraction automatique est activée, un modèle d’intelligence artificielle en extrait les informations
+          utiles et signale d’éventuelles incohérences ; sinon, la vérification est entièrement manuelle. Le modèle
           ne fait que proposer : chaque décision (validation, refus, demande de complément) est prise par un
           modérateur humain. Aucune décision produisant des effets à votre égard n’est fondée exclusivement sur un
           traitement automatisé.
@@ -162,13 +167,18 @@ export default function ConfidentialitePage() {
             </tr>
             <tr>
               <td>Anthropic</td>
-              <td>Extraction des informations du diplôme par un modèle d’IA</td>
+              <td>Extraction des informations du diplôme par un modèle d’IA, uniquement lorsque l’extraction automatique est activée</td>
               <td>Document du diplôme et informations qu’il contient</td>
             </tr>
             <tr>
               <td>Expo</td>
               <td>Acheminement des notifications push vers Apple (APNs) et Google (FCM)</td>
               <td>Jeton de l’appareil, contenu de la notification</td>
+            </tr>
+            <tr>
+              <td>Resend</td>
+              <td>Envoi des emails de service : code de connexion, verdict, nouveau match (région Union européenne)</td>
+              <td>Adresse email, prénom affiché, contenu de l’email</td>
             </tr>
           </tbody>
         </table>

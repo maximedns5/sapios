@@ -90,8 +90,10 @@ Aucun écart aux noms du contrat (RPC, Storage, Edge Functions, clés `app_copy`
 2. **Verdict « vu »** : rien n'indique en base qu'un verdict a été montré ; l'app mémorise localement (AsyncStorage, par compte)
    les clés `tier:<copy_key>:<niveau>` et `sub:<id>:<statut>`. Un verdict qui ouvre le feed est montré une fois puis
    « Entrer » mène au feed ; sur un nouvel appareil, il est rejoué une fois.
-3. **Version web de l'app** (vérification Playwright) : caméra, Sign in with Apple et push Expo sont neutralisés (boutons
-   désactivés avec la mention « Indisponible sur le web »), l'export RGPD est téléchargé au lieu de passer par `expo-sharing`.
+3. **Version web de l'app** (publiée sur Vercel, voir le README) : l'option caméra est masquée (sélection de fichier et
+   glisser-déposer à la place), Sign in with Apple reste affiché mais désactivé (« iOS uniquement »), le push Expo est
+   remplacé par les notifications dans l'app (badges, bandeaux, titre de l'onglet) et les emails de verdict et de match,
+   l'export RGPD est téléchargé au lieu de passer par `expo-sharing`.
 4. **Images** : photos de profil réencodées en JPEG 1600 px ; diplômes en image réencodés en JPEG 2400 px (2000 px si le
    fichier dépasse 7 Mo, limite de l'extraction), PDF envoyés tels quels après contrôle des 15 Mo. La position est arrondie à
    0,01° sur l'appareil avant `set_location` (la base arrondit ensuite à 3 décimales).
