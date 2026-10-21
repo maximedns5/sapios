@@ -105,3 +105,30 @@ Pas de clé API Claude en staging ni en prod pour l'instant : le porteur du proj
 - `extraction_unavailable` ne signifie plus que « clé présente mais refusée par l'API (401/403) ».
 - Le back-office reconnaît `manual_review` : pas de colonnes ni de panneau IA, une grille de vérification à l'œil à la place.
 - Ajouter une clé suffit à réactiver l'extraction (brief §4.3) pour les soumissions suivantes, sans redéploiement.
+
+## Emails (agent emails, 21 oct. 2026)
+
+Détail et marche à suivre : `docs/EMAILS.md`.
+
+1. **`notify` envoie aussi des emails** (API HTTP de Resend), en plus du push : un email au verdict, un email à
+   chacune des deux personnes d'un nouveau match, aucun pour les messages. Réponse `{ sent, emailed }` au lieu de
+   `{ sent }` (contrat §5) : `sent` reste le nombre de push acceptés par Expo, `emailed` le nombre d'emails acceptés
+   par Resend (`NotifyResponse` dans `packages/shared`).
+2. **Point d'entrée commun** `_shared/notify.ts` (`dispatch`), appelé par `notify` et par `review-diploma` (qui
+   appelait `_shared/push.ts` directement, écart « Edge Functions » n° 5). Les deux canaux sont indépendants : un
+   échec Resend (réseau, 4xx, 5xx, délai de 10 s) est journalisé et absorbé, avec deux nouveaux essais après un
+   429 ; une erreur du push remonte comme avant.
+3. **Canal facultatif** : actif seulement si `RESEND_API_KEY` et `EMAIL_FROM` sont définis (secrets des Edge
+   Functions), sinon ignoré avec un journal. `SAPIOS_APP_URL` (adresse de l'app membre) donne les liens :
+   `/` pour le verdict, `/chat/<match_id>` pour le match, comme `routeForPush` de l'app.
+4. **Clés `app_copy` ajoutées** (contrat §6), par la migration `20261021091000_email_copy.sql` :
+   `email.verdict.subject`, `email.verdict.title`, `email.verdict.body`, `email.verdict.cta`,
+   `email.match.subject`, `email.match.title`, `email.match.body`, `email.match.cta`, `email.footer`.
+   Dans les emails, `{name}` est le prénom du **destinataire** (dans `push.match`/`push.message`, c'est l'autre
+   personne) ; `{verdict}` est le texte de son verdict. Le prénom de l'autre personne d'un match n'apparaît jamais
+   dans un email : avec le genre du destinataire, il révélerait une orientation (brief §9).
+5. **Destinataires** : adresse lue par `auth.admin.getUserById` au moment de l'envoi. Ignorés : profil `banned`
+   ou absent, compte Auth absent, supprimé, anonyme, `banned_until` futur, adresse non confirmée.
+6. **Nouveau sous-traitant** : Resend (brief §9), à ajouter à la politique de confidentialité avec son DPA.
+7. **Auth** : le SMTP des projets hébergés passe par Resend (`smtp.resend.com`), réglé dans le dashboard ; les
+   gabarits `supabase/templates/*.html` y sont recopiés à la main. Mailpit reste le SMTP local.
