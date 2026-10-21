@@ -65,6 +65,22 @@ La CI (`.github/workflows/ci.yml`) lance tout cela à chaque pull request.
 3. Variables d'environnement : `NEXT_PUBLIC_SUPABASE_URL` (`https://<Project ID>.supabase.co`) et `NEXT_PUBLIC_SUPABASE_ANON_KEY` (clé publique `anon`) du projet visé ; facultatif : `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_PRIVACY_EMAIL`.
 4. Supabase → *Authentication → URL Configuration* : *Site URL* = l'URL Vercel, et `https://<url-vercel>/**` dans les *Redirect URLs*.
 
+### App membre sur Vercel
+
+L'app Expo (`apps/mobile`) est publiée en site web, sur un second projet Vercel, distinct de la landing. Elle n'est liée nulle part (la landing garde la liste d'attente) et n'est pas indexée : `noindex` dans la page et en en-tête `X-Robots-Tag`, `robots.txt` qui interdit tout.
+
+1. Vercel → *Add New → Project* → importer à nouveau `maximedns5/sapios` (un projet par application, même dépôt).
+2. *Root Directory* : `apps/mobile`, *Framework Preset* : *Other*. Laisser « Include files outside the root directory » activé (`packages/shared`, lockfile pnpm à la racine). Node 22.
+3. Le reste vient de `apps/mobile/vercel.json` : build `pnpm exec expo export --platform web`, sortie `dist`, toute URL sans fichier servie par `index.html` (un rechargement de `/chat/…` ou `/messages?m=…` fonctionne), `/_expo/static` et `/assets` en cache immuable (noms hachés), `index.html` revalidé à chaque visite.
+4. Variables d'environnement (lues au build, donc *Redeploy* après modification) : `EXPO_PUBLIC_SUPABASE_URL` (`https://<Project ID>.supabase.co`) et `EXPO_PUBLIC_SUPABASE_ANON_KEY` (clé publique `anon`). Il en manque une : le build échoue en la nommant. Facultatif : `EXPO_PUBLIC_CONTACT_EMAIL`. Jamais `EXPO_PUBLIC_ENABLE_PASSWORD_LOGIN` hors préproduction (connexion par mot de passe des comptes de test).
+5. Supabase → *Authentication → URL Configuration* : ajouter `https://<url-app-vercel>/**` aux *Redirect URLs* (et l'adresse de préproduction, ex. `https://<projet>-*-<équipe>.vercel.app/**`). Sur le web, le lien magique et la connexion Google reviennent sur `https://<url-app>/auth/callback` ; une adresse absente de la liste renvoie sur la *Site URL* (la landing) et la connexion échoue.
+
+Choix de sortie : `web.output: "single"` (une seule page, routage côté navigateur). Tout l'écran dépend de la session gardée dans `localStorage` et de `get_my_state()` ; un rendu statique par route n'apporterait ni référencement (non voulu) ni contenu utile, et devrait rendre côté serveur des modules natifs.
+
+Vérifier en local : `apps/mobile/.env` rempli, `pnpm --filter @sapios/mobile export:web`, puis servir `apps/mobile/dist` avec une réécriture vers `index.html` (comportement de `vercel.json`) ; pour tester le lien magique, servir sur `http://localhost:3000`, déjà dans les Redirect URLs locales.
+
+Sur le web, pas de push : les nouveaux matchs et messages s'annoncent dans l'app (bandeau, badge de l'onglet Messages, compteur dans le titre de l'onglet du navigateur, « (2) Sapios ») par l'abonnement Realtime ; l'état du compte (`get_my_state()`) est relu au retour sur l'onglet et toutes les 60 s, ce qui fait apparaître un verdict sans recharger. Sur ordinateur (≥ 960 px) : navigation latérale, messages en deux colonnes, raccourcis ← / → dans la découverte, glisser-déposer des photos et du diplôme. Le HEIC n'est lu que par Safari : ailleurs, l'app demande un JPEG, un PNG ou un PDF.
+
 ### Mode manuel
 
 Sans `ANTHROPIC_API_KEY`, chaque diplôme part en revue humaine sans extraction IA (marqueur `manual_review`). Ajouter la clé dans les secrets des Edge Functions réactive l'extraction.
