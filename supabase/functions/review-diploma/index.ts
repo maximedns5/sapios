@@ -1,10 +1,10 @@
 // Revue humaine (brief §4.1 étapes 5-6), réservée aux admins (`is_admin()` évalué avec leur JWT).
 // La décision passe par `apply_diploma_review` (une transaction : soumission, user_access, audit_log),
-// appelée avec la clé service_role, puis le verdict est notifié.
+// appelée avec la clé service_role, puis le verdict est notifié (push et email).
 import { adminClient, requireAdmin } from "../_shared/auth.ts";
 import type { SupabaseClient } from "../_shared/deps.ts";
 import { asString, handle, HttpError, isUuid, json, readJsonObject } from "../_shared/http.ts";
-import { notify, pushDepsFromEnv } from "../_shared/push.ts";
+import { dispatch, notifyDepsFromEnv } from "../_shared/notify.ts";
 import {
   type AccessTier,
   DIPLOMA_BUCKET,
@@ -78,7 +78,7 @@ async function decide(
   if (result.user_id && result.copy_key) {
     // Notification au mieux : la décision est déjà enregistrée et auditée.
     try {
-      await notify(pushDepsFromEnv(db), { type: "verdict", user_id: result.user_id, copy_key: result.copy_key });
+      await dispatch(notifyDepsFromEnv(db), { type: "verdict", user_id: result.user_id, copy_key: result.copy_key });
     } catch (err) {
       console.error("review-diploma: notification du verdict impossible", err);
     }

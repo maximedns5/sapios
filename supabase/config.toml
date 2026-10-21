@@ -252,17 +252,20 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# SMTP : laissé désactivé en local, Mailpit reçoit tout. Les projets hébergés (staging, prod) passent
+# par le SMTP de Resend, réglé dans le dashboard : voir docs/EMAILS.md. À décommenter seulement pour
+# essayer Resend depuis la stack locale (RESEND_API_KEY dans l'environnement du shell) :
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "bonjour@mail.<domaine>"
+# sender_name = "Sapios"
 
 # Gabarits Sapios : lien + code à 6 chiffres ({{ .Token }}), utilisés par le web et le mobile.
+# Les projets hébergés ne lisent pas ce fichier : recopier sujet et contenu dans le dashboard (docs/EMAILS.md).
 [auth.email.template.magic_link]
 subject = "Votre code Sapios"
 content_path = "./supabase/templates/magic_link.html"

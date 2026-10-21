@@ -1,8 +1,9 @@
 // Appelée par trigger (pg_net) au match et au message, avec l'en-tête x-sapios-secret.
-// Le verdict passe directement par `_shared/push.ts` depuis `review-diploma`, mais reste accepté ici.
+// Le verdict passe directement par `_shared/notify.ts` depuis `review-diploma`, mais reste accepté ici.
+// Push Expo pour tout ; email (Resend) pour le verdict et le match seulement.
 import { adminClient, requireInternalSecret } from "../_shared/auth.ts";
 import { asString, handle, HttpError, isUuid, json, readJsonObject } from "../_shared/http.ts";
-import { notify, pushDepsFromEnv } from "../_shared/push.ts";
+import { dispatch, notifyDepsFromEnv } from "../_shared/notify.ts";
 import type { NotifyRequest, NotifyResponse } from "../_shared/shared.ts";
 
 function parseRequest(body: Record<string, unknown>): NotifyRequest {
@@ -25,6 +26,5 @@ function parseRequest(body: Record<string, unknown>): NotifyRequest {
 Deno.serve(handle(async (req) => {
   requireInternalSecret(req);
   const request = parseRequest(await readJsonObject(req));
-  const sent = await notify(pushDepsFromEnv(adminClient()), request);
-  return json({ sent } satisfies NotifyResponse);
+  return json(await dispatch(notifyDepsFromEnv(adminClient()), request) satisfies NotifyResponse);
 }));

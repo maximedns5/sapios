@@ -110,3 +110,18 @@ Rien de bloquant : l'app tourne de bout en bout contre les migrations et le seed
   `inappropriate_content`, `harassment`, `minor`, `scam`, `other`. Libellés côté app : « Faux profil ou usurpation »,
   « Diplôme douteux », « Photos ou propos inappropriés », « Harcèlement ou menaces », « Personne mineure »,
   « Arnaque ou spam », « Autre ».
+
+## Emails (agent emails) : pour les agents web et mobile
+
+`notify` envoie désormais des emails (Resend) au verdict et au match : `docs/EMAILS.md`, écarts dans
+`docs/DEVIATIONS.md` (« Emails »). Rien de bloquant ; trois suites :
+
+1. **Web — politique de confidentialité** (`apps/web/app/confidentialite`) : ajouter Resend aux sous-traitants
+   (envoi des emails : code de connexion, verdict, match ; région UE, Irlande).
+2. **Web — back-office, textes** : les clés `email.*` existent déjà (migration), mais peuvent rejoindre
+   `REQUIRED_KEYS` de `components/admin/CopyEditor.tsx` : `email.verdict.subject`, `email.verdict.title`,
+   `email.verdict.body`, `email.verdict.cta`, `email.match.subject`, `email.match.title`, `email.match.body`,
+   `email.match.cta`, `email.footer`. Variables : `{name}` (prénom du destinataire), `{verdict}`.
+3. **Mobile (version web)** : les emails ouvrent `<SAPIOS_APP_URL>/` (verdict) et `<SAPIOS_APP_URL>/chat/<match_id>`
+   (match). Déconnecté, `Gate` renvoie sur `/sign-in` et perd la destination : la garder pour l'ouvrir après la
+   connexion serait plus agréable. Facultatif.

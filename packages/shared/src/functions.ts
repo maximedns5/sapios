@@ -130,7 +130,10 @@ export type NotifyRequest =
   | { type: "message"; message_id: string }
   | { type: "verdict"; user_id: string; copy_key: string };
 export interface NotifyResponse {
+  /** Notifications push acceptées par Expo. */
   sent: number;
+  /** Emails acceptés par Resend (verdict, match) ; 0 si le canal email est désactivé. */
+  emailed: number;
 }
 /** Champ `data` des notifications Expo reçues par l'app. */
 export type PushData =
