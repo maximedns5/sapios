@@ -1,5 +1,6 @@
-import Link from "next/link";
-import "@/app/legal.css";
+import SiteFooter from "@/components/site/SiteFooter";
+import SiteHeader from "@/components/site/SiteHeader";
+import "@/app/site.css";
 
 export default function LegalShell({
   label,
@@ -13,35 +14,18 @@ export default function LegalShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="legal light">
+    <div className="site" style={{ display: "flex", flexDirection: "column" }}>
       <a className="skip-link" href="#contenu">
         Aller au contenu
       </a>
-      <header className="legal-top">
-        <Link href="/" className="legal-logo" aria-label="Sapios, accueil">
-          SAPIOS<sup>®</sup>
-        </Link>
-        <nav aria-label="Pages" className="legal-nav">
-          <Link className="label" href="/confidentialite">
-            Confidentialité
-          </Link>
-          <Link className="label" href="/contact">
-            Contact
-          </Link>
-        </nav>
-      </header>
+      <SiteHeader />
       <main id="contenu" className="legal-main">
-        <p className="label">{label}</p>
+        <p className="s-kicker">{label}</p>
         <h1 className="legal-title">{title}</h1>
         {intro ? <div className="legal-intro">{intro}</div> : null}
         <div className="legal-body">{children}</div>
       </main>
-      <footer className="legal-foot">
-        <p className="label">© 2026 Sapios — Réservé aux personnes majeures</p>
-        <Link className="label" href="/">
-          Retour à l’accueil
-        </Link>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

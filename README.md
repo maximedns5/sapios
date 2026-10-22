@@ -12,7 +12,7 @@ Application de rencontre réservée aux diplômés : le niveau du diplôme valid
 | `supabase/functions` | Edge Functions Deno : `submit-diploma`, `process-diploma`, `review-diploma`, `notify`, `delete-account`, `purge-diplomas` |
 | `supabase/templates` | Emails d'authentification (lien + code à 6 chiffres), à recopier dans le dashboard des projets hébergés |
 | `packages/shared` | Enums, schéma d'extraction zod, signaux, types des Edge Functions, types générés de la base |
-| `apps/web` | Next.js : landing (`/`), pages légales, back-office (`/admin`) |
+| `apps/web` | Next.js : landing (`/`), test d’admission (`/test`), pages légales, back-office (`/admin`) |
 | `apps/mobile` | Expo (expo-router) : parcours membre complet |
 
 ## Développement local
@@ -62,7 +62,7 @@ La CI (`.github/workflows/ci.yml`) lance tout cela à chaque pull request.
 
 1. Vercel → *Add New → Project* → importer `maximedns5/sapios`.
 2. *Root Directory* : `apps/web` (Next.js est détecté ; laisser « Include files outside the root directory » activé pour `packages/shared`).
-3. Variables d'environnement : `NEXT_PUBLIC_SUPABASE_URL` (`https://<Project ID>.supabase.co`) et `NEXT_PUBLIC_SUPABASE_ANON_KEY` (clé publique `anon`) du projet visé ; facultatif : `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_PRIVACY_EMAIL`.
+3. Variables d'environnement : `NEXT_PUBLIC_SUPABASE_URL` (`https://<Project ID>.supabase.co`) et `NEXT_PUBLIC_SUPABASE_ANON_KEY` (clé publique `anon`) du projet visé ; facultatif : `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_PRIVACY_EMAIL`, `NEXT_PUBLIC_SITE_URL` (adresse publique du site, ex. `https://sapios.fr`, écrite sur l’image à partager du test et utilisée pour les aperçus de liens ; à défaut, le domaine de production Vercel).
 4. Supabase → *Authentication → URL Configuration* : *Site URL* = l'URL Vercel, et `https://<url-vercel>/**` dans les *Redirect URLs*.
 
 ### App membre sur Vercel
