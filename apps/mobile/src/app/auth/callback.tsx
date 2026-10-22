@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { Spinner } from '@/components/motion';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { Wordmark } from '@/components/Wordmark';
@@ -30,15 +31,17 @@ export default function AuthCallback() {
     })();
   }, [params.code, params.error, params.error_description]);
   return (
-    <Screen tone="dark">
+    <Screen>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 24 }}>
-        <Wordmark size={56} />
+        <Wordmark size={44} />
         {error ? (
           <View style={{ alignSelf: 'stretch', gap: 12 }}>
-            <Notice title="Connexion impossible" message={error} />
-            <Button label="Retour" onPress={() => router.replace('/sign-in')} />
+            <Notice kind="error" title="Connexion impossible" message={`${error} Le lien a peut-être expiré : demandez-en un nouveau.`} />
+            <Button label="Recevoir un nouveau lien" onPress={() => router.replace('/sign-in')} />
           </View>
-        ) : null}
+        ) : (
+          <Spinner />
+        )}
       </View>
     </Screen>
   );

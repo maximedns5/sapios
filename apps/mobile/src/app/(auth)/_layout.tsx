@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 
-import { INK } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 export default function AuthLayout() {
-  return <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: INK } }} />;
+  return <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: colors.bg } }} />;
 }

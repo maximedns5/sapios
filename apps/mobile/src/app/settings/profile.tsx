@@ -3,8 +3,8 @@ import { View } from 'react-native';
 
 import { useOverlay } from '@/components/Overlay';
 import { ProfileForm } from '@/components/ProfileForm';
-import { Screen, TopBar } from '@/components/Screen';
-import { Em, Title } from '@/components/Text';
+import { Header, Screen } from '@/components/Screen';
+import { Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
 
 export default function EditProfile() {
@@ -12,11 +12,9 @@ export default function EditProfile() {
   const { toast } = useOverlay();
   if (!userId || !state) return null;
   return (
-    <Screen scroll header={<TopBar left={{ label: '← Retour', onPress: () => router.back() }} right="Profil" />}>
-      <View style={{ gap: 24, paddingTop: 4 }}>
-        <Title size={42}>
-          Modifier <Em>le profil.</Em>
-        </Title>
+    <Screen scroll header={<Header onBack={() => router.back()} />}>
+      <View style={{ gap: 22, paddingTop: 4 }}>
+        <Title size={30}>Modifier mon profil</Title>
         <ProfileForm
           userId={userId}
           consentGiven={state.onboarding.consent_sensitive}

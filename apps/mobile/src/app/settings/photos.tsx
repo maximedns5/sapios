@@ -3,8 +3,8 @@ import { View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { PhotoManager } from '@/components/PhotoManager';
-import { Screen, TopBar } from '@/components/Screen';
-import { Body, Em, Title } from '@/components/Text';
+import { Header, Screen } from '@/components/Screen';
+import { Body, Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
 
 export default function EditPhotos() {
@@ -14,14 +14,20 @@ export default function EditPhotos() {
   return (
     <Screen
       scroll
-      header={<TopBar left={{ label: '← Retour', onPress: () => router.back() }} right="Photos" />}
-      footer={<Button label="Terminé" onPress={async () => { await refresh(); router.back(); }} />}
+      header={<Header onBack={() => router.back()} />}
+      footer={
+        <Button
+          label="Terminé"
+          onPress={async () => {
+            await refresh();
+            router.back();
+          }}
+        />
+      }
     >
-      <View style={{ gap: 20, paddingTop: 4 }}>
-        <Title size={42}>
-          Vos <Em>photos.</Em>
-        </Title>
-        <Body>La première est la photo principale. Utilisez les flèches pour changer l’ordre.</Body>
+      <View style={{ gap: 18, paddingTop: 4 }}>
+        <Title size={30}>Mes photos</Title>
+        <Body muted>La première est la photo principale. Les flèches changent l’ordre.</Body>
         <PhotoManager userId={userId} keepMinimum={active} />
       </View>
     </Screen>

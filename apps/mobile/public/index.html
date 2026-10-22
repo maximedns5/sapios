@@ -8,12 +8,12 @@
     <meta name="robots" content="noindex, nofollow" />
     <meta name="googlebot" content="noindex, nofollow" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <meta name="theme-color" content="#0B0B0B" />
+    <meta name="theme-color" content="#FFFFFF" />
     <meta name="color-scheme" content="light" />
     <meta name="apple-mobile-web-app-title" content="Sapios" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <style id="expo-reset">
@@ -21,7 +21,7 @@
       body {
         height: 100%;
         margin: 0;
-        background: #0b0b0b;
+        background: #ffffff;
       }
       body {
         overflow: hidden;
@@ -35,16 +35,25 @@
       noscript {
         display: block;
         padding: 24px;
-        color: #f4f3ef;
-        font: 14px/1.5 monospace;
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
+        color: #1a1918;
+        font: 16px/1.5 system-ui, sans-serif;
+      }
+      /* Logo de démarrage : affiché avant le chargement du script, remplacé par l'app au premier rendu. */
+      #boot {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        color: #1a1918;
+        font: italic 500 44px/1 'Bodoni Moda', Georgia, 'Times New Roman', serif;
+        letter-spacing: -0.01em;
       }
     </style>
   </head>
 
   <body>
     <noscript>Sapios demande JavaScript. Activez-le pour continuer.</noscript>
-    <div id="root"></div>
+    <div id="root"><div id="boot" aria-label="Sapios">sapios</div></div>
   </body>
 </html>

@@ -1,38 +1,88 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { View, useWindowDimensions } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import { Platform, Pressable, TextInput, useWindowDimensions, View } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/Button';
+import { IconButton } from '@/components/Button';
+import { ArrowRightIcon, HeartIcon, ReplayIcon } from '@/components/Icons';
+import { Confetti, haptic, Heartbeat, MaskUp, PopIn, Rise, Shockwave, useReplay } from '@/components/motion';
 import { Photo, useSignedUrls } from '@/components/Photo';
-import { Reveal } from '@/components/Reveal';
-import { Body, Em, Label, Title } from '@/components/Text';
+import { Body, Title } from '@/components/Text';
 import { ToneProvider } from '@/components/Tone';
-import { Volet } from '@/components/Volet';
-import { useShake } from '@/components/motion';
 import { api } from '@/lib/api';
 import { useApp } from '@/lib/app-state';
-import { splitTitle, useCopy } from '@/lib/copy';
+import { useCopy } from '@/lib/copy';
 import { noteOwnMatch, useInbox } from '@/lib/inbox';
+import { useLayout } from '@/lib/layout';
 import { openChat } from '@/lib/nav';
 import { loadPhotos } from '@/lib/profile';
-import { ease, INK, PAPER, space } from '@/lib/theme';
+import { supabase } from '@/lib/supabase';
+import { colors, ease, fonts } from '@/lib/theme';
 
-/** Match : animation plein écran, les deux portraits se rejoignent, titre révélé par masque. */
+const CARD_W = 136;
+const CARD_H = 180;
+
+/** Fond d'accent révélé en cercle depuis le haut de l'écran. */
+function Reveal({ width, height }: { width: number; height: number }) {
+  const reduced = useReducedMotion();
+  const p = useSharedValue(reduced ? 1 : 0);
+  useEffect(() => {
+    if (!reduced) p.value = withTiming(1, { duration: 750, easing: ease.inOut });
+  }, [p, reduced]);
+  const size = Math.hypot(width, height) * 2;
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: p.value }] }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: 'absolute', width: size, height: size, borderRadius: size / 2, left: width / 2 - size / 2, top: height * 0.4 - size / 2, backgroundColor: colors.accent }, style]}
+    />
+  );
+}
+
+/** Portrait qui arrive de côté avec un ressort et se pose de biais. */
+function FlyingCard({ side, delay, children }: { side: -1 | 1; delay: number; children: React.ReactNode }) {
+  const reduced = useReducedMotion();
+  const p = useSharedValue(reduced ? 1 : 0);
+  useEffect(() => {
+    if (!reduced) p.value = withDelay(delay, withTiming(1, { duration: 900, easing: ease.spring }));
+  }, [delay, p, reduced]);
+  const style = useAnimatedStyle(() => ({
+    opacity: Math.min(1, p.value * 1.8),
+    transform: [{ translateX: (1 - p.value) * 240 * side }, { rotate: `${side * (8 + (1 - p.value) * 22)}deg` }],
+  }));
+  return (
+    <Animated.View
+      style={[
+        { width: CARD_W, height: CARD_H, borderRadius: 22, borderWidth: 4, borderColor: '#FFFFFF', overflow: 'hidden', backgroundColor: colors.photo, boxShadow: '0px 18px 40px rgba(0,0,0,0.25)', marginRight: side < 0 ? -26 : 0 },
+        style,
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+/**
+ * C'est un match : le fond d'accent se déploie, les deux portraits se rejoignent, le cœur éclate (onde de
+ * choc, confettis), le titre monte, puis le premier message. Bouton pour rejouer la scène.
+ */
 export default function MatchScreen() {
   const params = useLocalSearchParams<{ matchId: string; name?: string; photo?: string }>();
   const { userId } = useApp();
   const { markOpened } = useInbox();
   const { t } = useCopy();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { height } = useWindowDimensions();
+  const { columnWidth } = useLayout();
   const [name, setName] = useState(params.name ?? '');
   const [otherPhoto, setOtherPhoto] = useState<string | null>(params.photo || null);
   const [myPhoto, setMyPhoto] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
   const urls = useSignedUrls([otherPhoto, myPhoto].filter((p): p is string => !!p));
-  const { style: shakeStyle, trigger } = useShake(0.25);
+  const [key, replay] = useReplay();
 
   useEffect(() => {
     if (params.matchId) {
@@ -54,88 +104,106 @@ export default function MatchScreen() {
     }
   }, [markOpened, params.matchId, params.name, userId]);
 
-  const left = useSharedValue(0);
-  const right = useSharedValue(0);
   useEffect(() => {
-    left.value = withDelay(450, withTiming(1, { duration: 900, easing: ease.expoOut }));
-    right.value = withDelay(520, withTiming(1, { duration: 900, easing: ease.expoOut }));
-    const timer = setTimeout(trigger, 1150);
+    const timer = setTimeout(() => haptic.success(), 760);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [key]);
 
-  const w = Math.min(width, 560);
-  const cardW = Math.min(150, (w - space.gutter * 2) * 0.42);
-  const leftStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: (1 - left.value) * -w }, { rotate: `${-7 + (1 - left.value) * -12}deg` }],
-  }));
-  const rightStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: (1 - right.value) * w }, { rotate: `${6 + (1 - right.value) * 12}deg` }],
-  }));
+  const send = async () => {
+    const body = draft.trim();
+    if (!body || !userId || !params.matchId) {
+      openChat(params.matchId, { replace: true });
+      return;
+    }
+    setSending(true);
+    const { error } = await supabase.from('messages').insert({ match_id: params.matchId, sender_id: userId, body });
+    setSending(false);
+    // En cas d'échec, la conversation s'ouvre avec le brouillon perdu : on le garde plutôt ici.
+    if (error) return;
+    openChat(params.matchId, { replace: true });
+  };
 
-  const [l1, l2] = splitTitle(t('match.title'));
+  const cardsTop = insets.top + 96;
+  const heartCenter = cardsTop + CARD_H;
+  const later = () => (router.canGoBack() ? router.back() : router.replace('/feed'));
 
   return (
-    <ToneProvider tone="dark">
+    <ToneProvider tone="accent">
       <StatusBar style="light" />
-      <View style={{ flex: 1, backgroundColor: INK }} testID="match">
-        <Animated.View style={[{ flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center', paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16, paddingHorizontal: space.gutter }, shakeStyle]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Reveal delay={300}>
-              <Label>C’est un match</Label>
-            </Reveal>
-            <Reveal delay={360}>
-              <Label>N° {(params.matchId ?? '').slice(0, 4).toUpperCase()}</Label>
-            </Reveal>
+      <View style={{ flex: 1, backgroundColor: colors.bg, overflow: 'hidden' }} testID="match">
+        <View key={key} style={{ flex: 1 }}>
+          <Reveal width={columnWidth} height={height} />
+
+          <View style={{ position: 'absolute', top: cardsTop, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <FlyingCard side={-1} delay={300}>
+              <Photo path={myPhoto} url={myPhoto ? urls[myPhoto] : ''} name="Vous" initialSize={56} style={{ flex: 1 }} />
+            </FlyingCard>
+            <FlyingCard side={1} delay={360}>
+              <Photo path={otherPhoto} url={otherPhoto ? urls[otherPhoto] : ''} name={name || '?'} initialSize={56} style={{ flex: 1 }} />
+            </FlyingCard>
           </View>
 
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <View style={{ flexDirection: 'row', height: cardW * 1.35 + 30, alignItems: 'center' }}>
-              <Animated.View style={[{ marginRight: -18, zIndex: 1 }, leftStyle]}>
-                <View style={{ backgroundColor: PAPER, padding: 5 }}>
-                  <Photo path={myPhoto} url={myPhoto ? urls[myPhoto] : ''} name="Vous" monogramSize={56} caption={false} style={{ width: cardW, height: cardW * 1.25 }} />
-                  <Label size={8.5} color={INK} style={{ marginTop: 5 }}>
-                    Vous
-                  </Label>
+          <View pointerEvents="none" style={{ position: 'absolute', top: heartCenter - 60, left: columnWidth / 2 - 60, width: 120, height: 120, alignItems: 'center', justifyContent: 'center' }}>
+            <Shockwave size={120} delay={800} />
+          </View>
+          <Confetti x={columnWidth / 2} y={heartCenter} />
+          <View pointerEvents="none" style={{ position: 'absolute', top: heartCenter - 30, left: columnWidth / 2 - 30 }}>
+            <PopIn delay={720} duration={550} overshoot={1.28}>
+              <Heartbeat delay={1800}>
+                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', boxShadow: '0px 8px 24px rgba(0,0,0,0.25)' }}>
+                  <HeartIcon size={28} color={colors.accent} filled />
                 </View>
-              </Animated.View>
-              <Animated.View style={[{ zIndex: 2 }, rightStyle]}>
-                <View style={{ backgroundColor: PAPER, padding: 5 }}>
-                  <Photo path={otherPhoto} url={otherPhoto ? urls[otherPhoto] : ''} name={name || '?'} monogramSize={56} caption={false} style={{ width: cardW, height: cardW * 1.25 }} />
-                  <Label size={8.5} color={INK} style={{ marginTop: 5, textAlign: 'right' }} numberOfLines={1}>
-                    {name || '—'}
-                  </Label>
-                </View>
-              </Animated.View>
-            </View>
+              </Heartbeat>
+            </PopIn>
+          </View>
 
-            <View style={{ alignItems: 'center', marginTop: 28 }}>
-              <Reveal delay={1000}>
-                <Title size={40} style={{ textAlign: 'center' }}>
-                  {l1}
-                </Title>
-              </Reveal>
-              <Reveal delay={1080}>
-                <Title size={40} style={{ textAlign: 'center' }}>
-                  <Em>{l2}</Em>
-                </Title>
-              </Reveal>
-              <Reveal delay={1250}>
-                <Body style={{ textAlign: 'center', marginTop: 14, opacity: 0.8 }}>
-                  {name ? `${name} et vous vous êtes mutuellement trouvés à la hauteur.` : 'Vous vous êtes mutuellement trouvés à la hauteur.'}
+          <View style={{ position: 'absolute', top: heartCenter + 50, left: 24, right: 24, bottom: insets.bottom + 28, alignItems: 'center', gap: 10 }}>
+            <MaskUp delay={950}>
+              <Title size={40} align="center" color="#FFFFFF">
+                C’est un match !
+              </Title>
+            </MaskUp>
+            <Rise delay={1150}>
+              <Body size={17} align="center" color="rgba(255,255,255,0.92)">
+                {name ? `${name} et vous. ${t('match.title')}` : t('match.title')}
+              </Body>
+            </Rise>
+            <View style={{ flex: 1 }} />
+            <Rise delay={1350} style={{ alignSelf: 'stretch' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFFFFF', borderRadius: 999, paddingLeft: 18, paddingRight: 6, paddingVertical: 6 }}>
+                <TextInput
+                  testID="match-message"
+                  value={draft}
+                  onChangeText={setDraft}
+                  placeholder={name ? `Écrire à ${name}…` : 'Votre premier message…'}
+                  placeholderTextColor={colors.muted}
+                  accessibilityLabel="Premier message"
+                  maxLength={2000}
+                  onSubmitEditing={send}
+                  style={[{ flex: 1, fontFamily: fonts.regular, fontSize: 16, color: colors.text, paddingVertical: 10 }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null]}
+                />
+                <Pressable testID="match-write" accessibilityRole="button" accessibilityLabel={draft.trim() ? 'Envoyer' : 'Ouvrir la conversation'} onPress={send} disabled={sending}>
+                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center', opacity: sending ? 0.6 : 1 }}>
+                    <ArrowRightIcon size={20} color="#FFFFFF" stroke={2.4} />
+                  </View>
+                </Pressable>
+              </View>
+            </Rise>
+            <Rise delay={1500}>
+              <Pressable testID="match-later" accessibilityRole="button" onPress={later} style={{ minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' }}>
+                <Body weight="bold" size={15} color="#FFFFFF">
+                  Continuer à découvrir
                 </Body>
-              </Reveal>
-            </View>
+              </Pressable>
+            </Rise>
           </View>
 
-          <Reveal delay={1450}>
-            <View style={{ gap: 10 }}>
-              <Button testID="match-write" label={name ? `Écrire à ${name}` : 'Écrire'} trailing="→" onPress={() => openChat(params.matchId, { replace: true })} />
-              <Button testID="match-later" label="Continuer la découverte" variant="outline" onPress={() => (router.canGoBack() ? router.back() : router.replace('/feed'))} />
-            </View>
-          </Reveal>
-        </Animated.View>
-        <Volet color={PAPER} direction="up" duration={700} />
+          <Rise delay={1700} style={{ position: 'absolute', top: insets.top + 14, right: 14 }}>
+            <IconButton label="Rejouer l’animation" variant="glass" onPress={replay}>
+              <ReplayIcon size={20} color="#FFFFFF" />
+            </IconButton>
+          </Rise>
+        </View>
       </View>
     </ToneProvider>
   );

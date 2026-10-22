@@ -57,6 +57,12 @@ export async function pickFromLibrary(): Promise<DiplomaPick | null> {
   return fromImageAsset(res.assets[0], 'diplome.jpg');
 }
 
+/** Navigateur : un seul sélecteur pour le PDF et les images. */
+export async function pickAnyWeb(): Promise<DiplomaPick | null> {
+  const [file] = await pickWebFiles('application/pdf,.pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif');
+  return file ? diplomaFromFile(file) : null;
+}
+
 export async function pickPdf(): Promise<DiplomaPick | null> {
   if (Platform.OS === 'web') {
     const [file] = await pickWebFiles('application/pdf,.pdf');

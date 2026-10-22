@@ -1,19 +1,14 @@
-import { BodoniModa_400Regular } from '@expo-google-fonts/bodoni-moda/400Regular';
-import { BodoniModa_400Regular_Italic } from '@expo-google-fonts/bodoni-moda/400Regular_Italic';
-import { BodoniModa_500Medium } from '@expo-google-fonts/bodoni-moda/500Medium';
-import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regular';
-import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium';
-import { IBMPlexMono_700Bold } from '@expo-google-fonts/ibm-plex-mono/700Bold';
-import { Inter_300Light } from '@expo-google-fonts/inter/300Light';
-import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
-import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
-import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
-import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
+import { BodoniModa_500Medium_Italic } from '@expo-google-fonts/bodoni-moda/500Medium_Italic';
+import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
+import { PlusJakartaSans_600SemiBold } from '@expo-google-fonts/plus-jakarta-sans/600SemiBold';
+import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
+import { PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans/800ExtraBold';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
+import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -22,11 +17,12 @@ import { Gate } from '@/components/Gate';
 import { AppStateProvider, useApp } from '@/lib/app-state';
 import { CopyProvider } from '@/lib/copy';
 import { InboxProvider } from '@/lib/inbox';
-import { INK, PAPER } from '@/lib/theme';
+import { COLUMN, useLayout } from '@/lib/layout';
+import { colors, shadow } from '@/lib/theme';
 import { installWebChrome } from '@/lib/web';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
-SystemUI.setBackgroundColorAsync(INK).catch(() => {});
+SystemUI.setBackgroundColorAsync(colors.bg).catch(() => {});
 installWebChrome();
 
 function WithCopy({ children }: { children: React.ReactNode }) {
@@ -34,44 +30,59 @@ function WithCopy({ children }: { children: React.ReactNode }) {
   return <CopyProvider userId={userId}>{children}</CopyProvider>;
 }
 
+/** Sur grand écran, l'app reste une colonne de téléphone centrée sur un fond chaud. */
+function Frame({ children }: { children: React.ReactNode }) {
+  const { wide } = useLayout();
+  return (
+    <View style={{ flex: 1, backgroundColor: wide ? colors.surface : colors.bg }}>
+      <View style={{ flex: 1, width: '100%', maxWidth: COLUMN, alignSelf: 'center', backgroundColor: colors.bg, overflow: 'hidden', boxShadow: wide ? shadow.card : undefined }}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
 export default function RootLayout() {
+  // Quatre graisses et le logotype : la moitié des fichiers de police de l'ancienne charte.
   const [loaded, error] = useFonts({
-    BodoniModa_400Regular,
-    BodoniModa_400Regular_Italic,
-    BodoniModa_500Medium,
-    Inter_300Light,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    IBMPlexMono_400Regular,
-    IBMPlexMono_500Medium,
-    IBMPlexMono_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+    BodoniModa_500Medium_Italic,
   });
 
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});
   }, [loaded, error]);
 
-  if (!loaded && !error) return null;
+  if (!loaded && !error) {
+    // Même logo que index.html, en attendant les polices : pas d'écran vide au premier chargement.
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontFamily: 'Georgia', fontStyle: 'italic', fontSize: 44, color: colors.text }}>sapios</Text>
+      </View>
+    );
+  }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: INK }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <SafeAreaProvider>
-        <AppStateProvider>
-          <WithCopy>
-            <OverlayProvider>
-              <InboxProvider>
-                <Gate />
-                <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: PAPER } }}>
-                  <Stack.Screen name="index" options={{ contentStyle: { backgroundColor: INK } }} />
-                  <Stack.Screen name="match/[matchId]" options={{ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } }} />
-                  <Stack.Screen name="report/[userId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-                </Stack>
-              </InboxProvider>
-            </OverlayProvider>
-          </WithCopy>
-        </AppStateProvider>
+        <Frame>
+          <AppStateProvider>
+            <WithCopy>
+              <OverlayProvider>
+                <InboxProvider>
+                  <Gate />
+                  <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: colors.bg } }}>
+                    <Stack.Screen name="match/[matchId]" options={{ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } }} />
+                    <Stack.Screen name="report/[userId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+                  </Stack>
+                </InboxProvider>
+              </OverlayProvider>
+            </WithCopy>
+          </AppStateProvider>
+        </Frame>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
