@@ -207,8 +207,8 @@ export function AccountScreen() {
               first
               testID={consent ? 'revoke-consent' : 'give-consent'}
               icon={<LockIcon size={18} color={colors.accent} />}
-              title={consent ? 'Donnée sensible : consentement donné' : 'Donnée sensible : pas de consentement'}
-              sub={consent ? 'Genres recherchés. Retirer mon consentement' : 'Nécessaire pour la découverte. Le donner'}
+              title="Donnée sensible"
+              sub={consent ? 'Consentement donné · le retirer' : 'Pas de consentement · le donner'}
               onPress={consent ? revoke : () => router.push('/settings/consent')}
             />
             {PUSH_SUPPORTED ? (

@@ -21,17 +21,24 @@ type Props = {
   contentStyle?: StyleProp<ViewStyle>;
   testID?: string;
   scrollRef?: RefObject<ScrollViewInstance | null>;
+  /** Décor derrière toute la page (formes d'accent), sans interaction. */
+  backdrop?: ReactNode;
 };
 
 /** Page de l'app : fond blanc, en-tête, contenu (défilant ou non), actions fixées en bas. */
-export function Screen({ tone = 'light', scroll, header, footer, children, bottomInset = true, contentStyle, testID, scrollRef }: Props) {
+export function Screen({ tone = 'light', scroll, header, footer, children, bottomInset = true, contentStyle, testID, scrollRef, backdrop }: Props) {
   const insets = useSafeAreaInsets();
   const { bg } = palette(tone);
   const bottom = bottomInset ? insets.bottom : 0;
   return (
     <ToneProvider tone={tone}>
       <StatusBar style={tone === 'light' ? 'dark' : 'light'} />
-      <View testID={testID} style={{ flex: 1, backgroundColor: bg, paddingTop: insets.top }}>
+      <View testID={testID} style={{ flex: 1, backgroundColor: bg, paddingTop: insets.top, overflow: 'hidden' }}>
+        {backdrop ? (
+          <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+            {backdrop}
+          </View>
+        ) : null}
         {header}
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
           {scroll ? (

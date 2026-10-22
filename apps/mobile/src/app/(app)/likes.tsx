@@ -98,7 +98,7 @@ export default function Likes() {
         }
         renderItem={({ item, index }) => {
           const path = item.photo_paths?.[0];
-          const where = [item.age != null ? `${item.age} ans` : null, describe(item) || null].filter(Boolean).join(' · ');
+          const where = describe(item);
           return (
             <Rise delay={80 + index * 90}>
               <Pressable
@@ -113,8 +113,9 @@ export default function Likes() {
                     <View style={{ flex: 1 }}>
                       <Body weight="bold" numberOfLines={1}>
                         {item.display_name}
+                        {item.age != null ? `, ${item.age}` : ''}
                       </Body>
-                      <Small numberOfLines={1}>{where ? `vous a liké · ${where}` : 'vous a liké'}</Small>
+                      <Small numberOfLines={2}>{where ? `vous a liké · ${where}` : 'vous a liké'}</Small>
                     </View>
                     <IconButton label={`Passer ${item.display_name}`} variant="floating" size={48} onPress={() => answer(item, 'pass')} testID={`liker-pass-${item.id}`}>
                       <CrossIcon size={20} color={colors.text} stroke={2.4} />
@@ -145,7 +146,7 @@ function Locked() {
           Qui vous a liké ?
         </Body>
         <Body secondary size={15} align="center">
-          Voir les likes reçus est réservé à l’accès illimité (Bac+8). Un like réciproque crée un match : continuez la découverte.
+          Voir les likes reçus est réservé à l’accès illimité. Un like réciproque crée un match : continuez la découverte.
         </Body>
         <Button label="Aller à la découverte" onPress={() => goToTab('/feed')} style={{ alignSelf: 'stretch', marginTop: 6 }} />
       </View>

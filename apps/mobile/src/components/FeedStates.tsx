@@ -16,10 +16,11 @@ function StackedCard({ index }: { index: number }) {
   useEffect(() => {
     if (!reduced) p.value = withDelay(index * 120, withTiming(1, { duration: 700, easing: ease.spring }));
   }, [index, p, reduced]);
-  const rest = [-8, 6, 0][index];
+  const rest = [-9, 7, 0][index];
+  const shift = [-22, 20, 0][index];
   const style = useAnimatedStyle(() => ({
-    opacity: p.value,
-    transform: [{ translateY: (1 - p.value) * -60 }, { rotate: `${rest * p.value + (1 - p.value) * rest * 2}deg` }],
+    opacity: Math.min(1, p.value * 2),
+    transform: [{ translateX: shift * p.value }, { translateY: (1 - p.value) * -60 }, { rotate: `${rest * p.value}deg` }],
   }));
   return (
     <Animated.View

@@ -29,7 +29,7 @@ function Blob({ index }: { index: number }) {
     v.value = withTiming(index, { duration: 900, easing: ease.out });
   }, [index, v]);
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: -v.value * 6 }, { translateY: v.value * 8 }, { scale: 1 + v.value * 0.16 }] }));
-  return <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: -110, right: -110, width: 280, height: 280, borderRadius: 140, backgroundColor: alpha(colors.accent, 0.1) }, style]} />;
+  return <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: -90, right: -110, width: 280, height: 280, borderRadius: 140, backgroundColor: alpha(colors.accent, 0.1) }, style]} />;
 }
 
 function Intro({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
@@ -68,6 +68,7 @@ export default function OnboardingProfile() {
   const [seeking, setSeeking] = useState<Gender[]>([]);
   const [city, setCity] = useState('');
   const [ages, setAges] = useState<[number, number]>([25, 40]);
+  const [suggested, setSuggested] = useState(false);
   const [bio, setBio] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -82,7 +83,8 @@ export default function OnboardingProfile() {
         setCity(p.city ?? '');
         setBio(p.bio ?? '');
         const untouched = p.age_min === AGE_MIN && p.age_max === AGE_MAX;
-        setAges(untouched && age ? suggestedAgeRange(age) : [p.age_min, p.age_max]);
+        setAges(untouched && age ? suggestedAgeRange(age) : untouched ? [25, 40] : [p.age_min, p.age_max]);
+        setSuggested(untouched && !!age);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -127,6 +129,7 @@ export default function OnboardingProfile() {
     <Screen
       scroll
       testID="onboarding-profile"
+      backdrop={<Blob index={done ? steps.length : index} />}
       header={<StepHeader step={3} fraction={fraction} onBack={!done && index > 0 ? () => setIndex(index - 1) : undefined} />}
       footer={
         done ? (
@@ -145,7 +148,6 @@ export default function OnboardingProfile() {
         )
       }
     >
-      <Blob index={done ? steps.length : index} />
       {loading ? (
         <View style={{ paddingTop: 80, alignItems: 'center' }}>
           <Spinner />
@@ -202,7 +204,7 @@ export default function OnboardingProfile() {
               </Rise>
               <Rise delay={350} style={{ gap: 6 }}>
                 <RangeSlider testID="age-range" label="Âge recherché" min={AGE_MIN} max={AGE_MAX} low={ages[0]} high={ages[1]} onChange={(lo, hi) => setAges([lo, hi])} />
-                <Small>Proposé d’après votre âge. Modifiable à tout moment dans votre compte.</Small>
+                <Small>{suggested ? 'Proposé d’après votre âge. ' : ''}Modifiable à tout moment dans votre compte.</Small>
               </Rise>
             </>
           ) : null}

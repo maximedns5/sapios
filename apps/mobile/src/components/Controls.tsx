@@ -275,6 +275,10 @@ export function RangeSlider({
           accessibilityRole="adjustable"
           accessibilityLabel={`${label}, ${which === 'low' ? 'minimum' : 'maximum'}`}
           accessibilityValue={{ min, max, now: value, text: `${value} ${unit}` }}
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={value}
+          aria-valuetext={`${value} ${unit}`}
           accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
           onAccessibilityAction={(e: AccessibilityActionEvent) => step(which, e.nativeEvent.actionName === 'increment' ? 1 : -1)}
           {...(Platform.OS === 'web' ? ({ onKeyDown, tabIndex: 0 } as object) : {})}
@@ -333,6 +337,9 @@ export function ProgressBar({ value, label, height = 6 }: { value: number; label
       accessibilityRole="progressbar"
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(value * 100)}
       style={{ flex: 1, height, borderRadius: height / 2, backgroundColor: colors.line, overflow: 'hidden' }}
     >
       <Animated.View style={[{ height: '100%', borderRadius: height / 2, backgroundColor: colors.accent }, fill]} />

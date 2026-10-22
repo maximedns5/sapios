@@ -19,7 +19,7 @@ import { colors, radius } from '@/lib/theme';
 function formatDate(iso: string): string {
   const d = new Date(iso);
   const today = new Date().toDateString() === d.toDateString();
-  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ');
+  const time = `${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`;
   return today ? `Aujourd’hui, ${time}` : `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}, ${time}`;
 }
 
@@ -100,7 +100,7 @@ export default function Review() {
       }
     >
       <View style={{ gap: 22 }}>
-        <View style={{ alignItems: 'center', gap: 18, paddingTop: 8 }}>
+        <View style={{ alignItems: 'center', gap: 18, paddingTop: 40 }}>
           <View style={{ width: 104, height: 104, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
             <Ripple size={104} />
             <Ripple size={104} delay={1100} />

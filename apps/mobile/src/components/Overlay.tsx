@@ -147,7 +147,7 @@ function Dialog({ state, onClose }: { state: DialogState; onClose: (v: boolean) 
         {state.typeToConfirm ? (
           <View style={{ gap: 8 }}>
             <Body weight="semibold" size={14}>
-              Tapez « {state.typeToConfirm} » pour confirmer
+              Tapez « {state.typeToConfirm} » pour confirmer
             </Body>
             <TextInput
               testID="dialog-input"

@@ -152,7 +152,7 @@ export function PhotoManager({ userId, keepMinimum, onChange }: { userId: string
           <View testID={`photo-${i}`} accessibilityLabel={i === 0 ? 'Photo principale' : `Photo ${i + 1}`} style={{ width: slot, height: h, borderRadius: radius.tile, overflow: 'hidden', backgroundColor: colors.photo }}>
             {url ? <Image source={{ uri: url, cacheKey: photo.storage_path }} style={{ flex: 1 }} contentFit="cover" transition={200} /> : null}
             {i === 0 ? (
-              <View style={{ position: 'absolute', left: 8, bottom: 8, backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
+              <View style={{ position: 'absolute', left: 8, top: 10, backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 }}>
                 <Body size={11.5} weight="bold" style={{ lineHeight: 16 }}>
                   Principale
                 </Body>

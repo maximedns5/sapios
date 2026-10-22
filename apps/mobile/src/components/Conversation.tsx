@@ -199,9 +199,11 @@ export function Conversation({ matchId, onLeave }: { matchId: string; onLeave?: 
                   </Body>
                   {match ? <VerifiedBadge size={18} /> : null}
                 </View>
-                <Small size={13} style={{ lineHeight: 16 }}>
-                  {closed ? 'Conversation fermée' : live ? 'En ligne dans la conversation' : 'Connexion…'}
-                </Small>
+                {closed || !live ? (
+                  <Small size={13} style={{ lineHeight: 16 }}>
+                    {closed ? 'Conversation fermée' : 'Connexion…'}
+                  </Small>
+                ) : null}
               </View>
             </View>
           </Pressable>
@@ -327,7 +329,7 @@ function Starter({ name, onPick }: { name: string; onPick: (text: string) => voi
       <Body weight="bold" align="center">
         Vous et {name}, c’est un match.
       </Body>
-      <Small align="center">Brisez la glace. Une citation, une question, ou un simple « bonjour » : c’est aussi permis.</Small>
+      <Small align="center">Brisez la glace. Une citation, une question, ou un simple « bonjour » : c’est aussi permis.</Small>
       <View style={{ alignSelf: 'stretch', gap: 8, marginTop: 4 }}>
         {STARTERS.map((text, i) => (
           <Rise key={text} delay={120 + i * 80}>

@@ -22,8 +22,8 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function emailProblem(value: string): string | null {
   if (!value) return 'Indiquez votre email.';
-  if (!value.includes('@')) return 'Il manque le « @ » de l’adresse.';
-  if (!EMAIL.test(value)) return 'Il manque la fin de l’adresse, par exemple « @ens.fr ».';
+  if (!value.includes('@')) return 'Il manque le « @ » de l’adresse.';
+  if (!EMAIL.test(value)) return 'Il manque la fin de l’adresse, par exemple « @ens.fr ».';
   return null;
 }
 

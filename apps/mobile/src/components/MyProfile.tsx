@@ -122,7 +122,7 @@ export function MyProfile() {
             </Small>
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            {Array.from({ length: MAX_PHOTOS }, (_, i) => photos[i] ?? null).map((p, i) =>
+            {[...photos, ...(photos.length < MAX_PHOTOS ? [null] : [])].map((p, i) =>
               p ? (
                 <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`Photo ${i + 1}${i === 0 ? ', principale' : ''}. Gérer mes photos`} onPress={() => router.push('/settings/photos')}>
                   <Photo path={p.storage_path} url={urls[p.storage_path]} name={name} initialSize={28} style={{ width: tile, height: tile * (4 / 3), borderRadius: 16 }} />
