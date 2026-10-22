@@ -49,7 +49,7 @@ export function TabBar({ state, emitter, navigateToTab, descriptors, badges, mar
             testID={`tab-${route.name}`}
             accessibilityRole="tab"
             accessibilityState={{ selected: focused }}
-            accessibilityLabel={`${tab.label}${badge ? `, ${badge} non lu${badge > 1 ? 's' : ''}` : ''}${mark ? ', nouveau match' : ''}`}
+            accessibilityLabel={`${tab.label}${badge ? (route.name === 'likes' ? `, ${badge} like${badge > 1 ? 's' : ''} reçu${badge > 1 ? 's' : ''}` : `, ${badge} non lu${badge > 1 ? 's' : ''}`) : ''}${mark ? ', nouveau match' : ''}`}
             style={{ flex: 1 }}
             onPress={() => press(route.key)}
           >

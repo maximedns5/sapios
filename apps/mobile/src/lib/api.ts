@@ -1,8 +1,42 @@
-import { EDGE_FUNCTIONS, type Database, type DeleteAccountResponse, type SubmitDiplomaResponse } from '@sapios/shared';
+import {
+  EDGE_FUNCTIONS,
+  type Database,
+  type DeleteAccountResponse,
+  type DiscoveryCounts,
+  type DiscoveryPrefs,
+  type DiscoverySort,
+  type LikedItem,
+  type ProfileView,
+  type StudyField,
+  type SubmitDiplomaResponse,
+} from '@sapios/shared';
 
 import { supabase } from './supabase';
 import { AppError, fromFunction, fromPostgrest } from './errors';
-import type { Candidate, MatchRow, MyState } from './types';
+import type { Candidate, Liker, MatchRow, MyState } from './types';
+
+/** Critères de découverte modifiables (null ou absent = inchangé). */
+export type DiscoveryCriteria = {
+  maxDistanceKm?: number | null;
+  ageMin?: number | null;
+  ageMax?: number | null;
+  levels?: number[] | null;
+  strictLevels?: boolean | null;
+  fields?: StudyField[] | null;
+  strictFields?: boolean | null;
+};
+
+function criteriaArgs(c: DiscoveryCriteria) {
+  const args: Record<string, unknown> = {};
+  if (c.maxDistanceKm != null) args.p_max_distance_km = c.maxDistanceKm;
+  if (c.ageMin != null) args.p_age_min = c.ageMin;
+  if (c.ageMax != null) args.p_age_max = c.ageMax;
+  if (c.levels != null) args.p_levels = c.levels;
+  if (c.strictLevels != null) args.p_strict_levels = c.strictLevels;
+  if (c.fields != null) args.p_fields = c.fields;
+  if (c.strictFields != null) args.p_strict_fields = c.strictFields;
+  return args;
+}
 
 type Fns = Database['public']['Functions'];
 
@@ -31,9 +65,22 @@ export const api = {
   setLocation: (lat: number, lng: number) => rpc('set_location', { p_lat: lat, p_lng: lng }),
   // Les colonnes nullables (âge, bio, distance) sont typées non nulles par le générateur : on garde nos types.
   feed: (limit = 20) => rpc<'get_feed', Candidate[]>('get_feed', { p_limit: limit }),
-  swipe: (target: string, direction: 'like' | 'pass') =>
-    rpc<'swipe', { matched: boolean; match_id: string | null }>('swipe', { p_target: target, p_direction: direction }),
-  likers: () => rpc<'get_likers', Candidate[]>('get_likers'),
+  /** Like ciblé (photo, réponse) et mot facultatif ; sans élément, le like porte sur tout le profil. */
+  swipe: (target: string, direction: 'like' | 'pass', item?: LikedItem | null, comment?: string | null) =>
+    rpc<'swipe', { matched: boolean; match_id: string | null }>('swipe', {
+      p_target: target,
+      p_direction: direction,
+      ...(direction === 'like' && item ? { p_liked_item: item } : {}),
+      ...(direction === 'like' && comment?.trim() ? { p_comment: comment.trim() } : {}),
+    }),
+  likers: () => rpc<'get_likers', Liker[]>('get_likers'),
+  likesCount: () => rpc<'get_likes_count', number>('get_likes_count'),
+  profile: (target: string) => rpc<'get_profile', ProfileView>('get_profile', { p_target: target }),
+  discoveryPrefs: () => rpc<'get_discovery_prefs', DiscoveryPrefs>('get_discovery_prefs'),
+  setDiscoveryPrefs: (c: DiscoveryCriteria & { sort?: DiscoverySort | null }) =>
+    rpc<'set_discovery_prefs', DiscoveryPrefs>('set_discovery_prefs', { ...criteriaArgs(c), ...(c.sort ? { p_sort: c.sort } : {}) } as Fns['set_discovery_prefs']['Args']),
+  countDiscovery: (c: DiscoveryCriteria = {}) => rpc<'count_discovery', DiscoveryCounts>('count_discovery', criteriaArgs(c) as Fns['count_discovery']['Args']),
+  ackNotice: (id: string) => rpc('ack_notice', { p_id: id }),
   matches: () => rpc<'get_matches', MatchRow[]>('get_matches'),
   unmatch: (matchId: string) => rpc('unmatch', { p_match_id: matchId }),
   block: (target: string) => rpc('block_user', { p_target: target }),
