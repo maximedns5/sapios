@@ -190,9 +190,18 @@ Sixtine → photo d'Hippolyte `unlimited@`).
   (découverte et fiche), onglet Likes (élément aimé, mot, ou nombre seul), citation au-dessus des messages nés d'un
   like, critères de découverte (`/criteria`) avec compte en direct, fin de sélection « critères trop stricts »,
   test d'admission (`/settings/test`).
-- **Textes** : les questions et `feed.empty_filters` viennent de `app_copy` ; les nouvelles clés de l'app
-  (`feed.ranking`, `intellect.sensitive`, `intellect.thesis_warning`, `likes.teaser`, `quiz.badge`) n'ont qu'un repli
-  local : les ajouter dans « Textes » pour les rendre modifiables sans redéployer.
-- **Reste à faire** : signaler un texte précis depuis la fiche (`report_user` + `p_content_kind`) ; recherche de
-  livres (Open Library, par une Edge Function relais) ; couverture des écrans par des tests de bout en bout.
+- **Textes** : les questions et `feed.empty_filters` viennent de `app_copy` ; les clés de l'app du lot 1 y sont
+  aussi depuis les finitions (voir ci-dessous).
+- **Reste à faire** : couverture des écrans par des tests de bout en bout.
+
+## Lot 1 : finitions
+
+- **Signaler un texte** : `ProfileBody` accepte `onReport` (drapeau sur réponses, livres, thèse) ; `openReport(…, content)`
+  passe le type, l'identifiant et la citation au formulaire `/report/[userId]`. Le back-office les voit dans
+  « Contenus » et « Signalements » (PR du back-office).
+- **`search-books`** : déployée par le workflow (`supabase functions deploy` déploie toutes les fonctions). Secret
+  facultatif `SAPIOS_CONTACT_EMAIL` (adresse du `User-Agent` envoyé à Open Library). Côté app :
+  `api.searchBooks(q)` et le composant `BookSearch` (« Ma bibliothèque »).
+- **Textes** : `fill(texte, { title })` dans `apps/mobile/src/lib/copy.tsx` remplit les emplacements ; garder la
+  même valeur en repli (`FALLBACK_COPY`) et en base pour toute nouvelle clé.
 

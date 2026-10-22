@@ -4,12 +4,14 @@ import { Pressable, ScrollView, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { describe } from '@/lib/candidates';
+import type { ReportTarget } from '@/lib/safety';
 import { useCopy } from '@/lib/copy';
 import { affinityChip, affinitySentences, levelAndField, promptText } from '@/lib/intellect';
 import { useLayout } from '@/lib/layout';
 import { alpha, colors, radius, shadow } from '@/lib/theme';
 import type { Candidate } from '@/lib/types';
-import { BookIcon, BuildingIcon, CapIcon, ChatIcon, HeartIcon, SparkIcon, VerifiedBadge } from './Icons';
+import { IconButton } from './Button';
+import { BookIcon, BuildingIcon, CapIcon, ChatIcon, FlagIcon, HeartIcon, SparkIcon, VerifiedBadge } from './Icons';
 import { haptic, Sparks, usePop } from './motion';
 import { Photo, useSignedUrls } from './Photo';
 import { Body, Small, Title } from './Text';
@@ -29,9 +31,9 @@ export type ProfileData = {
   quiz_badge: boolean;
   /** `id` absent tant que la fiche complète n'est pas chargée : le cœur aime alors tout le profil. */
   photos: { id?: string; path: string }[];
-  /** `position` absente (aperçu du feed) : pas de like ciblé possible. */
-  answers: { position?: number; prompt_key: string; answer: string }[];
-  books: { title: string; author: string | null }[];
+  /** `position` absente (aperçu du feed) : pas de like ciblé possible. `id` : cible d'un signalement. */
+  answers: { id?: string; position?: number; prompt_key: string; answer: string }[];
+  books: { id?: string; title: string; author: string | null }[];
   thesis: string | null;
   reasons: AffinityReason[];
 };
@@ -159,6 +161,15 @@ export function ReplyPill({ onPress, label, testID }: { onPress: () => void; lab
   );
 }
 
+/** Petit drapeau discret : signaler ce texte précis (zone tactile de 44 px). */
+function ReportTextButton({ label, onPress, testID }: { label: string; onPress: () => void; testID?: string }) {
+  return (
+    <IconButton label={label} variant="plain" size={36} onPress={onPress} testID={testID} style={{ marginVertical: -8, marginRight: -8 }}>
+      <FlagIcon size={16} color={colors.muted} />
+    </IconButton>
+  );
+}
+
 /** Pastille d'information (niveau et domaine, livres en commun, établissement). */
 export function InfoChip({ icon, label, tone = 'surface' }: { icon: ReactNode; label: string; tone?: 'surface' | 'accent' }) {
   return (
@@ -195,7 +206,7 @@ function Actions({ name, target, like, what, testID }: { name: string; target: L
  * puis les photos entrecoupées des réponses, de la bio et du « pourquoi ce profil » ; enfin la
  * bibliothèque et la phrase de thèse. `like` pose un cœur et « Répondre » sur chaque photo et réponse.
  */
-export function ProfileBody({ data, like, header }: { data: ProfileData; like?: LikeHandlers; header?: ReactNode }) {
+export function ProfileBody({ data, like, header, onReport }: { data: ProfileData; like?: LikeHandlers; header?: ReactNode; onReport?: (target: ReportTarget) => void }) {
   const { t } = useCopy();
   const { columnWidth } = useLayout();
   const urls = useSignedUrls(data.photos.map((p) => p.path));
@@ -226,17 +237,26 @@ export function ProfileBody({ data, like, header }: { data: ProfileData; like?: 
     </View>
   );
 
-  type Text = { key: string; label: string; text: string; position?: number };
+  type Text = { key: string; label: string; text: string; position?: number; id?: string };
   const texts: Text[] = [
-    ...data.answers.map((a) => ({ key: `answer-${a.position ?? a.prompt_key}`, label: promptText(t, a.prompt_key), text: a.answer, position: a.position })),
+    ...data.answers.map((a) => ({ key: `answer-${a.position ?? a.prompt_key}`, label: promptText(t, a.prompt_key), text: a.answer, position: a.position, id: a.id })),
     ...(data.bio ? [{ key: 'bio', label: 'En quelques mots', text: data.bio }] : []),
   ];
 
   const textCard = (x: Text) => (
     <View key={x.key} style={{ backgroundColor: colors.surface, borderRadius: radius.card, padding: 20, gap: 8 }}>
-      <Small weight="semibold" size={14}>
-        {x.label}
-      </Small>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Small weight="semibold" size={14} style={{ flex: 1 }}>
+          {x.label}
+        </Small>
+        {onReport && x.id ? (
+          <ReportTextButton
+            label={`Signaler cette réponse de ${name}`}
+            testID={`report-answer-${x.position ?? 0}`}
+            onPress={() => onReport({ kind: 'answer', item: x.id!, label: x.label, text: x.text })}
+          />
+        ) : null}
+      </View>
       <Body weight="bold" size={21} style={{ lineHeight: 28, letterSpacing: -0.2 }}>
         {x.text}
       </Body>
@@ -316,19 +336,37 @@ export function ProfileBody({ data, like, header }: { data: ProfileData; like?: 
                   </Small>
                 </View>
               ) : null}
+              {onReport && b.id ? (
+                <ReportTextButton
+                  label={`Signaler le livre « ${b.title} »`}
+                  testID={`report-book-${i}`}
+                  onPress={() => onReport({ kind: 'book', item: b.id!, label: 'Ses livres', text: b.author ? `${b.title}, ${b.author}` : b.title })}
+                />
+              ) : null}
             </View>
           ))}
         </View>
       ) : null}
       {data.thesis ? (
         <View style={{ borderWidth: 1, borderColor: colors.line, borderRadius: radius.card, padding: 20, gap: 6 }}>
-          <Small weight="semibold" size={14}>
-            {thesisLabel(data.level) === 'Ma thèse' ? 'Sa thèse, en une phrase' : 'Son mémoire, en une phrase'}
-          </Small>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Small weight="semibold" size={14} style={{ flex: 1 }}>
+              {thesisLabel(data.level) === 'Ma thèse' ? 'Sa thèse, en une phrase' : 'Son mémoire, en une phrase'}
+            </Small>
+            {onReport ? (
+              <ReportTextButton
+                label={`Signaler la phrase de thèse de ${name}`}
+                testID="report-thesis"
+                onPress={() =>
+                  onReport({ kind: 'thesis', item: null, label: thesisLabel(data.level) === 'Ma thèse' ? 'Sa thèse' : 'Son mémoire', text: data.thesis ?? '' })
+                }
+              />
+            ) : null}
+          </View>
           <Body weight="bold" size={18} style={{ lineHeight: 25 }}>
             {data.thesis}
           </Body>
-          <Small>Les autres en ont fait 400 pages.</Small>
+          <Small>{t('profile.thesis_footnote')}</Small>
         </View>
       ) : null}
     </View>

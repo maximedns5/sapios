@@ -30,6 +30,30 @@ const REQUIRED_KEYS = [
 ];
 const LOCALE = "fr";
 
+// Groupe d'une clé = préfixe avant le premier point ; le libellé dit où le texte apparaît.
+const GROUP_LABELS: Record<string, string> = {
+  affinity: "Découverte · « Pourquoi ce profil »",
+  email: "Emails",
+  feed: "Découverte",
+  intellect: "Mon profil · conseils",
+  library: "Mon profil · bibliothèque",
+  likes: "Likes",
+  match: "Match",
+  onboarding: "Inscription",
+  profile: "Fiche d’un profil",
+  prompt: "Questions du profil",
+  push: "Notifications",
+  quiz: "Test d’admission",
+  review: "Attente du verdict",
+  scan: "Analyse du diplôme",
+  verdict: "Verdicts",
+};
+
+/** Emplacements remplis par l'app ({title}, {count}…) : à garder tels quels. */
+function placeholders(text: string): string[] {
+  return [...new Set(text.match(/\{\w+\}/g) ?? [])];
+}
+
 function CopyItem({ row, onSaved }: { row: CopyRow; onSaved: (r: CopyRow) => void }) {
   const id = useId();
   const [text, setText] = useState(row.text);
@@ -37,11 +61,17 @@ function CopyItem({ row, onSaved }: { row: CopyRow; onSaved: (r: CopyRow) => voi
   const [error, setError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
   const dirty = text !== row.text;
+  const slots = placeholders(row.text);
+  const lost = slots.filter((p) => !text.includes(p));
 
   async function save(e: FormEvent) {
     e.preventDefault();
     if (!text.trim()) {
       setError("Un texte vide n’est pas accepté.");
+      return;
+    }
+    if (lost.length) {
+      setError(`Emplacement retiré : ${lost.join(", ")}. L’app le remplit, gardez-le tel quel.`);
       return;
     }
     setBusy(true);
@@ -70,6 +100,7 @@ function CopyItem({ row, onSaved }: { row: CopyRow; onSaved: (r: CopyRow) => voi
         <p className="copy-meta">
           {row.locale} · {row.updated_at ? `modifié ${fmtDateTime(row.updated_at)}` : "—"}
         </p>
+        {slots.length ? <p className="copy-meta">À garder : {slots.join(", ")}</p> : null}
       </div>
       <div className="copy-edit">
         <textarea
@@ -264,7 +295,7 @@ export default function CopyEditor() {
           {groups.map(([group, items]) => (
             <section key={group} aria-label={`Textes ${group}`} style={{ marginBottom: 32 }}>
               <h2 className="label" style={{ marginBottom: 8 }}>
-                {group} · {items.length}
+                {GROUP_LABELS[group] ? `${GROUP_LABELS[group]} (${group})` : group} · {items.length}
               </h2>
               <div className="copy-list">
                 {items.map((r) => (

@@ -6,7 +6,7 @@ import { DEGREE_TYPES, DIPLOMA_EXTENSIONS, DIPLOMA_MIME_TYPES, Extraction } from
 
 const functionsDir = new URL("../", import.meta.url);
 const sharedSrc = new URL("../../../packages/shared/src/", import.meta.url);
-const FUNCTIONS = ["submit-diploma", "process-diploma", "review-diploma", "notify", "delete-account", "purge-diplomas"];
+const FUNCTIONS = ["submit-diploma", "process-diploma", "review-diploma", "notify", "delete-account", "purge-diplomas", "search-books"];
 
 Deno.test("chaque fonction a un deno.json identique (même version de zod)", async () => {
   const configs = await Promise.all(

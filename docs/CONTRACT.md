@@ -91,7 +91,7 @@ Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `an
 | `swipe(p_target uuid, p_direction swipe_direction, p_liked_item text default null, p_comment text default null)` | `jsonb` `{ matched bool, match_id uuid \| null }` | `not_eligible`, `quota_exceeded`, `target_unavailable`, `self_swipe`, `invalid_item`, `invalid_input`, `comment_too_long` |
 | `get_likers()` | colonnes de `get_feed` jusqu'à `photo_paths`, puis `level, study_field, liked_item, comment, liked_prompt_key, liked_text, liked_photo_path, liked_at` | `not_allowed` (si `sees_likers` faux) |
 | `get_likes_count()` | `int` : likes reçus en attente, sans identité (tous paliers) | — |
-| `get_profile(p_target uuid)` | `jsonb` `ProfileView` (`packages/shared/src/intellect.ts`) | `not_found` (profil non visible) |
+| `get_profile(p_target uuid)` | `jsonb` `ProfileView` (`packages/shared/src/intellect.ts`) ; chaque réponse et chaque livre porte son `id`, cible de `report_user(…, p_content_kind, p_content_item)` | `not_found` (profil non visible) |
 | `get_discovery_prefs()` | `jsonb` `DiscoveryPrefs` (valeurs effectives) | — |
 | `set_discovery_prefs(p_max_distance_km, p_age_min, p_age_max, p_levels int[], p_strict_levels, p_fields study_field[], p_strict_fields, p_sort)` (tous facultatifs, null = inchangé) | `jsonb` `DiscoveryPrefs` | `invalid_input` |
 | `count_discovery(mêmes critères que ci-dessus sans p_sort, facultatifs)` | `jsonb` `{ matching, total }` | `invalid_input` |
@@ -115,6 +115,7 @@ Réservées à `service_role` (jamais `authenticated`) :
 - `apply_diploma_review(p_submission uuid, p_reviewer uuid, p_decision text /* approve|reject|needs_more */, p_level int, p_reason text, p_institution text default null, p_field study_field default null)` → `jsonb { user_id, tier, level, copy_key }`. Une seule transaction : soumission, `user_access` (établissement et domaine compris), `audit_log`.
 - `diploma_queue_read(p_qty int, p_vt int)` / `diploma_queue_delete(p_msg_id bigint)` : enveloppes sur `pgmq`.
 - `diplomas_to_purge(p_days int)` → `setof (id, storage_path)` ; `mark_diploma_purged(p_id uuid)`.
+- `consume_rate_limit(p_user uuid, p_bucket text, p_limit int, p_window_seconds int)` → `bool` (vrai si l'appel passe) : fenêtre fixe par membre et par usage (`private.rate_limits`), pour les appels sortants des Edge Functions (`book_search`). Erreur `invalid_input`.
 
 ## 4. Storage
 
@@ -134,6 +135,7 @@ Réponses JSON. Erreurs : `{ "error": "<code>" }` avec un statut HTTP adapté.
 | `notify` | en-tête `x-sapios-secret` | `{ type: "match", match_id }` \| `{ type: "message", message_id }` \| `{ type: "verdict", user_id, copy_key }` | `{ sent: n }` |
 | `delete-account` | JWT utilisateur | `{}` | `{ deleted: true }` |
 | `purge-diplomas` | en-tête `x-sapios-secret` | `{}` | `{ purged: n }` |
+| `search-books` | JWT utilisateur | `{ q }` (2 à 100 caractères) | `{ results: [{ title, author, ol_work_id }] }` (8 au plus) ; erreurs `invalid_query` (400), `rate_limited` (429, 30 recherches par minute et par membre), `upstream_unavailable` (502). Relais vers Open Library : le service ne voit jamais l'adresse du membre ; ni la recherche ni la réponse ne sont journalisées |
 
 Secret partagé : variable d'env `SAPIOS_INTERNAL_SECRET` côté Edge Functions, même valeur dans Vault (`internal_secret`) côté base. URL de base pour `pg_net` : Vault `project_url`.
 
@@ -143,7 +145,11 @@ Clés minimales (le seed les remplit, le back-office les édite) :
 `verdict.unlimited`, `verdict.standard`, `verdict.waitlist`, `verdict.refused`, `verdict.uninstall`, `verdict.rejected`, `verdict.needs_more`, `scan.title`, `scan.log.authenticity`, `scan.log.level`, `scan.log.einstein`, `scan.pending`, `feed.empty`, `match.title`, `onboarding.consent`, `push.match`, `push.message`, `push.verdict`.
 Lot 1 : `prompt.<key>` (une par question du catalogue), `feed.empty_filters`.
 Lot 1, app (repli local dans `apps/mobile/src/lib/copy.tsx`, surchargeable depuis « Textes ») : `feed.ranking`
-(« Comment nous choisissons vos profils »), `intellect.sensitive`, `intellect.thesis_warning`, `likes.teaser`, `quiz.badge`.
+(« Comment nous choisissons vos profils »), `intellect.sensitive`, `intellect.thesis_warning`, `likes.teaser`, `quiz.badge`,
+`affinity.book_one`, `affinity.books_many`, `affinity.same_field`, `affinity.prompt_one`, `affinity.prompts_many`,
+`affinity.same_institution` (« Pourquoi ce profil »), `profile.thesis_footnote`, `library.empty`. Toutes présentes dans
+`app_copy` depuis `20261023090000_lot1_finitions.sql`. Les accolades (`{title}`, `{count}`, `{field}`, `{prompt}`,
+`{institution}`) sont remplies par l'app ; le back-office refuse un texte qui en perd une.
 
 ## 7. Comptes de test (seed local uniquement)
 

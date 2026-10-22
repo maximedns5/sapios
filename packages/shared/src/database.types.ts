@@ -465,6 +465,9 @@ isOneToOne: false
 "can_view_profile":
 { Args: { "target": string }; Returns: boolean
                            },
+"consume_rate_limit":
+{ Args: { "p_bucket": string,"p_limit": number,"p_user": string,"p_window_seconds": number }; Returns: boolean
+                           },
 "count_discovery":
 { Args: { "p_age_max"?: number,"p_age_min"?: number,"p_fields"?: (Database["public"]['Enums']["study_field"])[],"p_levels"?: (number)[],"p_max_distance_km"?: number,"p_strict_fields"?: boolean,"p_strict_levels"?: boolean }; Returns: Json
                            },

@@ -200,6 +200,12 @@ export default function ConfidentialitePage() {
           de l’Union européenne, le transfert est encadré par les clauses contractuelles types de la Commission
           européenne.
         </p>
+        <p>
+          <strong>Recherche de livres.</strong> Quand vous cherchez un livre pour votre bibliothèque, le texte saisi
+          est transmis par nos serveurs au catalogue Open Library (Internet Archive, États-Unis), qui renvoie titres
+          et auteurs. Open Library ne reçoit ni votre adresse IP, ni votre identité, ni aucune autre donnée de votre
+          compte ; Sapios ne conserve pas les textes cherchés.
+        </p>
       </section>
 
       <section aria-labelledby="conservation">
