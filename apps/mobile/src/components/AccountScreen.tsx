@@ -1,102 +1,115 @@
 import { levelLabel } from '@sapios/shared';
-import { router } from 'expo-router';
 import * as Linking from 'expo-linking';
-import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 
 import { api } from '@/lib/api';
 import { useApp } from '@/lib/app-state';
-import { CONSENT_VERSION, CONTACT_EMAIL } from '@/lib/env';
+import { useCopy } from '@/lib/copy';
+import { CONSENT_VERSION, CONTACT_EMAIL, SITE_URL } from '@/lib/env';
 import { errorMessage } from '@/lib/errors';
 import { exportMyData } from '@/lib/exportData';
-import { useLayout } from '@/lib/layout';
-import { loadOwnProfile } from '@/lib/profile';
 import { pushPermission, PUSH_SUPPORTED, registerForPush } from '@/lib/push';
-import { PAPER, space } from '@/lib/theme';
-import { Choice } from './Controls';
-import { ArrowIcon } from './Icons';
+import { IN_REVIEW } from '@/lib/routing';
+import { alpha, colors, radius } from '@/lib/theme';
+import { TIER_LABEL } from './AdmissionGrid';
+import { Switch } from './Controls';
+import { BellIcon, CapIcon, CheckIcon, DownloadIcon, EditIcon, EyeIcon, ImageIcon, LockIcon, LogoutIcon, MailIcon, ShieldIcon } from './Icons';
+import { MaskUp, Ripple, Rise } from './motion';
 import { useOverlay } from './Overlay';
-import { Reveal } from './Reveal';
-import { Rule, TopBar } from './Screen';
-import { Body, Em, Label, Title } from './Text';
-import { ToneProvider, useTone } from './Tone';
+import { Header, Screen } from './Screen';
+import { SettingsGroup, SettingsRow } from './SettingsRow';
+import { Body, Heading, Small, Title } from './Text';
 
-const TIER_LABEL: Record<string, string> = { unlimited: 'Accès illimité', standard: 'Accès toléré', waitlist: 'Liste d’attente', refused: 'Refusé' };
+function formatDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+}
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+/** État du diplôme : en relecture (étapes, pulsation) ou niveau validé (et diplôme supérieur possible). */
+function DiplomaCard() {
+  const { state } = useApp();
+  const { t } = useCopy();
+  if (!state) return null;
+  const sub = state.latest_submission;
+  const inReview = !!sub && (IN_REVIEW as readonly string[]).includes(sub.status);
+  const canHigher = state.profile_status !== 'onboarding' && (state.level ?? 0) < 8 && state.submissions_left > 0 && !inReview;
   return (
-    <View style={{ marginTop: 28 }}>
-      <Label style={{ marginBottom: 10, opacity: 0.6 }}>{title}</Label>
-      <Rule />
-      {children}
+    <View style={{ backgroundColor: inReview ? alpha(colors.accent, 0.07) : colors.surface, borderRadius: radius.card, padding: 18, gap: 14 }} testID="account-diploma">
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+          <CapIcon size={22} color={colors.accent} stroke={1.9} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Body weight="bold" size={16}>
+            {inReview ? 'Diplôme en relecture' : state.level ? `Niveau validé : ${levelLabel(state.level)}` : 'Aucun niveau validé'}
+          </Body>
+          <Small>{inReview && sub ? `Envoyé le ${formatDay(sub.created_at)}` : state.tier ? TIER_LABEL[state.tier] : 'Votre diplôme décide de votre accès'}</Small>
+        </View>
+        {inReview ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5 }}>
+            <View style={{ width: 8, height: 8, alignItems: 'center', justifyContent: 'center' }}>
+              <Ripple size={8} filled duration={1400} />
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent }} />
+            </View>
+            <Body size={13} weight="bold" color={colors.accent}>
+              En cours
+            </Body>
+          </View>
+        ) : null}
+      </View>
+      {inReview ? (
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} accessibilityLabel="Reçu, relecture humaine en cours, verdict à venir">
+            <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+              <CheckIcon size={12} stroke={3} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.accent }} />
+            <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 3, borderColor: colors.accent, backgroundColor: '#FFFFFF' }} />
+            <View style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.disabled }} />
+            <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.disabled }} />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Small size={13}>Reçu</Small>
+            <Small size={13} weight="bold" color={colors.text}>
+              Relecture humaine
+            </Small>
+            <Small size={13}>Verdict</Small>
+          </View>
+          <Small>
+            {t('review.delay')}
+            {state.can_browse && state.level ? ` Vous gardez votre accès ${levelLabel(state.level)} en attendant.` : ''}
+          </Small>
+        </>
+      ) : null}
+      {canHigher ? (
+        <Body weight="bold" size={14.5} color={colors.accent} onPress={() => router.push('/diploma')} accessibilityRole="link" testID="submit-higher">
+          Soumettre un diplôme supérieur →
+        </Body>
+      ) : null}
     </View>
   );
 }
 
-function Row({ title, hint, onPress, testID, danger }: { title: string; hint?: string; onPress?: () => void; testID?: string; danger?: boolean }) {
-  const { fg, bg } = useTone();
-  return (
-    <>
-      <Pressable testID={testID} accessibilityRole="button" disabled={!onPress} onPress={onPress}>
-        {({ pressed, hovered }) => {
-          const inv = pressed || hovered || danger;
-          return (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingVertical: 14,
-                paddingHorizontal: danger ? 12 : 0,
-                marginTop: danger ? 10 : 0,
-                backgroundColor: inv ? fg : bg,
-                gap: 12,
-              }}
-            >
-              <View style={{ flex: 1, gap: 3 }}>
-                <Title size={22} color={inv ? bg : fg}>
-                  {title}
-                </Title>
-                {hint ? (
-                  <Label size={9.5} color={inv ? bg : fg} style={{ opacity: 0.7 }}>
-                    {hint}
-                  </Label>
-                ) : null}
-              </View>
-              {onPress ? <ArrowIcon color={inv ? bg : fg} /> : null}
-            </View>
-          );
-        }}
-      </Pressable>
-      {danger ? null : <Rule weight={1} />}
-    </>
-  );
-}
-
-/** Compte : pause, diplôme, consentement, export, suppression, déconnexion. */
-export function AccountScreen({ standalone }: { standalone?: boolean }) {
+/** Compte : diplôme, réglages, données et session. La suppression du compte reste discrète. */
+export function AccountScreen() {
   const { state, userId, refresh, signOut } = useApp();
   const { confirm, toast } = useOverlay();
-  const insets = useSafeAreaInsets();
-  const { wide, column } = useLayout();
-  const [name, setName] = useState<string | null>(null);
   const [push, setPush] = useState<string>('unavailable');
 
   useEffect(() => {
-    if (userId) loadOwnProfile(userId).then((p) => setName(p.display_name)).catch(() => {});
     pushPermission().then(setPush);
-  }, [userId, state?.profile_status]);
+  }, [userId]);
 
   if (!state) return null;
   const active = state.profile_status === 'active' || state.profile_status === 'paused';
   const consent = state.onboarding.consent_sensitive;
 
-  const togglePause = async (paused: boolean) => {
+  const togglePause = async (visible: boolean) => {
     try {
-      await api.setPaused(paused);
+      await api.setPaused(!visible);
       await refresh();
-      toast(paused ? 'Profil en pause. Vous disparaissez de la découverte.' : 'Profil de nouveau visible.');
+      toast(visible ? 'Profil de nouveau visible.' : 'Profil en pause. Vous disparaissez de la découverte.');
     } catch (e) {
       toast(errorMessage(e));
     }
@@ -105,7 +118,7 @@ export function AccountScreen({ standalone }: { standalone?: boolean }) {
   const revoke = async () => {
     const ok = await confirm({
       label: 'Donnée sensible',
-      title: 'Retirer votre consentement ?',
+      title: 'Retirer votre consentement ?',
       message: 'Vos genres recherchés seront effacés et votre profil retiré de la découverte jusqu’à un nouveau consentement.',
       confirm: 'Retirer',
     });
@@ -131,16 +144,18 @@ export function AccountScreen({ standalone }: { standalone?: boolean }) {
   const deleteAccount = async () => {
     const first = await confirm({
       label: 'Suppression définitive',
-      title: 'Supprimer votre compte ?',
+      title: 'Supprimer votre compte ?',
       message: 'Profil, photos, diplômes, conversations et jetons de notification seront effacés. C’est irréversible.',
       confirm: 'Continuer',
+      destructive: true,
     });
     if (!first) return;
     const second = await confirm({
       label: 'Dernière confirmation',
-      title: 'Vraiment ?',
+      title: 'Vraiment ?',
       message: 'Même un Bac+8 ne pourra pas le restaurer.',
       confirm: 'Supprimer définitivement',
+      destructive: true,
       typeToConfirm: 'SUPPRIMER',
     });
     if (!second) return;
@@ -160,99 +175,74 @@ export function AccountScreen({ standalone }: { standalone?: boolean }) {
   };
 
   return (
-    <ToneProvider tone="light">
-      <View style={{ flex: 1, backgroundColor: PAPER, paddingTop: insets.top + (wide ? 24 : 0) }} testID="account">
-        <View style={{ width: '100%', maxWidth: column, alignSelf: 'center', flex: 1 }}>
-          {standalone ? <TopBar left={{ label: '← Retour', onPress: () => (router.canGoBack() ? router.back() : router.replace('/')) }} right="Compte" /> : null}
-          <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingTop: standalone ? 4 : 14, paddingBottom: insets.bottom + space.xl }}>
-            {!standalone ? (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 }}>
-                <Label>Compte</Label>
-                <Label>Sapios®</Label>
-              </View>
-            ) : null}
-            <Reveal>
-              <Title size={44}>{name ?? 'Vous'}</Title>
-            </Reveal>
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-              <Badge text={state.level ? levelLabel(state.level) : 'Niveau en attente'} solid />
-              {state.tier ? <Badge text={TIER_LABEL[state.tier] ?? state.tier} /> : null}
-              {state.profile_status === 'paused' ? <Badge text="En pause" /> : null}
-            </View>
+    <Screen scroll testID="settings" header={<Header onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))} />}>
+      <View style={{ gap: 22, paddingTop: 4 }}>
+        <MaskUp>
+          <Title size={30}>Compte</Title>
+        </MaskUp>
+        <Rise delay={80}>
+          <DiplomaCard />
+        </Rise>
 
-            {active ? (
-              <Section title="Profil">
-                <Row testID="edit-profile" title="Modifier mon profil" hint="Prénom, genre, âge, bio, ville" onPress={() => router.push('/settings/profile')} />
-                <Row testID="edit-photos" title="Mes photos" hint={`${state.onboarding.photos_count} / 6`} onPress={() => router.push('/settings/photos')} />
-              </Section>
-            ) : null}
+        {active ? (
+          <Rise delay={140} style={{ gap: 10 }}>
+            <Heading size={16}>Profil</Heading>
+            <SettingsGroup>
+              <SettingsRow first testID="edit-profile" icon={<EditIcon size={18} color={colors.accent} />} title="Modifier mon profil" sub="Prénom, âge recherché, ville, bio" onPress={() => router.push('/settings/profile')} />
+              <SettingsRow testID="edit-photos" icon={<ImageIcon size={18} color={colors.accent} />} title="Mes photos" sub={`${state.onboarding.photos_count} / 6`} onPress={() => router.push('/settings/photos')} />
+              <SettingsRow
+                icon={<EyeIcon size={18} color={colors.accent} />}
+                title="Visibilité"
+                sub={state.profile_status === 'active' ? 'Visible dans la découverte' : 'En pause : vous n’apparaissez plus'}
+                right={<Switch testID="visibility" label="Visible dans la découverte" value={state.profile_status === 'active'} onChange={togglePause} />}
+              />
+            </SettingsGroup>
+          </Rise>
+        ) : null}
 
-            {active ? (
-              <Section title="Visibilité">
-                <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 14 }}>
-                  <Choice flex testID="status-active" label="Visible" active={state.profile_status === 'active'} onPress={() => state.profile_status !== 'active' && togglePause(false)} />
-                  <Choice flex testID="status-paused" label="En pause" active={state.profile_status === 'paused'} onPress={() => state.profile_status !== 'paused' && togglePause(true)} />
-                </View>
-                <Rule weight={1} />
-              </Section>
-            ) : null}
-
-            <Section title="Diplôme">
-              <Row title={state.level ? `Niveau validé : ${levelLabel(state.level)}` : 'Aucun niveau validé'} hint={`Tentatives restantes : ${state.submissions_left} / 3`} />
-              {state.profile_status !== 'onboarding' && (state.level ?? 0) < 8 && state.submissions_left > 0 ? (
-                <Row testID="submit-higher" title="Soumettre un diplôme supérieur" hint="Photo ou PDF" onPress={() => router.push('/diploma')} />
-              ) : null}
-            </Section>
-
+        <Rise delay={200} style={{ gap: 10 }}>
+          <Heading size={16}>Données et confidentialité</Heading>
+          <SettingsGroup>
+            <SettingsRow
+              first
+              testID={consent ? 'revoke-consent' : 'give-consent'}
+              icon={<LockIcon size={18} color={colors.accent} />}
+              title="Donnée sensible"
+              sub={consent ? 'Consentement donné · le retirer' : 'Pas de consentement · le donner'}
+              onPress={consent ? revoke : () => router.push('/settings/consent')}
+            />
             {PUSH_SUPPORTED ? (
-              <Section title="Notifications">
-                <Row title={push === 'granted' ? 'Notifications activées' : 'Activer les notifications'} hint="Match, message, verdict" onPress={push === 'granted' ? undefined : enablePush} />
-              </Section>
-            ) : (
-              <Section title="Notifications">
-                <Row title="Dans l’app, pas de push" hint="Bandeau, compteur sur Messages et dans le titre de l’onglet" />
-              </Section>
-            )}
+              <SettingsRow
+                icon={<BellIcon size={18} color={colors.accent} />}
+                title={push === 'granted' ? 'Notifications activées' : 'Activer les notifications'}
+                sub="Match, message, verdict"
+                onPress={push === 'granted' ? undefined : enablePush}
+              />
+            ) : null}
+            <SettingsRow testID="export-data" icon={<DownloadIcon size={18} color={colors.accent} />} title="Exporter mes données" sub="Fichier JSON complet" onPress={exportData} />
+            <SettingsRow icon={<ShieldIcon size={18} color={colors.accent} />} title="Politique de confidentialité" onPress={() => Linking.openURL(`${SITE_URL}/confidentialite`)} />
+            <SettingsRow icon={<MailIcon size={18} color={colors.accent} />} title="Contacter l’éditeur" sub={CONTACT_EMAIL} onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}`)} />
+          </SettingsGroup>
+        </Rise>
 
-            <Section title="Donnée sensible">
-              <Row title={consent ? 'Consentement donné' : 'Consentement non donné'} hint="Genres recherchés — art. 9 RGPD" />
-              {consent ? (
-                <Row testID="revoke-consent" title="Retirer mon consentement" hint="Révocable à tout moment" onPress={revoke} />
-              ) : (
-                <Row testID="give-consent" title="Donner mon consentement" hint="Nécessaire pour la découverte" onPress={() => router.push('/settings/consent')} />
-              )}
-            </Section>
+        <Rise delay={260} style={{ gap: 10 }}>
+          <SettingsGroup>
+            <SettingsRow first testID="sign-out" icon={<LogoutIcon size={18} color={colors.text} />} title="Se déconnecter" onPress={() => signOut()} />
+          </SettingsGroup>
+          <Body testID="delete-account" weight="semibold" size={14.5} color={colors.danger} align="center" onPress={deleteAccount} accessibilityRole="button" style={{ paddingVertical: 12 }}>
+            Supprimer mon compte
+          </Body>
+        </Rise>
 
-            <Section title="Mes données">
-              <Row testID="export-data" title="Exporter mes données" hint="Fichier JSON complet" onPress={exportData} />
-              <Row title="Contacter l’éditeur" hint={CONTACT_EMAIL} onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}`)} />
-            </Section>
-
-            <Section title="Session">
-              <Row testID="sign-out" title="Se déconnecter" onPress={() => signOut()} />
-              <Row testID="delete-account" title="Supprimer mon compte" hint="Définitif, double confirmation" onPress={deleteAccount} danger />
-            </Section>
-
-            <Body size={12} style={{ marginTop: 28, opacity: 0.55 }}>
-              Sapios décline toute responsabilité en cas de coup de foudre pour un titulaire de BTS. Les sentiments ne sont pas vérifiés.
-            </Body>
-            <Title size={18} style={{ marginTop: 8, opacity: 0.55 }}>
-              <Em>L’amour est aveugle. Nous, non.</Em>
-            </Title>
-          </ScrollView>
+        <View style={{ gap: 4, paddingBottom: 8 }}>
+          <Small align="center" size={13}>
+            Sapios décline toute responsabilité en cas de coup de foudre pour un titulaire de BTS. Les sentiments ne sont pas vérifiés.
+          </Small>
+          <Small align="center" size={13} weight="semibold">
+            L’amour est aveugle. Nous, non.
+          </Small>
         </View>
       </View>
-    </ToneProvider>
-  );
-}
-
-function Badge({ text, solid }: { text: string; solid?: boolean }) {
-  const { fg, bg } = useTone();
-  return (
-    <View style={{ borderWidth: 1.5, borderColor: fg, backgroundColor: solid ? fg : bg, paddingHorizontal: 8, paddingVertical: 4 }}>
-      <Label size={10} color={solid ? bg : fg}>
-        {text}
-      </Label>
-    </View>
+    </Screen>
   );
 }

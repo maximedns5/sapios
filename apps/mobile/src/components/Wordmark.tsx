@@ -1,19 +1,17 @@
-import { View } from 'react-native';
+import { Text } from 'react-native';
 
-import { Reveal } from './Reveal';
-import { Title } from './Text';
+import { fonts } from '@/lib/theme';
+import { useTone } from './Tone';
 
-/** « SAPIOS » révélé lettre à lettre (stagger 45 ms, montée de 118 %, comme l'intro de la vidéo). */
-export function Wordmark({ size = 72, delay = 0, color }: { size?: number; delay?: number; color?: string }) {
+/** Logotype « sapios » : Bodoni Moda italique, seul usage de la serif dans l'app. */
+export function Wordmark({ size = 30, color }: { size?: number; color?: string }) {
+  const { fg } = useTone();
   return (
-    <View accessible accessibilityLabel="Sapios" accessibilityRole="header" style={{ flexDirection: 'row' }}>
-      {'SAPIOS'.split('').map((ch, i) => (
-        <Reveal key={i} delay={delay + i * 45} duration={1050}>
-          <Title size={size} color={color} style={{ letterSpacing: size * 0.03, lineHeight: size * 1.02 }}>
-            {ch}
-          </Title>
-        </Reveal>
-      ))}
-    </View>
+    <Text
+      accessibilityLabel="Sapios"
+      style={{ fontFamily: fonts.wordmark, fontSize: size, lineHeight: Math.round(size * 1.25), letterSpacing: -size * 0.01, color: color ?? fg }}
+    >
+      sapios
+    </Text>
   );
 }

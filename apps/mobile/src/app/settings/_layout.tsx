@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 
-import { PAPER } from '@/lib/theme';
+import { colors } from '@/lib/theme';
 
 export default function SettingsLayout() {
-  return <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: PAPER } }} />;
+  return <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: colors.bg } }} />;
 }

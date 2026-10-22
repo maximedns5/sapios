@@ -1,6 +1,6 @@
 import { AccountScreen } from '@/components/AccountScreen';
 
-/** Compte accessible hors des onglets (verdict, revue, onboarding). */
+/** Compte et réglages (depuis « Mon profil », et pendant l'inscription, la relecture ou un verdict). */
 export default function Settings() {
-  return <AccountScreen standalone />;
+  return <AccountScreen />;
 }

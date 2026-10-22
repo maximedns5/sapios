@@ -17,10 +17,7 @@ importers:
       '@expo-google-fonts/bodoni-moda':
         specifier: ^0.4.2
         version: 0.4.2
-      '@expo-google-fonts/ibm-plex-mono':
-        specifier: ^0.4.1
-        version: 0.4.1
-      '@expo-google-fonts/inter':
+      '@expo-google-fonts/plus-jakarta-sans':
         specifier: ^0.4.2
         version: 0.4.2
       '@react-native-async-storage/async-storage':
@@ -646,11 +643,8 @@ packages:
   '@expo-google-fonts/bodoni-moda@0.4.2':
     resolution: {integrity: sha512-fnHVMSHRIU1Pzg27Iv/L5PVq/JpVJSTBHsx3hQZSOjUwsQzAd0hGMoRjT91ck/9Ui0P7d+8si0A/AeV+jzIhMg==}
 
-  '@expo-google-fonts/ibm-plex-mono@0.4.1':
-    resolution: {integrity: sha512-/yYz1mPZq8Nd4tSiH0SBDPEdJUqiOGBwVgSrQvLuw7SPh6C7ezBzmi6eFyHY4QaQwjHDmOLSBKsxzq8ZDFXVAg==}
-
-  '@expo-google-fonts/inter@0.4.2':
-    resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
+  '@expo-google-fonts/plus-jakarta-sans@0.4.2':
+    resolution: {integrity: sha512-6LYVmVGwjQvH+uzzWlVc9+oMj4lkNQ41aymVDjO+x8aFk8kCye20wOyLomYMZaMezA++Uf1mZRCw3W3Fy/hxEA==}
 
   '@expo/cli@58.1.13':
     resolution: {integrity: sha512-a3FBo818/laj78tmDe8j/oOmxv8XBtA7nYdQQNHjebj1+RbhJjlZNxc2e1SwFXj8pXtruCdrs7fNFQTAFjS6GA==}
@@ -4938,9 +4932,7 @@ snapshots:
 
   '@expo-google-fonts/bodoni-moda@0.4.2': {}
 
-  '@expo-google-fonts/ibm-plex-mono@0.4.1': {}
-
-  '@expo-google-fonts/inter@0.4.2': {}
+  '@expo-google-fonts/plus-jakarta-sans@0.4.2': {}
 
   '@expo/cli@58.1.13(@expo/dom-webview@58.0.2)(@expo/metro-runtime@58.0.14)(expo-constants@58.0.12)(expo-font@58.0.9(expo@58.0.16)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo-router@58.0.24)(expo@58.0.16)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)':
     dependencies:
@@ -5852,9 +5844,7 @@ snapshots:
       metro-runtime: 0.87.1
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

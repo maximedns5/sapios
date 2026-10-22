@@ -7,17 +7,14 @@ import { supabase } from './supabase';
 export const FALLBACK_COPY: Record<string, string> = {
   'verdict.unlimited': 'Accès illimité. Bienvenue chez vous.',
   'verdict.standard': 'Accès toléré.',
-  'verdict.waitlist': 'Liste d’attente. On vous rappellera. Peut-être.',
-  'verdict.refused': 'Diplôme non validé = pas assez intelligent.',
-  'verdict.uninstall': 'Désinstallez.',
-  'verdict.rejected': 'Document refusé. Nous l’avons lu deux fois. Par politesse.',
-  'verdict.needs_more': 'Illisible. Même pour nous. Renvoyez une version nette, en entier, à votre nom.',
-  'scan.title': 'Analyse du profil',
-  'scan.log.authenticity': 'Vérification de l’authenticité du document…',
-  'scan.log.level': 'Calcul du niveau d’études…',
-  'scan.log.einstein': 'Comparaison avec Einstein… écart significatif.',
-  'scan.pending': 'Un humain dûment diplômé relit votre dossier. La patience est une vertu des esprits supérieurs.',
-  'feed.empty': 'Plus personne à votre hauteur dans les parages. Revenez demain, ou lisez un livre.',
+  'verdict.waitlist': 'Vous y êtes presque.',
+  'verdict.refused': 'Pas cette fois.',
+  'verdict.uninstall': 'Pas cette fois.',
+  'verdict.rejected': 'Document non retenu.',
+  'verdict.needs_more': 'Il manque une pièce.',
+  'review.delay': 'Réponse sous 48 h, souvent plus tôt.',
+  'review.notice': 'Inutile de rester sur cette page : le verdict s’affichera ici à votre prochaine visite.',
+  'feed.empty': 'Tous les profils qui vous correspondent sont passés. Revenez demain, ou lisez un livre.',
   'match.title': 'Intellectuellement compatibles.',
   'onboarding.consent':
     'Les genres que vous recherchez révèlent votre orientation sexuelle, une donnée sensible. Nous ne l’utilisons que pour composer votre feed, jamais pour autre chose. Votre consentement est facultatif, séparé et révocable à tout moment depuis votre compte ; sans lui, vous ne pourrez pas apparaître dans le feed.',
@@ -66,18 +63,10 @@ export function useCopy() {
   return useContext(Ctx);
 }
 
-/** Coupe un texte de verdict en accroche (sans-serif grasse) et chute (serif italique), comme la vidéo. */
-export function splitVerdict(text: string): [string, string] {
-  const eq = text.indexOf('= ');
-  if (eq > 0) return [text.slice(0, eq + 1).trim(), text.slice(eq + 1).trim()];
-  const dot = text.search(/[.!?…](\s|$)/);
-  if (dot > 0 && dot < text.length - 1) return [text.slice(0, dot + 1).trim(), text.slice(dot + 1).trim()];
-  return ['', text.trim()];
-}
-
-/** « Analyse du profil » → [« Analyse du », « profil. »] : le dernier mot passe en italique. */
-export function splitTitle(text: string): [string, string] {
-  const clean = text.trim().replace(/\.$/, '');
-  const i = clean.lastIndexOf(' ');
-  return i > 0 ? [clean.slice(0, i), `${clean.slice(i + 1)}.`] : ['', `${clean}.`];
+/** « Accès illimité. Bienvenue chez vous. » → [« Accès illimité. », « Bienvenue chez vous. »] : titre et suite. */
+export function splitHeadline(text: string): [string, string] {
+  const clean = text.trim();
+  const dot = clean.search(/[.!?…](\s|$)/);
+  if (dot > 0 && dot < clean.length - 1) return [clean.slice(0, dot + 1).trim(), clean.slice(dot + 1).trim()];
+  return [clean, ''];
 }

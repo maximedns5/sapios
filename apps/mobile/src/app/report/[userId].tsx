@@ -1,19 +1,20 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Button } from '@/components/Button';
-import { Checkbox } from '@/components/Controls';
+import { Checkbox, OptionCard } from '@/components/Controls';
 import { Field } from '@/components/Field';
+import { CrossIcon } from '@/components/Icons';
 import { Notice } from '@/components/Notice';
 import { useOverlay } from '@/components/Overlay';
-import { Rule, Screen, TopBar } from '@/components/Screen';
-import { Body, Em, Label, Title } from '@/components/Text';
+import { Header, Screen } from '@/components/Screen';
+import { Body, Heading, Title } from '@/components/Text';
+import { IconButton } from '@/components/Button';
 import { api } from '@/lib/api';
 import { dropCandidate } from '@/lib/candidates';
 import { errorMessage } from '@/lib/errors';
 import { goToTab } from '@/lib/nav';
-import { INK, PAPER } from '@/lib/theme';
 
 const REASONS: [string, string][] = [
   ['fake_profile', 'Faux profil ou usurpation'],
@@ -55,37 +56,31 @@ export default function Report() {
     <Screen
       scroll
       testID="report"
-      header={<TopBar left={{ label: 'Annuler', onPress: () => router.back() }} right="Signalement" />}
+      header={
+        <Header
+          right={
+            <IconButton label="Annuler le signalement" onPress={() => router.back()}>
+              <CrossIcon size={20} />
+            </IconButton>
+          }
+        />
+      }
       footer={<Button testID="report-submit" label="Envoyer le signalement" disabled={!reason} onPress={submit} />}
     >
       <View style={{ gap: 20, paddingTop: 4 }}>
-        <Title size={40}>
-          Signaler <Em>{name}.</Em>
-        </Title>
-        <Body>La modération examine chaque signalement. La personne n’est pas prévenue.</Body>
-        <View>
-          <Label style={{ marginBottom: 10 }}>Motif</Label>
-          <Rule />
-          {REASONS.map(([code, label]) => {
-            const active = reason === code;
-            return (
-              <View key={code}>
-                <Pressable testID={`reason-${code}`} accessibilityRole="radio" accessibilityState={{ checked: active }} onPress={() => setReason(code)}>
-                  {({ pressed, hovered }) => (
-                    <View style={{ paddingVertical: 13, paddingHorizontal: 10, backgroundColor: active || pressed || hovered ? INK : PAPER, flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Body color={active || pressed || hovered ? PAPER : INK}>{label}</Body>
-                      <Label color={active || pressed || hovered ? PAPER : INK}>{active ? '●' : '○'}</Label>
-                    </View>
-                  )}
-                </Pressable>
-                <Rule weight={1} />
-              </View>
-            );
-          })}
+        <View style={{ gap: 8 }}>
+          <Title size={30}>Signaler {name}</Title>
+          <Body muted>La modération examine chaque signalement. La personne n’est pas prévenue.</Body>
+        </View>
+        <View style={{ gap: 10 }} role="radiogroup" accessibilityLabel="Motif">
+          <Heading size={16}>Motif</Heading>
+          {REASONS.map(([code, label]) => (
+            <OptionCard key={code} testID={`reason-${code}`} label={label} active={reason === code} onPress={() => setReason(code)} />
+          ))}
         </View>
         <Field testID="report-details" label="Détails (facultatif)" value={details} onChangeText={setDetails} multiline maxLength={2000} counter placeholder="Ce qui s’est passé, en quelques mots." />
         <Checkbox testID="report-block" checked={alsoBlock} onChange={setAlsoBlock} label={`Bloquer aussi ${name}`} />
-        {error ? <Notice title="Erreur" message={error} /> : null}
+        {error ? <Notice kind="error" message={error} /> : null}
       </View>
     </Screen>
   );

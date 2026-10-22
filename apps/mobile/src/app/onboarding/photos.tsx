@@ -2,22 +2,25 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { ArrowRightIcon } from '@/components/Icons';
+import { MaskUp, Rise } from '@/components/motion';
 import { Notice } from '@/components/Notice';
 import { PhotoManager } from '@/components/PhotoManager';
-import { RevealLines } from '@/components/Reveal';
 import { Screen } from '@/components/Screen';
 import { StepHeader } from '@/components/StepHeader';
-import { Body, Em, Title } from '@/components/Text';
+import { Body, Eyebrow, Title } from '@/components/Text';
 import { api } from '@/lib/api';
 import { useApp } from '@/lib/app-state';
 import { errorMessage } from '@/lib/errors';
 import { MIN_PHOTOS } from '@/lib/profile';
 
+/** Étape 4 : de deux à six photos, puis le profil est enregistré et l'on passe au diplôme. */
 export default function OnboardingPhotos() {
   const { userId, state, refresh } = useApp();
   const [count, setCount] = useState(state?.onboarding.photos_count ?? 0);
   const [error, setError] = useState<string | null>(null);
   if (!userId) return null;
+  const missing = Math.max(0, MIN_PHOTOS - count);
 
   const activate = async () => {
     setError(null);
@@ -32,33 +35,34 @@ export default function OnboardingPhotos() {
   return (
     <Screen
       scroll
-      header={<StepHeader step={4} />}
+      testID="onboarding-photos"
+      header={<StepHeader step={4} fraction={Math.min(count, MIN_PHOTOS) / MIN_PHOTOS} />}
       footer={
         <Button
           testID="activate"
-          label={count < MIN_PHOTOS ? `Encore ${MIN_PHOTOS - count} photo${MIN_PHOTOS - count > 1 ? 's' : ''}` : 'Activer mon profil'}
-          trailing={count >= MIN_PHOTOS ? '→' : undefined}
-          disabled={count < MIN_PHOTOS}
+          label={missing ? `Encore ${missing} photo${missing > 1 ? 's' : ''}` : 'Continuer vers le diplôme'}
+          trailing={missing ? undefined : <ArrowRightIcon size={20} color="#FFFFFF" stroke={2.4} />}
+          disabled={!!missing}
           onPress={activate}
         />
       }
     >
-      <View style={{ gap: 22, paddingTop: 12 }}>
-        <View>
-          <RevealLines
-            lines={[
-              <Title key="a" size={46}>
-                Montrez-vous
-              </Title>,
-              <Title key="b" size={46}>
-                <Em>sous votre meilleur angle.</Em>
-              </Title>,
-            ]}
-          />
+      <View style={{ gap: 22, paddingTop: 20 }}>
+        <View style={{ gap: 10 }}>
+          <Rise>
+            <Eyebrow>Plus que deux étapes</Eyebrow>
+          </Rise>
+          <MaskUp delay={80}>
+            <Title size={34}>Vos photos</Title>
+          </MaskUp>
+          <Rise delay={200}>
+            <Body muted>Deux au minimum, six au plus. Votre visage, bien éclairé, sans lunettes de soleil.</Body>
+          </Rise>
         </View>
-        <Body>Deux photos minimum, six au maximum. La première est la photo principale.</Body>
-        <PhotoManager userId={userId} keepMinimum={false} onChange={setCount} />
-        {error ? <Notice title="Erreur" message={error} /> : null}
+        <Rise delay={280}>
+          <PhotoManager userId={userId} keepMinimum={false} onChange={setCount} />
+        </Rise>
+        {error ? <Notice kind="error" message={error} /> : null}
       </View>
     </Screen>
   );

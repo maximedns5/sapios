@@ -39,6 +39,26 @@ export async function loadLegalName(userId: string): Promise<string | null> {
   return (data as { legal_name: string | null } | null)?.legal_name ?? null;
 }
 
+/** Âge du membre connecté (date de naissance lisible par lui seul), ou null. */
+export async function loadOwnAge(userId: string): Promise<number | null> {
+  const { data } = await supabase.from('profile_private').select('birthdate').eq('user_id', userId).maybeSingle();
+  const birthdate = (data as { birthdate: string | null } | null)?.birthdate;
+  if (!birthdate) return null;
+  const [y, m, d] = birthdate.split('-').map(Number);
+  return ageFrom(new Date(y, m - 1, d));
+}
+
+/** Tranche d'âge proposée d'après son propre âge (de −5 à +7 ans, bornée à 18–99). */
+export function suggestedAgeRange(age: number): [number, number] {
+  return [Math.max(18, age - 5), Math.min(99, age + 7)];
+}
+
+export const AGE_MIN = 18;
+export const AGE_MAX = 99;
+
+/** Libellés « Vous êtes… » (onboarding). */
+export const GENDER_SENTENCE: Record<Gender, string> = { woman: 'Une femme', man: 'Un homme', nonbinary: 'Une personne non-binaire' };
+
 export async function loadPhotos(userId: string): Promise<Photo[]> {
   const { data, error } = await supabase
     .from('profile_photos')

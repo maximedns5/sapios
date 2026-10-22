@@ -14,3 +14,6 @@ export const CONTACT_EMAIL = process.env.EXPO_PUBLIC_CONTACT_EMAIL || 'contact@s
 
 /** Version du texte de consentement (donnée sensible, art. 9 RGPD) envoyée à set_sensitive_consent. */
 export const CONSENT_VERSION = '2026-10-v1';
+
+/** Site public (landing) : pages légales et contact. À régler sur l'hébergeur (EXPO_PUBLIC_SITE_URL). */
+export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://sapios.app').replace(/\/$/, '');

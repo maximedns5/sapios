@@ -1,27 +1,28 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { INK, PAPER } from './theme';
+import { ACCENT, colors } from './theme';
 
 const WEB = Platform.OS === 'web' && typeof document !== 'undefined';
 
 /**
- * Réglages de page propres au navigateur : fond, sélection, focus clavier visible sur les deux tons
- * (filet noir collé à l'élément, filet blanc cassé décalé), barres de défilement à la charte.
+ * Réglages de page propres au navigateur : fond, sélection, anneau de focus clavier visible (accent),
+ * barres de défilement discrètes.
  */
 export function installWebChrome() {
   if (!WEB || document.getElementById('sapios-web')) return;
-  document.body.style.backgroundColor = INK;
+  document.body.style.backgroundColor = colors.bg;
   const style = document.createElement('style');
   style.id = 'sapios-web';
   style.textContent = `
 * { -webkit-tap-highlight-color: transparent; }
-::selection { background: ${INK}; color: ${PAPER}; }
+::selection { background: ${ACCENT}; color: #FFFFFF; }
 [tabindex]:not([tabindex="-1"]):not(input):not(textarea):focus { outline: none; }
 [tabindex]:not([tabindex="-1"]):not(input):not(textarea):focus-visible {
-  outline: 2px solid ${PAPER}; outline-offset: 2px; box-shadow: 0 0 0 2px ${INK};
+  outline: 2px solid ${ACCENT}; outline-offset: 2px; border-radius: 12px;
 }
-* { scrollbar-width: thin; scrollbar-color: ${INK} transparent; }
+input:focus-visible, textarea:focus-visible { outline: none; }
+* { scrollbar-width: thin; scrollbar-color: ${colors.disabled} transparent; }
 `;
   document.head.appendChild(style);
 }

@@ -1,14 +1,12 @@
 import { levelLabel } from '@sapios/shared';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 import { supabase } from '@/lib/supabase';
-import { ease } from '@/lib/theme';
+import { colors, ease } from '@/lib/theme';
 import type { AccessTier } from '@/lib/types';
-import { CheckIcon, CrossIcon, DashIcon } from './Icons';
-import { Label, Title } from './Text';
-import { useTone } from './Tone';
+import { Body, Small } from './Text';
 
 export type PolicyRow = { min_level: number; tier: AccessTier; can_browse: boolean; copy_key: string };
 
@@ -21,14 +19,8 @@ const DEFAULT_POLICY: PolicyRow[] = [
   { min_level: 1, tier: 'refused', can_browse: false, copy_key: 'verdict.uninstall' },
 ];
 
-const ROW_LABEL: Record<string, string> = {
-  'verdict.unlimited': 'Accès illimité',
-  'verdict.standard': 'Accès toléré',
-  'verdict.waitlist': 'Liste d’attente',
-  'verdict.refused': 'Refusé',
-  'verdict.uninstall': 'Désinstallez.',
-};
-const TIER_LABEL: Record<AccessTier, string> = { unlimited: 'Accès illimité', standard: 'Accès toléré', waitlist: 'Liste d’attente', refused: 'Refusé' };
+export const TIER_SHORT: Record<AccessTier, string> = { unlimited: 'Illimité', standard: 'Toléré', waitlist: 'Attente', refused: 'Refusé' };
+export const TIER_LABEL: Record<AccessTier, string> = { unlimited: 'Accès illimité', standard: 'Accès toléré', waitlist: 'Liste d’attente', refused: 'Refusé' };
 
 export function usePolicy(): PolicyRow[] {
   const [rows, setRows] = useState<PolicyRow[]>(DEFAULT_POLICY);
@@ -44,77 +36,64 @@ export function usePolicy(): PolicyRow[] {
   return rows;
 }
 
-function Row({
-  row,
-  index,
-  highlighted,
-  strike,
-  delay,
-  emphasis,
-}: {
-  row: PolicyRow;
-  index: number;
-  highlighted: boolean;
-  strike: boolean;
-  delay: number;
-  emphasis: number;
-}) {
-  const { fg, bg } = useTone();
-  const line = useSharedValue(0);
-  const enter = useSharedValue(0);
-  const cross = useSharedValue(0);
-  const fill = useSharedValue(0);
-  const [inverted, setInverted] = useState(false);
+/** Premier niveau qui ouvre une porte (liste d'attente comprise), d'après la grille. */
+export function firstOpenLevel(rows: PolicyRow[]): number | null {
+  const open = rows.filter((r) => r.tier !== 'refused').map((r) => r.min_level);
+  return open.length ? Math.min(...open) : null;
+}
 
+type Column = { key: string; label: string; caption: string; mine: boolean; weight: number };
+
+function Bar({ column, index, delay }: { column: Column; index: number; delay: number }) {
+  const reduced = useReducedMotion();
+  const p = useSharedValue(reduced ? 1 : 0);
   useEffect(() => {
-    const t = delay + index * 80;
-    line.value = withDelay(t, withTiming(1, { duration: 600, easing: ease.expoInOut }));
-    enter.value = withDelay(t + 80, withTiming(1, { duration: 600, easing: ease.expoOut }));
-    if (strike) cross.value = withDelay(emphasis + index * 60, withTiming(1, { duration: 300, easing: ease.expoInOut }));
-    if (highlighted) {
-      fill.value = withDelay(emphasis + 140, withTiming(1, { duration: 360, easing: ease.expoInOut }));
-      const timer = setTimeout(() => setInverted(true), emphasis + 140 + 180);
-      return () => clearTimeout(timer);
-    }
-  }, [cross, delay, emphasis, enter, fill, highlighted, index, line, strike]);
-
-  const lineStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: line.value }] }));
-  const enterStyle = useAnimatedStyle(() => ({ opacity: enter.value, transform: [{ translateY: (1 - enter.value) * 24 }] }));
-  const crossStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: cross.value }] }));
-  const fillStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: fill.value }] }));
-
-  const ink = inverted ? bg : fg;
-  const Icon = row.can_browse ? CheckIcon : row.tier === 'waitlist' ? DashIcon : CrossIcon;
+    if (reduced) return;
+    p.value = withDelay(column.mine ? delay : delay + 700 + index * 100, withTiming(1, { duration: column.mine ? 900 : 400, easing: ease.out }));
+  }, [column.mine, delay, index, p, reduced]);
+  const fill = useAnimatedStyle(() => (column.mine ? { transform: [{ scaleX: p.value }] } : { opacity: p.value * column.weight }));
   return (
-    <View testID={highlighted ? 'grid-row-mine' : undefined} style={{ height: 58, justifyContent: 'center' }}>
-      <Animated.View style={[{ position: 'absolute', left: -12, right: -12, top: 0, bottom: 0, backgroundColor: fg, transformOrigin: 'left' }, fillStyle]} />
-      <Animated.View style={[{ position: 'absolute', left: 0, right: 0, top: 0, height: 1.5, backgroundColor: fg, transformOrigin: 'left' }, lineStyle]} />
-      <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, enterStyle]}>
-        <View>
-          <Title size={34} color={ink}>
-            {levelLabel(row.min_level)}
-          </Title>
-          <Animated.View style={[{ position: 'absolute', left: -4, right: -4, top: '54%', height: 3, backgroundColor: ink, transformOrigin: 'left' }, crossStyle]} />
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Label color={ink} size={10.5}>
-            {ROW_LABEL[row.copy_key] ?? TIER_LABEL[row.tier]}
-          </Label>
-          <Icon size={20} color={ink} />
-        </View>
-      </Animated.View>
+    <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: column.mine ? '#E2DDD7' : 'transparent', overflow: 'hidden' }}>
+      <Animated.View style={[{ flex: 1, backgroundColor: column.mine ? colors.text : colors.accent, transformOrigin: 'left' }, fill]} />
     </View>
   );
 }
 
-/** Grille d'admission de la vidéo (scène 03) : la ligne du membre est remplie, les refus barrés. */
-export function AdmissionGrid({ rows, level, delay = 0, emphasis = 900 }: { rows: PolicyRow[]; level: number | null; delay?: number; emphasis?: number }) {
-  const mine = level == null ? -1 : rows.findIndex((r) => r.min_level <= level);
+/**
+ * Grille d'admission en barres : votre niveau en noir, puis les paliers qui ouvrent une porte, de plus en plus
+ * intenses. Elle dit la vérité de la règle (access_policy), sans viser la personne.
+ */
+export function AdmissionBars({ rows, level, delay = 500 }: { rows: PolicyRow[]; level: number | null; delay?: number }) {
+  const open = rows.filter((r) => r.tier !== 'refused').sort((a, b) => a.min_level - b.min_level);
+  const mineRow = level == null ? null : rows.find((r) => r.min_level <= level) ?? null;
+  const columns: Column[] = [];
+  if (level != null && mineRow?.tier === 'refused') columns.push({ key: 'me', label: levelLabel(level), caption: 'Vous', mine: true, weight: 1 });
+  open.forEach((r, i) => {
+    const mine = mineRow?.min_level === r.min_level;
+    columns.push({ key: String(r.min_level), label: levelLabel(r.min_level), caption: mine ? 'Vous' : TIER_SHORT[r.tier], mine, weight: open.length > 1 ? 0.35 + (0.65 * i) / (open.length - 1) : 1 });
+  });
   return (
-    <View>
-      {rows.map((row, i) => (
-        <Row key={row.min_level} row={row} index={i} highlighted={i === mine} strike={row.tier === 'refused'} delay={delay} emphasis={emphasis} />
-      ))}
+    <View style={{ gap: 8 }} accessible accessibilityLabel={`Grille d’admission : ${columns.map((c) => `${c.label}, ${c.caption}`).join(' ; ')}`}>
+      <Small weight="semibold" size={13}>
+        Grille d’admission
+      </Small>
+      <View style={{ flexDirection: 'row', gap: 4 }}>
+        {columns.map((c, i) => (
+          <Bar key={c.key} column={c} index={i} delay={delay} />
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 4 }}>
+        {columns.map((c) => (
+          <View key={c.key} style={{ flex: 1 }}>
+            <Body size={13} weight={c.mine ? 'extrabold' : 'bold'} style={{ lineHeight: 17 }}>
+              {c.label}
+            </Body>
+            <Small size={13} style={{ lineHeight: 17 }}>
+              {c.caption}
+            </Small>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }

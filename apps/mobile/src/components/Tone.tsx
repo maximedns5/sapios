@@ -4,6 +4,7 @@ import { palette, type Palette, type Tone } from '@/lib/theme';
 
 const ToneContext = createContext<Palette>(palette('light'));
 
+/** Ton de la zone courante : clair (par défaut) ou accent (match, verdict). Fixe la couleur du texte. */
 export function ToneProvider({ tone, children }: { tone: Tone; children: ReactNode }) {
   return <ToneContext.Provider value={palette(tone)}>{children}</ToneContext.Provider>;
 }

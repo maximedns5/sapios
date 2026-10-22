@@ -1,23 +1,24 @@
-import { Text as RNText, type TextProps, type TextStyle, type StyleProp } from 'react-native';
+import { Text as RNText, type StyleProp, type TextProps, type TextStyle } from 'react-native';
 
-import { fonts, tracking } from '@/lib/theme';
+import { colors, fonts } from '@/lib/theme';
 import { useTone } from './Tone';
 
-type Props = TextProps & { style?: StyleProp<TextStyle>; color?: string };
+type Props = TextProps & { style?: StyleProp<TextStyle>; color?: string; size?: number; align?: TextStyle['textAlign'] };
 
-function useColor(color?: string) {
-  const { fg } = useTone();
-  return color ?? fg;
+/** Titre de niveau h1/h2 pour les lecteurs d'écran (role="heading", aria-level sur le web). */
+export function heading(level: 1 | 2 | 3): object {
+  return { role: 'heading', 'aria-level': level };
 }
 
-/** Étiquette : monospace, capitales, interlettrage 0,2em. */
-export function Label({ style, color, size = 11, children, ...rest }: Props & { size?: number }) {
-  const c = useColor(color);
+/** Grand titre d'écran : extra-gras, serré. Annoncé comme titre de niveau 1. */
+export function Title({ style, color, size = 32, align, children, ...rest }: Props) {
+  const { fg } = useTone();
   return (
     <RNText
+      {...heading(1)}
       {...rest}
       style={[
-        { fontFamily: fonts.mono, fontSize: size, letterSpacing: tracking(size), textTransform: 'uppercase', color: c, lineHeight: size * 1.5 },
+        { fontFamily: fonts.extrabold, fontSize: size, lineHeight: Math.round(size * 1.14), letterSpacing: -size * 0.02, color: color ?? fg, textAlign: align },
         style,
       ]}
     >
@@ -26,53 +27,77 @@ export function Label({ style, color, size = 11, children, ...rest }: Props & { 
   );
 }
 
-/** Titre Didone (Bodoni Moda). L'italique d'accent passe par <Em>. */
-export function Title({ style, color, size = 44, children, ...rest }: Props & { size?: number }) {
-  const c = useColor(color);
+/** Titre de section (h2). */
+export function Heading({ style, color, size = 20, align, children, ...rest }: Props) {
+  const { fg } = useTone();
   return (
     <RNText
+      {...heading(2)}
       {...rest}
-      style={[{ fontFamily: fonts.serif, fontSize: size, lineHeight: size * 1.04, color: c, letterSpacing: -size * 0.005 }, style]}
+      style={[{ fontFamily: fonts.extrabold, fontSize: size, lineHeight: Math.round(size * 1.3), letterSpacing: -size * 0.01, color: color ?? fg, textAlign: align }, style]}
     >
       {children}
     </RNText>
   );
 }
 
-export function Em({ style, children, ...rest }: Props) {
+type Weight = 'regular' | 'semibold' | 'bold' | 'extrabold';
+
+/** Texte courant (16 px par défaut). `secondary` et `muted` adoucissent la couleur sur fond clair. */
+export function Body({
+  style,
+  color,
+  size = 16,
+  align,
+  weight = 'regular',
+  secondary,
+  muted,
+  children,
+  ...rest
+}: Props & { weight?: Weight; secondary?: boolean; muted?: boolean }) {
+  const tone = useTone();
+  const ink = color ?? (muted ? tone.muted : secondary && tone.tone === 'light' ? colors.secondary : tone.fg);
   return (
-    <RNText {...rest} style={[{ fontFamily: fonts.serifItalic }, style]}>
+    <RNText {...rest} style={[{ fontFamily: fonts[weight], fontSize: size, lineHeight: Math.round(size * 1.5), color: ink, textAlign: align }, style]}>
       {children}
     </RNText>
   );
 }
 
-/** Accroche sans-serif grasse, serrée (ligne « v1 » des verdicts). */
-export function Strong({ style, color, size = 26, children, ...rest }: Props & { size?: number }) {
-  const c = useColor(color);
+/** Texte d'appoint (13,5 px, atténué) : aides, horodatages, mentions. Jamais sous 13 px. */
+export function Small({ style, color, size = 13.5, align, weight = 'regular', children, ...rest }: Props & { weight?: Weight }) {
+  const { muted } = useTone();
   return (
-    <RNText
-      {...rest}
-      style={[{ fontFamily: fonts.sansBold, fontSize: size, lineHeight: size * 1.08, letterSpacing: -size * 0.02, color: c }, style]}
-    >
+    <RNText {...rest} style={[{ fontFamily: fonts[weight], fontSize: Math.max(13, size), lineHeight: Math.round(Math.max(13, size) * 1.45), color: color ?? muted, textAlign: align }, style]}>
       {children}
     </RNText>
   );
 }
 
-export function Body({ style, color, size = 16, children, ...rest }: Props & { size?: number }) {
-  const c = useColor(color);
+/** Surtitre en couleur d'accent (« Bienvenue chez Sapios »). */
+export function Eyebrow({ style, color, size = 15, align, children, ...rest }: Props) {
+  const { tone, fg } = useTone();
   return (
-    <RNText {...rest} style={[{ fontFamily: fonts.sans, fontSize: size, lineHeight: size * 1.5, color: c }, style]}>
+    <RNText {...rest} style={[{ fontFamily: fonts.bold, fontSize: size, lineHeight: Math.round(size * 1.4), color: color ?? (tone === 'accent' ? fg : colors.accent), textAlign: align }, style]}>
       {children}
     </RNText>
   );
 }
 
-export function Mono({ style, color, size = 13, children, ...rest }: Props & { size?: number }) {
-  const c = useColor(color);
+/** Étiquette de champ ou de réglage (14 px, demi-gras). */
+export function Label({ style, color, size = 14, align, children, ...rest }: Props) {
+  const { fg } = useTone();
   return (
-    <RNText {...rest} style={[{ fontFamily: fonts.mono, fontSize: size, lineHeight: size * 1.4, color: c }, style]}>
+    <RNText {...rest} style={[{ fontFamily: fonts.semibold, fontSize: size, lineHeight: Math.round(size * 1.4), color: color ?? fg, textAlign: align }, style]}>
+      {children}
+    </RNText>
+  );
+}
+
+/** Gras dans un paragraphe. */
+export function Strong({ style, color, children, ...rest }: Props) {
+  return (
+    <RNText {...rest} style={[{ fontFamily: fonts.bold, color }, style]}>
       {children}
     </RNText>
   );

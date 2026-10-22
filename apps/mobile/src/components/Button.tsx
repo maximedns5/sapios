@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { ActivityIndicator, Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { fonts, tracking } from '@/lib/theme';
-import { Label } from './Text';
+import { colors, fonts, radius, shadow } from '@/lib/theme';
 import { useTone } from './Tone';
 
-type Variant = 'solid' | 'outline' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'inverse' | 'danger' | 'destructive';
 
 type Props = {
   label: string;
@@ -14,21 +13,37 @@ type Props = {
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
-  /** Mention à droite (ex. compteur, flèche). */
-  trailing?: string;
+  /** Icône avant le libellé. */
+  icon?: ReactNode;
+  /** Icône après le libellé (flèche). */
+  trailing?: ReactNode;
   testID?: string;
   accessibilityHint?: string;
-  compact?: boolean;
+  size?: 'lg' | 'md';
 };
 
-/** Bouton : plein = inversion du ton courant ; contour = filet 1,5 px ; état pressé = inversion franche. */
-export function Button({ label, onPress, variant = 'solid', disabled, loading, style, trailing, testID, accessibilityHint, compact }: Props) {
-  const { fg, bg } = useTone();
+const FILL: Record<Variant, { bg: string; fg: string }> = {
+  primary: { bg: colors.accent, fg: colors.onAccent },
+  secondary: { bg: colors.surface, fg: colors.text },
+  ghost: { bg: 'transparent', fg: colors.muted },
+  inverse: { bg: '#FFFFFF', fg: colors.text },
+  danger: { bg: 'transparent', fg: colors.danger },
+  destructive: { bg: colors.danger, fg: '#FFFFFF' },
+};
+
+/**
+ * Bouton pilule. Primaire = accent plein, secondaire = surface chaude, discret = texte seul.
+ * Une action asynchrone affiche une roue et bloque les appuis répétés. Désactivé : gris, sans ombre.
+ */
+export function Button({ label, onPress, variant = 'primary', disabled, loading, style, icon, trailing, testID, accessibilityHint, size = 'lg' }: Props) {
+  const { tone } = useTone();
   const [busy, setBusy] = useState(false);
   const isBusy = loading || busy;
-  // Libellés longs (« Soumettre un diplôme supérieur ») : corps réduit plutôt que tronqué.
-  const labelSize = compact ? 11 : label.length > 24 ? 10.5 : 12;
   const inactive = disabled || isBusy;
+  // Sur fond d'accent, le bouton principal devient blanc.
+  const v: Variant = tone === 'accent' && variant === 'primary' ? 'inverse' : variant;
+  const fill = disabled ? { bg: v === 'ghost' || v === 'danger' ? 'transparent' : colors.line, fg: colors.muted } : FILL[v];
+  const fg = tone === 'accent' && v === 'ghost' ? colors.onAccent : fill.fg;
 
   const handle = async () => {
     if (!onPress || inactive) return;
@@ -54,61 +69,100 @@ export function Button({ label, onPress, variant = 'solid', disabled, loading, s
       disabled={inactive}
       style={style}
     >
-      {({ pressed, hovered }) => {
-        // Survol (web) = inversion, comme l'appui : la charte n'a pas d'autre accent.
-        const on = pressed || (hovered && !inactive);
-        const solid = variant === 'solid' ? !on : on;
-        const fill = solid ? fg : variant === 'ghost' ? 'transparent' : bg;
-        const ink = solid ? bg : fg;
-        return (
-          <View
-            style={{
-              minHeight: compact ? 40 : 56,
-              paddingHorizontal: compact ? 14 : 20,
-              borderWidth: variant === 'ghost' ? 0 : 1.5,
-              borderColor: fg,
-              backgroundColor: fill,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: trailing ? 'space-between' : 'center',
-              opacity: disabled ? 0.35 : 1,
-            }}
-          >
-            {isBusy ? (
-              <ActivityIndicator color={ink} />
-            ) : (
-              <>
-                <Label
-                  color={ink}
-                  size={labelSize}
-                  numberOfLines={1}
-                  style={{ fontFamily: fonts.monoMedium, letterSpacing: tracking(labelSize), flexShrink: 1 }}
-                >
-                  {label}
-                </Label>
-                {trailing ? (
-                  <Label color={ink} size={trailing.length > 3 ? 9 : compact ? 11 : 12} numberOfLines={1} style={{ marginLeft: 12, opacity: trailing.length > 3 ? 0.8 : 1 }}>
-                    {trailing}
-                  </Label>
-                ) : null}
-              </>
-            )}
-          </View>
-        );
-      }}
+      {({ pressed, hovered }) => (
+        <View
+          style={{
+            minHeight: size === 'lg' ? 56 : 48,
+            paddingHorizontal: v === 'ghost' || v === 'danger' ? 14 : 22,
+            borderRadius: radius.pill,
+            backgroundColor: fill.bg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            opacity: pressed ? 0.88 : hovered && !inactive ? 0.94 : 1,
+            transform: [{ scale: pressed && !inactive ? 0.97 : 1 }],
+            boxShadow: v === 'inverse' && !disabled ? shadow.soft : undefined,
+          }}
+        >
+          {isBusy ? (
+            <ActivityIndicator color={fg} />
+          ) : (
+            <>
+              {icon}
+              <Text
+                numberOfLines={1}
+                style={{ fontFamily: fonts.bold, fontSize: size === 'lg' ? 16 : 15, color: fg, flexShrink: 1, textDecorationLine: hovered && (v === 'ghost' || v === 'danger') ? 'underline' : 'none' }}
+              >
+                {label}
+              </Text>
+              {trailing}
+            </>
+          )}
+        </View>
+      )}
     </Pressable>
   );
 }
 
-/** Lien textuel souligné, pour les actions secondaires. */
-export function TextLink({ label, onPress, testID, color }: { label: string; onPress: () => void; testID?: string; color?: string }) {
+type IconButtonProps = {
+  label: string;
+  onPress?: () => void;
+  children: ReactNode;
+  /** surface : disque chaud (en-têtes) ; floating : blanc avec ombre (actions sur photo) ; accent : plein. */
+  variant?: 'surface' | 'floating' | 'accent' | 'plain' | 'glass';
+  size?: number;
+  disabled?: boolean;
+  testID?: string;
+  accessibilityHint?: string;
+  style?: StyleProp<ViewStyle>;
+  selected?: boolean;
+};
+
+/** Bouton rond à icône (44 px minimum), libellé obligatoire pour les lecteurs d'écran. */
+export function IconButton({ label, onPress, children, variant = 'surface', size = 44, disabled, testID, accessibilityHint, style, selected }: IconButtonProps) {
+  const bg =
+    variant === 'surface' ? colors.surface : variant === 'floating' ? '#FFFFFF' : variant === 'accent' ? colors.accent : variant === 'glass' ? 'rgba(255,255,255,0.18)' : 'transparent';
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: !!disabled, ...(selected != null ? { selected } : {}) }}
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={size < 44 ? (44 - size) / 2 : 0}
+      style={style}
+    >
+      {({ pressed, hovered }) => (
+        <View
+          style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: bg,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: disabled ? 0.4 : pressed ? 0.85 : hovered ? 0.92 : 1,
+            transform: [{ scale: pressed && !disabled ? 0.94 : 1 }],
+            boxShadow: variant === 'floating' ? (size >= 56 ? shadow.floating : shadow.button) : variant === 'accent' ? shadow.button : undefined,
+          }}
+        >
+          {children}
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+/** Lien textuel pour les actions secondaires. */
+export function TextLink({ label, onPress, testID, color, size = 15, accessibilityRole = 'button' }: { label: string; onPress: () => void; testID?: string; color?: string; size?: number; accessibilityRole?: 'button' | 'link' }) {
   const { fg } = useTone();
   return (
-    <Pressable testID={testID} accessibilityRole="link" onPress={onPress} hitSlop={8}>
+    <Pressable testID={testID} accessibilityRole={accessibilityRole} onPress={onPress} hitSlop={10} style={{ minHeight: 44, justifyContent: 'center' }}>
       {({ pressed, hovered }) => (
-        <Label color={color ?? fg} style={{ textDecorationLine: 'underline', opacity: pressed || hovered ? 0.6 : 1 }}>
-          {label}
-        </Label>
+        <Text style={{ fontFamily: fonts.bold, fontSize: size, color: color ?? fg, opacity: pressed ? 0.6 : 1, textDecorationLine: hovered ? 'underline' : 'none' }}>{label}</Text>
       )}
     </Pressable>
   );

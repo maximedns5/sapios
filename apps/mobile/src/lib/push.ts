@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { EAS_PROJECT_ID } from './env';
-import { INK } from './theme';
+import { ACCENT } from './theme';
 import { supabase } from './supabase';
 
 export type PushResult = 'registered' | 'denied' | 'unavailable';
@@ -47,7 +47,7 @@ export async function registerForPush(userId: string, ask = true): Promise<PushR
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Sapios',
       importance: Notifications.AndroidImportance.HIGH,
-      lightColor: INK,
+      lightColor: ACCENT,
     });
   }
   let { status } = await Notifications.getPermissionsAsync();

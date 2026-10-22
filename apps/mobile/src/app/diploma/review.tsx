@@ -1,43 +1,72 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { Button } from '@/components/Button';
-import { ScanCard, type DiplomaContent } from '@/components/DiplomaCard';
+import { Button, IconButton } from '@/components/Button';
+import { ProgressBar } from '@/components/Controls';
+import { CapIcon, CheckIcon, GearIcon } from '@/components/Icons';
+import { Dots, PopIn, Rise, Ripple, ScanLine } from '@/components/motion';
 import { Notice } from '@/components/Notice';
-import { RevealLines } from '@/components/Reveal';
-import { Rule, Screen, TopBar } from '@/components/Screen';
-import { Body, Em, Label, Mono, Title } from '@/components/Text';
-import { useTone } from '@/components/Tone';
+import { Header, Screen } from '@/components/Screen';
+import { Body, Heading, Small, Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
+import { profileCompletion } from '@/lib/completion';
 import { useCopy } from '@/lib/copy';
-import { loadLegalName } from '@/lib/profile';
+import { loadOwnProfile } from '@/lib/profile';
 import { pushPermission, PUSH_SUPPORTED, registerForPush } from '@/lib/push';
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Reçu',
-  processing: 'Extraction',
-  needs_review: 'En revue',
-};
+import { colors, radius } from '@/lib/theme';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} · ${p(d.getHours())}:${p(d.getMinutes())}`;
+  const today = new Date().toDateString() === d.toDateString();
+  const time = `${d.getHours()} h ${String(d.getMinutes()).padStart(2, '0')}`;
+  return today ? `Aujourd’hui, ${time}` : `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}, ${time}`;
 }
 
-/** Attente du verdict : la soumission est en file, puis en revue humaine. */
+function Step({ state, title, sub, last }: { state: 'done' | 'current' | 'todo'; title: string; sub?: React.ReactNode; last?: boolean }) {
+  return (
+    <View
+      accessibilityState={{ selected: state === 'current' }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: last ? 0 : 1, borderColor: colors.line }}
+    >
+      <View style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+        {state === 'done' ? (
+          <PopIn delay={500}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+              <CheckIcon size={16} stroke={3} color="#FFFFFF" />
+            </View>
+          </PopIn>
+        ) : state === 'current' ? (
+          <>
+            <Ripple size={28} filled duration={1600} />
+            <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 3, borderColor: colors.accent, backgroundColor: '#FFFFFF' }} />
+          </>
+        ) : (
+          <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.disabled }} />
+        )}
+      </View>
+      <View style={{ flex: 1 }}>
+        <Body weight="bold" size={15.5} color={state === 'todo' ? colors.muted : colors.text}>
+          {title}
+        </Body>
+        {sub}
+      </View>
+    </View>
+  );
+}
+
+/** Attente du verdict : ce qui est fait, ce qui est en cours, le délai, et de quoi s'occuper. */
 export default function Review() {
   const { t } = useCopy();
   const { state, userId, refresh, loadingState } = useApp();
-  const { fg, bg } = useTone();
-  const [legal, setLegal] = useState<string | null>(null);
   const [push, setPush] = useState<'granted' | 'denied' | 'undetermined' | 'unavailable'>('unavailable');
   const [pushMessage, setPushMessage] = useState<string | null>(null);
+  const [bio, setBio] = useState<string | null>(null);
   const sub = state?.latest_submission;
+  const completion = profileCompletion({ photos: state?.onboarding.photos_count ?? 0, bio });
 
   useEffect(() => {
-    if (userId) loadLegalName(userId).then(setLegal);
+    if (userId) loadOwnProfile(userId).then((p) => setBio(p.bio)).catch(() => {});
     pushPermission().then(setPush);
   }, [userId]);
 
@@ -47,19 +76,6 @@ export default function Review() {
       const id = setInterval(() => refresh(), 20000);
       return () => clearInterval(id);
     }, [refresh]),
-  );
-
-  const content = useMemo<DiplomaContent>(
-    () => ({
-      issuer: 'Sapios · Comité d’admission',
-      number: `N° ${(sub?.id ?? '0042').slice(0, 4).toUpperCase()}`,
-      kicker: 'Document soumis',
-      degree: 'DIPLÔME',
-      lines: [`Titulaire : ${legal ?? '—'}`, 'Mention : en attente'],
-      seal: 'S·A·P',
-      signatory: 'Le comité d’admission',
-    }),
-    [legal, sub?.id],
   );
 
   const enablePush = async () => {
@@ -73,58 +89,78 @@ export default function Review() {
     <Screen
       scroll
       testID="review"
-      header={<TopBar left="Étape 02 / 02" right={{ label: 'Compte', onPress: () => router.push('/settings') }} />}
-      footer={
-        <>
-          {PUSH_SUPPORTED && push !== 'granted' ? <Button testID="review-push" label="Me prévenir du verdict" onPress={enablePush} /> : null}
-          <Button testID="review-refresh" label="Actualiser" variant="outline" loading={loadingState} onPress={() => refresh()} />
-        </>
+      header={
+        <Header
+          right={
+            <IconButton label="Compte" onPress={() => router.push('/settings')}>
+              <GearIcon size={20} />
+            </IconButton>
+          }
+        />
       }
     >
-      <View style={{ gap: 22, paddingTop: 8 }}>
-        <Label>En revue</Label>
-        <View>
-          <RevealLines
-            lines={[
-              <Title key="a" size={44}>
-                Votre dossier
-              </Title>,
-              <Title key="b" size={44}>
-                <Em>est relu.</Em>
-              </Title>,
-            ]}
-          />
-        </View>
-        <ScanCard content={content} loop delay={600} />
-        <View>
-          {[
-            ['Soumis le', sub ? formatDate(sub.created_at) : '—'],
-            ['Statut', sub ? STATUS_LABEL[sub.status] ?? sub.status : '—'],
-            ['Tentatives restantes', `${state?.submissions_left ?? '—'} / 3`],
-          ].map(([k, v], i) => (
-            <View key={k}>
-              <Rule weight={1} />
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}>
-                <Label style={{ opacity: 0.7 }}>{k}</Label>
-                {i === 1 ? (
-                  <View style={{ backgroundColor: fg, paddingHorizontal: 8, paddingVertical: 3 }} testID="review-status">
-                    <Label color={bg}>{v}</Label>
-                  </View>
-                ) : (
-                  <Mono size={13}>{v}</Mono>
-                )}
-              </View>
+      <View style={{ gap: 22 }}>
+        <View style={{ alignItems: 'center', gap: 18, paddingTop: 40 }}>
+          <View style={{ width: 104, height: 104, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Ripple size={104} />
+            <Ripple size={104} delay={1100} />
+            <View style={{ width: 104, height: 104, borderRadius: 52, backgroundColor: colors.surface, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
+              <CapIcon size={46} color={colors.accent} stroke={1.8} />
+              <ScanLine height={104} />
             </View>
-          ))}
-          <Rule weight={1} />
+          </View>
+          <Rise delay={100}>
+            <Title size={30} align="center">
+              On vérifie votre diplôme
+            </Title>
+          </Rise>
+          <Rise delay={200}>
+            <Body secondary align="center">
+              {t('review.delay')} {t('review.notice')}
+            </Body>
+          </Rise>
         </View>
-        <Body>{t('scan.pending')}</Body>
-        {!PUSH_SUPPORTED ? (
-          <Label size={9} style={{ opacity: 0.6 }}>
-            Pas de notification push sur le web : laissez cette page ouverte, le verdict s’affichera de lui-même.
-          </Label>
-        ) : null}
-        {pushMessage ? <Notice outline message={pushMessage} /> : null}
+
+        <Rise delay={300} style={{ borderWidth: 1, borderColor: colors.line, borderRadius: radius.card, paddingHorizontal: 20, paddingVertical: 4 }}>
+          <View accessibilityRole="list" accessibilityLabel="Avancement">
+            <Step state="done" title="Diplôme reçu" sub={<Small>{sub ? formatDate(sub.created_at) : '—'}</Small>} />
+            <Step
+              state="current"
+              title="Relecture par notre équipe"
+              sub={
+                <View style={{ flexDirection: 'row' }}>
+                  <Small>En cours</Small>
+                  <Dots />
+                </View>
+              }
+            />
+            <Step state="todo" title="Verdict" last />
+          </View>
+        </Rise>
+
+        <Rise delay={450} style={{ backgroundColor: colors.surface, borderRadius: radius.card, padding: 20, gap: 12 }}>
+          <Heading size={17}>En attendant, complétez votre profil</Heading>
+          <Body size={14.5} secondary>
+            Une bio et quelques photos de plus : de quoi donner envie de vous écrire, le jour venu.
+          </Body>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <ProgressBar value={completion.value} label="Profil complété" />
+            <Body weight="bold" size={13.5}>
+              {Math.round(completion.value * 100)} %
+            </Body>
+          </View>
+          <Button testID="review-complete" label="Compléter mon profil" size="md" onPress={() => router.push('/settings/profile')} />
+          <Button label="Mes photos" variant="ghost" size="md" onPress={() => router.push('/settings/photos')} />
+        </Rise>
+
+        <View style={{ gap: 8 }}>
+          {PUSH_SUPPORTED && push !== 'granted' ? <Button testID="review-push" label="Me prévenir du verdict" variant="secondary" onPress={enablePush} /> : null}
+          {pushMessage ? <Notice message={pushMessage} /> : null}
+          <Button testID="review-refresh" label="Actualiser" variant="ghost" loading={loadingState} onPress={() => refresh()} />
+          <Small align="center" size={13}>
+            Tentatives restantes : {state?.submissions_left ?? '—'} / 3
+          </Small>
+        </View>
       </View>
     </Screen>
   );

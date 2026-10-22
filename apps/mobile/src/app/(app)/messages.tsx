@@ -1,179 +1,150 @@
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Conversation } from '@/components/Conversation';
+import { ChatIcon } from '@/components/Icons';
+import { MaskUp, PopIn, Rise, Spinner } from '@/components/motion';
 import { Notice } from '@/components/Notice';
-import { Photo, useSignedUrls } from '@/components/Photo';
-import { RevealLines } from '@/components/Reveal';
-import { Body, Em, Label, Title } from '@/components/Text';
-import { ToneProvider } from '@/components/Tone';
+import { Avatar, useSignedUrls } from '@/components/Photo';
+import { Body, Heading, Small, Title } from '@/components/Text';
 import { formatShort } from '@/lib/format';
 import { useInbox } from '@/lib/inbox';
-import { useLayout } from '@/lib/layout';
 import { openChat } from '@/lib/nav';
-import { alpha, INK, PAPER, space } from '@/lib/theme';
+import { colors, fonts, radius, space } from '@/lib/theme';
 import type { MatchRow } from '@/lib/types';
 
-/**
- * Conversations (get_matches via la boîte de réception partagée, tenue à jour en temps réel).
- * Grand écran : liste à gauche, conversation à droite (`/messages?m=<match_id>`).
- */
+/** Messages : nouveaux matchs en haut (pas encore de message), puis les conversations, en temps réel. */
 export default function Messages() {
-  const { wide } = useLayout();
   const { m } = useLocalSearchParams<{ m?: string }>();
-  const selected = wide && m ? m : null;
-
-  if (!wide) return <Inbox selected={null} onOpen={(id) => openChat(id)} />;
-  return (
-    <ToneProvider tone="light">
-      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: PAPER }} testID="messages-split">
-        <View style={{ width: 380, borderRightWidth: 1.5, borderColor: INK }}>
-          <Inbox selected={selected} compact onOpen={(id) => router.setParams({ m: id })} />
-        </View>
-        <View style={{ flex: 1 }}>
-          {selected ? (
-            <Conversation key={selected} matchId={selected} embedded onLeave={() => router.setParams({ m: '' })} />
-          ) : (
-            <EmptyPane />
-          )}
-        </View>
-      </View>
-    </ToneProvider>
-  );
-}
-
-function Inbox({ selected, onOpen, compact }: { selected: string | null; onOpen: (matchId: string) => void; compact?: boolean }) {
   const { rows, error, reload, isFresh } = useInbox();
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   useFocusEffect(reload);
   const urls = useSignedUrls((rows ?? []).map((r) => r.photo_path).filter((p): p is string => !!p));
-  const titleSize = compact ? 36 : 44;
+
+  // Ancien lien « /messages?m=<id> » (vue en deux colonnes) : ouvre la conversation.
+  if (m) return <Redirect href={{ pathname: '/chat/[matchId]', params: { matchId: m } }} />;
+
+  const fresh = (rows ?? []).filter((r) => !r.last_message);
+  const conversations = (rows ?? []).filter((r) => !!r.last_message);
 
   return (
-    <ToneProvider tone="light">
-      <View style={{ flex: 1, backgroundColor: PAPER, paddingTop: compact ? 0 : insets.top }} testID="messages">
-        <FlatList
-          data={rows ?? []}
-          keyExtractor={(r) => r.match_id}
-          style={{ width: '100%', maxWidth: 560, alignSelf: 'center' }}
-          contentContainerStyle={{ paddingBottom: space.xl }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              tintColor={INK}
-              onRefresh={() => {
-                setRefreshing(true);
-                reload();
-                setTimeout(() => setRefreshing(false), 600);
-              }}
-            />
-          }
-          ListHeaderComponent={
-            <View style={{ gap: 14, paddingTop: compact ? 28 : 14, paddingBottom: 18, paddingHorizontal: space.gutter }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Label>Messages</Label>
-                <Label>{rows ? `${rows.length} match${rows.length > 1 ? 's' : ''}` : ''}</Label>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }} testID="messages">
+      <FlatList
+        data={conversations}
+        keyExtractor={(r) => r.match_id}
+        contentContainerStyle={{ paddingBottom: space.xl }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            tintColor={colors.accent}
+            onRefresh={() => {
+              setRefreshing(true);
+              reload();
+              setTimeout(() => setRefreshing(false), 600);
+            }}
+          />
+        }
+        ListHeaderComponent={
+          <View style={{ gap: 18, paddingTop: 16, paddingBottom: 6 }}>
+            <MaskUp style={{ paddingHorizontal: space.gutter }}>
+              <Title size={30}>Messages</Title>
+            </MaskUp>
+            {error ? <Notice kind="error" message={error} style={{ marginHorizontal: space.gutter }} /> : null}
+            {rows === null && !error ? (
+              <View style={{ paddingVertical: 30, alignItems: 'center' }}>
+                <Spinner />
               </View>
-              <View>
-                <RevealLines
-                  lines={[
-                    <Title key="a" size={titleSize}>
-                      Conversations
-                    </Title>,
-                    <Title key="b" size={titleSize}>
-                      <Em>éclairées.</Em>
-                    </Title>,
-                  ]}
-                />
+            ) : null}
+            {rows?.length === 0 ? <Empty /> : null}
+            {fresh.length ? (
+              <View style={{ gap: 12 }}>
+                <Heading size={15} style={{ paddingHorizontal: space.gutter }}>
+                  Nouveaux matchs
+                </Heading>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.gutter, gap: 14 }}>
+                  {fresh.map((r, i) => (
+                    <PopIn key={r.match_id} delay={100 + i * 70} overshoot={1.1}>
+                      <Pressable testID={`match-${r.match_id}`} accessibilityRole="button" accessibilityLabel={`Nouveau match avec ${r.display_name}. Écrire`} onPress={() => openChat(r.match_id)} style={{ alignItems: 'center', gap: 6, width: 76 }}>
+                        <Avatar path={r.photo_path} url={r.photo_path ? urls[r.photo_path] : ''} name={r.display_name} size={72} ring />
+                        <Body size={13.5} weight="semibold" numberOfLines={1}>
+                          {r.display_name}
+                        </Body>
+                        {isFresh(r.match_id) ? <View testID="match-new" style={{ position: 'absolute', top: 0, right: 4, width: 14, height: 14, borderRadius: 7, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' }} /> : null}
+                      </Pressable>
+                    </PopIn>
+                  ))}
+                </ScrollView>
               </View>
-              {error ? <Notice title="Erreur" message={error} /> : null}
-              {rows === null && !error ? <ActivityIndicator color={INK} /> : null}
-              {rows?.length === 0 ? <Body>Aucun match pour l’instant. Personne n’est à la hauteur, ou vous êtes trop exigeant. Les deux, sans doute.</Body> : null}
-            </View>
-          }
-          ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: alpha(INK, 0.15), marginLeft: space.gutter + 64 + 14, marginRight: space.gutter }} />}
-          renderItem={({ item }) => <Row item={item} url={item.photo_path ? urls[item.photo_path] : ''} active={item.match_id === selected} fresh={isFresh(item.match_id)} onPress={() => onOpen(item.match_id)} />}
-        />
-      </View>
-    </ToneProvider>
+            ) : null}
+            {conversations.length ? (
+              <Heading size={15} style={{ paddingHorizontal: space.gutter }}>
+                Conversations
+              </Heading>
+            ) : null}
+          </View>
+        }
+        renderItem={({ item, index }) => (
+          <Rise delay={120 + index * 60}>
+            <Row item={item} url={item.photo_path ? urls[item.photo_path] : ''} onPress={() => openChat(item.match_id)} />
+          </Rise>
+        )}
+      />
+    </View>
   );
 }
 
-function Row({ item, url, active, fresh, onPress }: { item: MatchRow; url: string; active: boolean; fresh: boolean; onPress: () => void }) {
+function Row({ item, url, onPress }: { item: MatchRow; url: string; onPress: () => void }) {
+  const unread = item.unread_count > 0;
   return (
     <Pressable
       testID={`match-${item.match_id}`}
       accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={`${item.display_name}${item.unread_count ? `, ${item.unread_count} non lu${item.unread_count > 1 ? 's' : ''}` : ''}`}
+      accessibilityLabel={`${item.display_name}${unread ? `, ${item.unread_count} non lu${item.unread_count > 1 ? 's' : ''}` : ''}`}
       onPress={onPress}
     >
-      {({ pressed, hovered }) => {
-        const inv = pressed || hovered || active;
-        const fg = inv ? PAPER : INK;
-        return (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: space.gutter, paddingVertical: 12, backgroundColor: inv ? INK : PAPER }}>
-            <Photo path={item.photo_path} url={url} name={item.display_name} monogramSize={34} caption={false} style={{ width: 64, height: 64, borderWidth: 1.5, borderColor: fg }} />
-            <View style={{ flex: 1, gap: 4 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                <Title size={24} color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
-                  {item.display_name}
-                </Title>
-                {fresh ? (
-                  <View testID="match-new" style={{ backgroundColor: fg, paddingHorizontal: 5, paddingVertical: 1 }}>
-                    <Label size={8.5} color={inv ? INK : PAPER}>
-                      Nouveau
-                    </Label>
-                  </View>
-                ) : (
-                  <Label size={9} color={fg} style={{ opacity: 0.6 }}>
-                    {item.last_message_at ? formatShort(item.last_message_at) : 'Nouveau'}
-                  </Label>
-                )}
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Body
-                  size={14}
-                  numberOfLines={1}
-                  color={fg}
-                  style={{ flex: 1, opacity: item.unread_count ? 1 : 0.65, fontFamily: item.unread_count ? 'Inter_600SemiBold' : 'Inter_400Regular' }}
-                >
-                  {item.last_message ?? 'Écrivez le premier message. Pas de pression.'}
-                </Body>
-                {item.unread_count ? (
-                  <View testID="unread-badge" style={{ minWidth: 20, height: 20, paddingHorizontal: 5, backgroundColor: fg, alignItems: 'center', justifyContent: 'center' }}>
-                    <Label size={10} color={inv ? INK : PAPER} style={{ letterSpacing: 0 }}>
-                      {item.unread_count}
-                    </Label>
-                  </View>
-                ) : null}
-              </View>
+      {({ pressed }) => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: space.gutter, paddingVertical: 12, backgroundColor: pressed ? colors.surfaceSoft : colors.bg }}>
+          <Avatar path={item.photo_path} url={url} name={item.display_name} size={58} />
+          <View style={{ flex: 1, gap: 3 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+              <Body weight="bold" numberOfLines={1} style={{ flexShrink: 1 }}>
+                {item.display_name}
+              </Body>
+              <Small size={13}>{item.last_message_at ? formatShort(item.last_message_at) : ''}</Small>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Body size={14.5} numberOfLines={1} color={unread ? colors.text : colors.muted} style={{ flex: 1, fontFamily: unread ? fonts.semibold : fonts.regular }}>
+                {item.last_message}
+              </Body>
+              {unread ? (
+                <View testID="unread-badge" style={{ minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: radius.pill, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+                  <Body size={11.5} weight="bold" color="#FFFFFF" style={{ lineHeight: 15 }}>
+                    {item.unread_count}
+                  </Body>
+                </View>
+              ) : null}
             </View>
           </View>
-        );
-      }}
+        </View>
+      )}
     </Pressable>
   );
 }
 
-function EmptyPane() {
+function Empty() {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 64, gap: 18, maxWidth: 640 }} testID="chat-empty">
-      <Label>Aucune conversation ouverte</Label>
-      <RevealLines
-        lines={[
-          <Title key="a" size={52}>
-            Choisissez
-          </Title>,
-          <Title key="b" size={52}>
-            <Em>votre interlocuteur.</Em>
-          </Title>,
-        ]}
-      />
-      <Body style={{ opacity: 0.75 }}>La liste de gauche se met à jour en temps réel. Entrée envoie un message, Maj + Entrée passe à la ligne.</Body>
-    </View>
+    <Rise delay={150} style={{ marginHorizontal: space.gutter, backgroundColor: colors.surface, borderRadius: radius.card, padding: 22, gap: 10, alignItems: 'center' }}>
+      <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+        <ChatIcon size={24} color={colors.accent} stroke={2} />
+      </View>
+      <Body weight="bold" align="center">
+        Aucun match pour l’instant
+      </Body>
+      <Body secondary size={15} align="center">
+        Un like réciproque, et la conversation s’ouvre ici. Personne n’est à la hauteur, ou vous êtes trop exigeant. Les deux, sans doute.
+      </Body>
+    </Rise>
   );
 }
