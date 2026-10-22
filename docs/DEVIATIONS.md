@@ -153,3 +153,36 @@ Détail et marche à suivre : `docs/EMAILS.md`.
    aucun lien avec l'accès, aucun paiement à proximité. Contenu dans `packages/shared/src/quiz.ts` (`QUIZ`),
    repris par l'app. Image à partager générée au build (`/test/partage/story` et `/test/partage/carre`).
 
+## Lot 1 : base de données (agent base, 22 oct. 2026)
+
+Profil intellectuel, likes ciblés et découverte par critères (décisions D1 à D9 aux valeurs recommandées).
+Contrat mis à jour (§1, §2, §3, §5, §6) ; formes jsonb typées dans `packages/shared/src/intellect.ts`.
+
+1. **Thèse dans sa propre table `profile_theses`** (et non `profiles.thesis_line` / `thesis_visibility`) : `profiles`
+   est lisible en entier par tout membre qui voit le profil, et révoquer une colonne casserait les `select *` des
+   clients. La table porte sa propre règle de lecture (D3 : `everyone`, ou match actif) et son statut de modération.
+2. **`profile_answers` et `profile_books` ont un `id` unique** en plus de la clé (`user_id`, `position`) : la file de
+   modération et les signalements visent un texte précis même si le membre réordonne ses réponses. Les likes
+   ciblés gardent le format demandé `answer:<position>` : un like suit la position, pas le texte.
+3. **Réponses : 250 caractères au plus en base** (le cadrage dit 200 dans le parcours, 250 dans l'impact
+   technique) ; l'app peut afficher une limite plus basse.
+4. **`discovery_prefs.max_distance_km` nul = rayon par défaut** (`app_settings.feed_radius_km`, réglable dans le
+   back-office), au lieu d'un défaut 50 figé dans la ligne. `get_discovery_prefs` renvoie la valeur effective.
+   L'âge recherché reste dans `profiles` ; `set_discovery_prefs` l'enregistre (un seul endroit, cadrage §3).
+5. **Ordre du feed** : tri `activity` (défaut, D9) = jour d'activité, puis préférences (niveaux et domaines choisis),
+   puis score d'affinité, puis distance ; tri `affinity` = préférences, affinité, jour d'activité, distance.
+   `count_discovery().total` ignore tous les critères du membre (rayon compris) : `matching = 0` et `total > 0`
+   signifie « critères trop stricts ».
+6. **Modération** : un texte repéré (`pending`) reste publié jusqu'à la décision (D6) ; un texte modifié après un
+   retrait repasse en file (motif `edited_after_removal`). Le membre qui supprime son texte clôt l'entrée
+   (`withdrawn`). La contestation d'un retrait passe pour l'instant par la page contact (pas de RPC dédiée).
+   Les mots joints aux likes ne sont pas filtrés : ce sont des messages privés destinés à une seule personne.
+7. **Likes ciblés** : un like existant n'est jamais réécrit (idempotence d'origine) ; au match, les mots des likes
+   deviennent des messages `from_like` qui ne déclenchent pas la notification « nouveau message » (le match l'est
+   déjà). `get_likes_count()` et `get_my_state().likes_received` donnent le nombre seul à tous les paliers (D16).
+8. **`apply_diploma_review(…, p_institution, p_field)`** : paramètres facultatifs pour ne pas casser le
+   back-office actuel ; le back-office du lot 1 les rendra obligatoires à l'approbation. Le domaine vérifié devient
+   celui du profil s'il est vide. `admin_set_member_institution` permet le rattrapage des membres déjà validés.
+9. **Avis au membre** : table `member_notices` (motif d'un retrait, obligation de motivation du DSA), lus via
+   `get_my_state().notices`, marqués lus par `ack_notice`.
+10. **Extension `unaccent`** ajoutée (comparaison des titres de livres, des établissements et de la liste de mots).
