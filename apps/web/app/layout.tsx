@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Bodoni_Moda, IBM_Plex_Mono, Inter } from "next/font/google";
+import { Bodoni_Moda, IBM_Plex_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const serif = Bodoni_Moda({
@@ -23,7 +24,16 @@ const mono = IBM_Plex_Mono({
   display: "swap",
 });
 
+// Police du site public (landing, test, pages légales). Le back-office garde Inter et Plex Mono.
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-jakarta",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
+  ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
   title: {
     default: "Sapios — L’amour est aveugle. Nous, non.",
     template: "%s — Sapios",
@@ -45,7 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html
       lang="fr"
-      className={`${serif.variable} ${sans.variable} ${mono.variable}`}
+      className={`${serif.variable} ${sans.variable} ${mono.variable} ${jakarta.variable}`}
       suppressHydrationWarning
     >
       <head>

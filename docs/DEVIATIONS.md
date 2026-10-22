@@ -134,3 +134,22 @@ Détail et marche à suivre : `docs/EMAILS.md`.
 6. **Nouveau sous-traitant** : Resend (brief §9), à ajouter à la politique de confidentialité avec son DPA.
 7. **Auth** : le SMTP des projets hébergés passe par Resend (`smtp.resend.com`), réglé dans le dashboard ; les
    gabarits `supabase/templates/*.html` y sont recopiés à la main. Mailpit reste le SMTP local.
+
+## Site public : landing simple et test d'admission (lot 1, 22 oct. 2026)
+
+1. **Charte** : le site public (landing, `/test`, pages légales, 404) quitte la charte noir et blanc du brief
+   (§« Charte visuelle ») pour la « direction simple » validée sur maquettes : fond blanc, Plus Jakarta Sans,
+   accent `#4338E0` (variable `--accent` de `apps/web/app/site.css`), Bodoni Moda italique pour le logo seul.
+   Tout est rangé sous `.site` : le back-office garde `globals.css`, Inter et Plex Mono, sans changement.
+2. **Landing** : la transposition du spot au défilement (GSAP, Lenis, Splitting.js, brief « Landing page ») est
+   remplacée par une page courte animée en CSS ; les trois bibliothèques sont retirées. Bouton « Postuler » fixé en
+   bas sur téléphone (audit n° 02), bloc « Pour de vrai » (n° 01), suite expliquée après l'inscription (n° 03).
+3. **Liste d'attente** : le formulaire ne demande toujours que l'email. Niveau et ville, prévus sur la maquette,
+   attendent deux colonnes dans `waitlist_signups` : on ne demande pas une donnée qu'on n'enregistre pas.
+   `source` vaut `landing`, ou `test` quand l'inscription suit le test.
+4. **Test d'admission** (fonctionnalité 2, option A, décision ouverte n° 6 du brief) : un gag assumé, dix
+   questions, chronomètre de 3 minutes, résultat « QI estimé : 130 » pour tout le monde, mention « test non
+   scientifique » à l'entrée et au résultat. Tout se passe dans le navigateur : rien n'est envoyé ni enregistré,
+   aucun lien avec l'accès, aucun paiement à proximité. Contenu dans `packages/shared/src/quiz.ts` (`QUIZ`),
+   repris par l'app. Image à partager générée au build (`/test/partage/story` et `/test/partage/carre`).
+

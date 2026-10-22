@@ -1,350 +1,192 @@
+import type { Viewport } from "next";
 import Link from "next/link";
-import LevelLabel from "@/components/LevelLabel";
-import FilmMotion from "@/components/landing/FilmMotion";
+import StickyApply from "@/components/landing/StickyApply";
 import WaitlistForm from "@/components/landing/WaitlistForm";
-import "./landing.css";
+import { ArrowRight, Heart, Partial, Refused, Verified, Waiting } from "@/components/site/Icons";
+import Reveal from "@/components/site/Reveal";
+import SiteFooter from "@/components/site/SiteFooter";
+import SiteHeader from "@/components/site/SiteHeader";
+import "./site.css";
 
-const CHECK = <path d="M8 24 L19 35 L39 11" />;
-const DASH = <path d="M9 23 H37" />;
-const CROSS = <path d="M11 11 L35 35 M35 11 L11 35" />;
+export const viewport: Viewport = {
+  themeColor: "#FFFFFF",
+  colorScheme: "light",
+};
 
-const ROWS = [
-  { level: "Bac+8", status: "Accès illimité", icon: CHECK, struck: false },
-  { level: "Bac+5", status: "Accès toléré", icon: CHECK, struck: false },
-  { level: "Bac+3", status: "Liste d’attente", icon: DASH, struck: false },
-  { level: "Bac", status: "Refusé", icon: CROSS, struck: true },
-  { level: "Brevet", status: "Désinstallez.", icon: CROSS, struck: true },
+const delay = (d: string) => ({ "--d": d }) as React.CSSProperties;
+
+type Row = { level: string; status: string; icon: React.ReactNode; tone?: "wait" | "out" | "last" };
+
+const ROWS: Row[] = [
+  { level: "Bac+8", status: "Accès illimité", icon: <Verified /> },
+  { level: "Bac+5", status: "Accès toléré", icon: <Partial /> },
+  { level: "Bac+3", status: "Liste d’attente", icon: <Waiting size={22} />, tone: "wait" },
+  { level: "Bac+2", status: "Refusé", icon: <Refused size={22} />, tone: "out" },
+  { level: "Brevet", status: "Désinstallez.", icon: <Refused size={22} />, tone: "last" },
 ];
 
 export default function Home() {
   return (
-    <div className="landing">
-      <a className="skip-link" href="#liste">
-        Aller à la liste d’attente
+    <div className="site">
+      <a className="skip-link" href="#postuler">
+        Aller au formulaire
       </a>
+      <SiteHeader applyHref="#postuler" />
 
-      <header className="hud">
-        <i className="crop tl" aria-hidden="true" />
-        <i className="crop tr" aria-hidden="true" />
-        <i className="crop bl" aria-hidden="true" />
-        <i className="crop br" aria-hidden="true" />
-        <a className="hud-logo" href="#top" aria-label="Sapios, retour en haut">
-          SAPIOS<sup>®</sup>
-        </a>
-        <div className="hud-tr">
-          <span className="hud-tc hud-dyn" aria-hidden="true">
-            00:00:00:00
-          </span>
-          <a className="hud-cta" href="#liste">
-            <span>Liste d’attente</span>
-          </a>
-        </div>
-        <div className="hud-bl hud-dyn" aria-hidden="true">
-          QI ≥ 130 — Bac+5 min.
-        </div>
-        <div className="hud-br hud-dyn" aria-hidden="true">
-          01 / Intro
-        </div>
-        <i className="hud-prog hud-dyn" aria-hidden="true" />
-      </header>
-
-      <main id="top">
-        <div className="film">
-          {/* 01 — intro */}
-          <section className="scene dark sA" aria-labelledby="sA-title">
-            <div className="scene-in">
-              <div className="a-wrap">
-                <p className="a-label lmono">
-                  <span className="mask">
-                    <span>Application de rencontre</span>
-                  </span>
-                </p>
-                <i className="a-rule" aria-hidden="true" />
-                <h1 className="logo" id="sA-title">
-                  <span className="sr-only">Sapios</span>
-                  <span aria-hidden="true" data-split="">
-                    SAPIOS
-                  </span>
-                </h1>
-                <p className="a-tag">
-                  <span className="mask">
-                    <span className="t1">pour les gens</span>
-                  </span>{" "}
-                  <span className="mask">
-                    <span className="t2">
-                      vraiment
-                      <i className="ul" aria-hidden="true" />
-                    </span>
-                  </span>{" "}
-                  <span className="mask">
-                    <span className="t3">intelligents.</span>
-                  </span>
-                </p>
-              </div>
-              <p className="a-hint lmono" aria-hidden="true">
-                <span>Défilez. On vous évalue.</span>
-                <i />
-              </p>
-            </div>
-          </section>
-
-          {/* 02 — vérification du diplôme */}
-          <section className="scene light sB" aria-labelledby="sB-title">
-            <div className="shake">
-              <div className="scene-in">
-                <div className="b-grid">
-                  <div className="b-head">
-                    <p className="b-step lmono">
-                      <span>Étape 01 / 01</span>
-                      <span>Vérification obligatoire</span>
-                    </p>
-                    <h2 className="b-title" id="sB-title">
-                      <span className="mask">
-                        <span>Validez votre</span>
-                      </span>
-                      <span className="mask">
-                        <em>diplôme.</em>
-                      </span>
-                    </h2>
-                  </div>
-
-                  <div className="card-wrap">
-                    <div
-                      className="card"
-                      role="img"
-                      aria-label="Exemple de diplôme : licence, spécialité Communication, mention Passable."
-                    >
-                      <div className="c-top" aria-hidden="true">
-                        <span>Université de Quelque Part</span>
-                        <span>N° 0042-B</span>
-                      </div>
-                      <div className="c-mid" aria-hidden="true">
-                        <div className="c-kicker">Diplôme national de</div>
-                        <div className="c-deg">LICENCE</div>
-                        <div className="c-sub">
-                          Spécialité « Communication »
-                          <br />
-                          Mention : <em>Passable</em>
-                        </div>
-                      </div>
-                      <div className="c-bot" aria-hidden="true">
-                        <div className="seal">
-                          <span>U·Q·P</span>
-                        </div>
-                        <div className="sign">
-                          <svg viewBox="0 0 230 62">
-                            <path
-                              d="M6 46 C 26 6, 40 64, 62 30 S 96 8, 104 40 S 132 58, 150 22 S 186 34, 200 28 S 218 24, 226 30"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.4"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                          <span>Le président du jury</span>
-                        </div>
-                      </div>
-                      <div className="scan" aria-hidden="true" />
-                    </div>
-                    <p className="stamp">
-                      <b>REFUSÉ</b>
-                      <i>QI insuffisant</i>
-                    </p>
-                  </div>
-
-                  <div className="b-analysis">
-                    <div className="prog">
-                      <div className="p-row">
-                        <span className="lmono">Analyse du profil</span>
-                        <span className="pct" aria-hidden="true">
-                          100%
-                        </span>
-                      </div>
-                      <div className="bar" aria-hidden="true">
-                        <i />
-                      </div>
-                    </div>
-                    <ul className="logs">
-                      <li className="log">
-                        <span>› Authenticité du diplôme</span>
-                        <span className="dots" aria-hidden="true" />
-                        <b>OK</b>
-                      </li>
-                      <li className="log">
-                        <span>› Niveau (Bac+5 requis)</span>
-                        <span className="dots" aria-hidden="true" />
-                        <b className="bad">BAC+3</b>
-                      </li>
-                      <li className="log">
-                        <span>› Comparaison avec Einstein</span>
-                        <span className="dots" aria-hidden="true" />
-                        <b className="bad">ÉCHEC</b>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="verdict dark">
-              <div className="v-in">
-                <p className="lmono">
-                  <span className="mask">
-                    <span>Résultat de l’analyse</span>
-                  </span>
-                </p>
-                <p className="v1">
-                  <span className="mask">
-                    <span>Diplôme non validé =</span>
-                  </span>
-                </p>
-                <p className="v2">
-                  <span className="mask">
-                    <em>pas assez intelligent.</em>
-                  </span>
-                </p>
-              </div>
-            </div>
-            <div className="blackout" aria-hidden="true" />
-          </section>
-
-          {/* 03 — grille d'admission */}
-          <section className="scene dark sC" aria-labelledby="sC-title">
-            <div className="scene-in">
-              <div className="c-grid">
-                <div>
-                  <p className="c-head lmono">
-                    <span>Grille d’admission</span>
-                    <span>Saison 2026</span>
-                  </p>
-                  <h2 className="c-title" id="sC-title">
-                    <span className="mask">
-                      <span>Qui a le droit</span>
-                    </span>
-                    <span className="mask">
-                      <em>d’aimer&nbsp;?</em>
-                    </span>
-                  </h2>
-                </div>
-                <ol className="rows">
-                  {ROWS.map((row, i) => (
-                    <li key={row.level} className={i === ROWS.length - 1 ? "rw rw--out" : "rw"}>
-                      <i className="ln" aria-hidden="true" />
-                      <i className="fill" aria-hidden="true" />
-                      <span className="lv">
-                        <LevelLabel label={row.level} />
-                        {row.struck ? <i className="strike" aria-hidden="true" /> : null}
-                      </span>
-                      <span className="rt">
-                        <span className="st">{row.status}</span>
-                        <span className="ic" aria-hidden="true">
-                          <svg viewBox="0 0 46 46">{row.icon}</svg>
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          </section>
-
-          {/* 04 — règle n°1 */}
-          <section className="scene light sD1" aria-labelledby="sD1-title">
-            <div className="scene-in">
-              <p className="d-label lmono">
-                <span className="mask">
-                  <span>Règle n°1</span>
+      <main>
+        <section className="lp-section lp-hero" aria-labelledby="hero-title">
+          <div className="lp-stage" aria-hidden="true">
+            <div className="lp-stage-in">
+              <span className="lp-card lp-card--left">
+                <span style={delay("0.1s")}>
+                  <span
+                    className="s-photo s-photo--lilac"
+                    style={{ "--float": "5.2s", "--float-d": "1s" } as React.CSSProperties}
+                  />
                 </span>
-              </p>
-              <h2 className="d-txt" id="sD1-title">
-                <span className="mask">
-                  <span>Pas de</span>
+              </span>
+              <span className="lp-card lp-card--right">
+                <span style={delay("0.18s")}>
+                  <span
+                    className="s-photo s-photo--sand"
+                    style={{ "--float": "5.8s", "--float-d": "1.4s" } as React.CSSProperties}
+                  />
                 </span>
-                <span className="mask">
-                  <span>diplôme&nbsp;?</span>
+              </span>
+              <span className="lp-card lp-card--main">
+                <span style={delay("0.26s")}>
+                  <span className="lp-float" style={{ "--float": "4.6s", "--float-d": "0.8s" } as React.CSSProperties}>
+                    <span className="s-photo">
+                      <span className="lp-card-tag">
+                        <Verified size={16} />
+                        Bac+8 · Philo
+                      </span>
+                    </span>
+                    <span className="lp-heart">
+                      <Heart size={24} />
+                    </span>
+                  </span>
                 </span>
+              </span>
+            </div>
+          </div>
+
+          <div className="lp-hero-copy">
+            <h1 className="s-h1" id="hero-title">
+              <span className="s-mask">
+                <span style={delay("0.45s")}>Pour les gens</span>
+              </span>
+              <span className="s-mask">
+                <span className="s-serif-accent" style={delay("0.55s")}>
+                  vraiment
+                </span>
+              </span>
+              <span className="s-mask">
+                <span style={delay("0.65s")}>intelligents.</span>
+              </span>
+            </h1>
+            <p className="s-lead s-rise" style={delay("0.8s")}>
+              L’application de rencontre où chaque diplôme est vérifié par un humain. Ouverture prochaine en France.
+            </p>
+            <div className="lp-hero-actions">
+              <a id="hero-cta" className="s-btn s-rise" style={delay("0.92s")} href="#postuler">
+                Rejoindre la liste d’attente
+                <ArrowRight />
+              </a>
+              <span className="s-small s-rise" style={delay("1s")}>
+                Gratuit. Un seul email, à l’ouverture.
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <div className="lp-section lp-block">
+          <div className="lp-split">
+            <section className="s-reveal" aria-labelledby="grille-title">
+              <div className="lp-head">
+                <span className="s-kicker">Grille d’admission</span>
+                <h2 className="s-h2" id="grille-title">
+                  Qui a le droit d’aimer ?
+                </h2>
+              </div>
+              <ul className="lp-grid">
+                {ROWS.map((row) => (
+                  <li key={row.level} className={row.tone ? `is-${row.tone}` : undefined}>
+                    <span className="lv">{row.level}</span>
+                    <span className="st">
+                      {row.status}
+                      {row.icon}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <a className="s-btn s-btn--soft lp-grid-cta" href="#postuler">
+                Votre niveau ? Postulez
+                <ArrowRight size={18} />
+              </a>
+            </section>
+
+            <section className="lp-real s-reveal" style={delay("0.08s")} aria-labelledby="vrai-title">
+              <span className="s-kicker">Pour de vrai</span>
+              <h2 className="s-h2" id="vrai-title">
+                Le ton est ironique. La vérification, non.
               </h2>
-            </div>
-          </section>
-
-          <section className="scene dark sD2" aria-label="Donc : pas d’amour.">
-            <div className="scene-in">
-              <div className="d2-wrap">
-                <p className="d-label lmono">
-                  <span className="mask">
-                    <span>Donc</span>
+              <ol className="lp-steps">
+                <li>
+                  <span className="lp-num" aria-hidden="true">
+                    1
                   </span>
-                </p>
-                <p className="d2-txt">
-                  <span className="mask">
-                    <span className="d2-pas">Pas</span>
+                  <span>Un humain vérifie votre diplôme, sous 48 h. Pas de robot, pas de tirage au sort.</span>
+                </li>
+                <li>
+                  <span className="lp-num" aria-hidden="true">
+                    2
                   </span>
-                  <span className="mask big">
-                    <span className="sr-only">d’amour.</span>
-                    <span aria-hidden="true" data-split="">
-                      d’amour.
-                    </span>
+                  <span>
+                    Le document n’est jamais montré aux membres. Il est supprimé 30 jours après la décision.
                   </span>
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* 05 — carte finale et liste d'attente */}
-          <section className="scene dark sE" aria-labelledby="sE-title">
-            <div className="scene-in">
-              <p className="logo e-logo">
-                <span className="sr-only">Sapios</span>
-                <span aria-hidden="true" data-split="">
-                  SAPIOS
-                </span>
-              </p>
-              <i className="e-rule" aria-hidden="true" />
-              <h2 className="e-title" id="sE-title">
-                <span className="e-l1">
-                  <span className="mask">
-                    <span>L’amour est aveugle.</span>
+                </li>
+                <li>
+                  <span className="lp-num" aria-hidden="true">
+                    3
                   </span>
-                </span>
-                <span className="e-l2">
-                  <span className="mask">
-                    <em>Nous, non.</em>
+                  <span>Les profils montrent un diplôme vérifié, des photos et ce qui vous passionne.</span>
+                </li>
+                <li>
+                  <span className="lp-num" aria-hidden="true">
+                    4
                   </span>
-                </span>
-              </h2>
-              <p className="e-cta lmono">
-                <span className="mask">
-                  <span>Bientôt disponible</span>
-                </span>
-                <span className="mask">
-                  <span>pour 2&nbsp;% de la population</span>
-                </span>
-              </p>
-              <div className="e-form" id="liste">
-                <WaitlistForm />
-              </div>
-              <p className="e-fine">
-                * Sapios décline toute responsabilité en cas de coup de foudre pour un titulaire de BTS. Les
-                sentiments ne sont pas vérifiés.
-              </p>
-            </div>
-          </section>
+                  <span>À l’ouverture, les inscrits de la liste entrent en premier.</span>
+                </li>
+              </ol>
+            </section>
+          </div>
         </div>
+
+        <div className="lp-section lp-block">
+          <Link className="lp-test s-reveal" href="/test">
+            <span className="lp-test-copy">
+              <small>En attendant</small>
+              <strong>Passez le test d’admission.</strong>
+              <span>3 minutes. Non scientifique. Résultat garanti.</span>
+            </span>
+            <span className="lp-test-go" aria-hidden="true">
+              <ArrowRight />
+            </span>
+          </Link>
+        </div>
+
+        <section id="postuler" className="lp-section lp-block lp-apply" aria-label="Liste d’attente">
+          <div className="lp-apply-card s-reveal">
+            <WaitlistForm />
+          </div>
+        </section>
       </main>
 
-      <footer className="site-footer dark">
-        <p className="label">© 2026 Sapios — Réservé aux personnes majeures</p>
-        <nav aria-label="Informations">
-          <Link className="label" href="/confidentialite">
-            Confidentialité
-          </Link>
-          <Link className="label" href="/contact">
-            Contact
-          </Link>
-        </nav>
-      </footer>
+      <SiteFooter note="Sapios décline toute responsabilité en cas de coup de foudre pour un titulaire de BTS. Les sentiments ne sont pas vérifiés." />
 
-      <FilmMotion />
+      <StickyApply heroId="hero-cta" formId="postuler" />
+      <Reveal />
     </div>
   );
 }

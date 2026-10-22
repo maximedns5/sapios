@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import LegalShell from "@/components/LegalShell";
 import { SITE } from "@/lib/site";
@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Politique de confidentialité",
   description: "Données traitées par Sapios, finalités, sous-traitants, durées de conservation et droits.",
 };
+
+export const viewport: Viewport = { themeColor: "#FFFFFF", colorScheme: "light" };
 
 export default function ConfidentialitePage() {
   return (
@@ -43,7 +45,14 @@ export default function ConfidentialitePage() {
         </h2>
         <h3>Liste d’attente (ce site)</h3>
         <ul>
-          <li>Adresse email, provenance de l’inscription et date.</li>
+          <li>Adresse email, provenance de l’inscription (page d’accueil ou test d’admission) et date.</li>
+        </ul>
+        <h3>Test d’admission (ce site)</h3>
+        <ul>
+          <li>
+            Aucune donnée : le test se déroule entièrement dans votre navigateur, vos réponses ne sont ni envoyées
+            ni enregistrées.
+          </li>
         </ul>
         <h3>Compte et profil (application)</h3>
         <ul>

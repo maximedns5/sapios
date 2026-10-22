@@ -1,35 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useRef, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { Alert, ArrowRight, Check } from "@/components/site/Icons";
 import { createClient } from "@/lib/supabase/client";
 
 type State =
   | { kind: "idle" }
   | { kind: "sending" }
-  | { kind: "done" }
-  | { kind: "error"; message: string };
+  | { kind: "done"; email: string }
+  | { kind: "error"; message: string; tries: number };
 
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+
+function emailProblem(email: string): string | null {
+  if (!email) return "Indiquez votre email.";
+  if (!email.includes("@")) return "Il manque le « @ » de l’adresse.";
+  if (!EMAIL_RE.test(email) || email.length > 254) return "Il manque la fin de l’adresse, par exemple « @ens.fr ».";
+  return null;
+}
+
+/** Provenance enregistrée avec l'inscription : la landing, ou le résultat du test. */
+function signupSource(): string {
+  return new URLSearchParams(window.location.search).get("via") === "test" ? "test" : "landing";
+}
+
+const delay = (d: string) => ({ "--d": d }) as CSSProperties;
 
 export default function WaitlistForm() {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [email, setEmail] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (state.kind === "sending") return;
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "").trim();
+    const value = email.trim();
 
     // Pot de miel : un robot remplit tout, on fait semblant d'accepter.
-    if (String(form.get("website") ?? "") !== "") {
-      setState({ kind: "done" });
+    if (String(new FormData(event.currentTarget).get("website") ?? "") !== "") {
+      setState({ kind: "done", email: value });
       return;
     }
-    if (!EMAIL_RE.test(email) || email.length > 254) {
-      setState({ kind: "error", message: "Cette adresse ne passerait pas l’examen. Vérifiez-la." });
+    const problem = emailProblem(value);
+    if (problem) {
+      setState({ kind: "error", message: problem, tries: state.kind === "error" ? state.tries + 1 : 1 });
       inputRef.current?.focus();
       return;
     }
@@ -38,72 +54,118 @@ export default function WaitlistForm() {
     try {
       const supabase = createClient();
       // Insertion seule, sans select de retour : anon ne lit rien. Un doublon (23505) vaut succès.
-      const { error } = await supabase.from("waitlist_signups").insert({ email, source: "landing" });
+      const { error } = await supabase.from("waitlist_signups").insert({ email: value, source: signupSource() });
       if (error && error.code !== "23505") throw error;
-      setState({ kind: "done" });
+      setState({ kind: "done", email: value });
     } catch {
-      setState({
-        kind: "error",
-        message: "L’inscription a échoué. Ce n’est pas vous, c’est nous. Réessayez dans un instant.",
-      });
+      setState({ kind: "error", message: "L’inscription n’a pas abouti. Réessayez dans un instant.", tries: 1 });
     }
   }
 
   if (state.kind === "done") {
     return (
-      <div className="wl-done" role="status" tabIndex={-1} ref={(el) => el?.focus()}>
-        <p className="label">Candidature enregistrée</p>
-        <p className="serif">
-          On vous rappellera. <em>Peut-être.</em>
+      <div className="wl-done" role="status">
+        <span className="wl-check" aria-hidden="true">
+          <span>
+            <Check size={44} />
+          </span>
+        </span>
+        <div className="s-mask">
+          <div style={delay("0.35s")}>
+            <h2 className="s-h2" tabIndex={-1} ref={(el) => el?.focus()}>
+              Vous êtes sur la liste.
+            </h2>
+          </div>
+        </div>
+        <p className="s-lead s-rise" style={delay("0.5s")}>
+          {state.email ? (
+            <>
+              Nous écrirons à <strong>{state.email}</strong> à l’ouverture. Une seule fois.
+            </>
+          ) : (
+            <>Nous vous écrirons à l’ouverture. Une seule fois.</>
+          )}
         </p>
-        <p className="wl-note">Un seul email, au lancement. Rien d’autre.</p>
+        <ol className="wl-next s-rise" style={delay("0.6s")} aria-label="La suite">
+          <li>
+            <span className="lp-num" aria-hidden="true">
+              1
+            </span>
+            <span>À l’ouverture, vous recevez votre accès à l’application.</span>
+          </li>
+          <li>
+            <span className="lp-num" aria-hidden="true">
+              2
+            </span>
+            <span>Vous y déposez votre diplôme, en photo ou en PDF.</span>
+          </li>
+          <li>
+            <span className="lp-num" aria-hidden="true">
+              3
+            </span>
+            <span>Un humain le vérifie, sous 48 h. Ensuite, les présentations.</span>
+          </li>
+        </ol>
+        <Link className="s-btn s-btn--soft s-rise" style={delay("0.7s")} href="/test">
+          Passer le test en attendant
+          <ArrowRight size={18} />
+        </Link>
       </div>
     );
   }
 
-  const invalid = state.kind === "error";
+  const error = state.kind === "error" ? state : null;
   return (
-    <form className="wl" onSubmit={onSubmit} noValidate aria-describedby={`${id}-note`}>
-      <label className="lmono" htmlFor={`${id}-email`}>
-        Votre email
-      </label>
-      <div className="wl-row">
+    <form className="wl" onSubmit={onSubmit} noValidate aria-labelledby={`${id}-title`} aria-describedby={`${id}-note`}>
+      <div className="wl-head">
+        <h2 className="s-h2" id={`${id}-title`}>
+          Postulez.
+        </h2>
+        <p className="s-lead">Inscrivez-vous sur la liste d’attente. Les inscrits entrent en premier.</p>
+      </div>
+      <div className="s-field">
+        <label className="s-label" htmlFor={`${id}-email`}>
+          Email
+        </label>
         <input
           ref={inputRef}
           id={`${id}-email`}
-          className="input"
+          className="s-input"
           type="email"
           name="email"
           inputMode="email"
           autoComplete="email"
           autoCapitalize="none"
           spellCheck={false}
-          placeholder="prenom@ens.fr"
+          placeholder="vous@exemple.fr"
           required
           maxLength={254}
-          aria-invalid={invalid}
-          aria-describedby={invalid ? `${id}-msg` : undefined}
-          data-waitlist-email=""
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-msg` : undefined}
+          // Alterne entre deux animations identiques pour rejouer la secousse à chaque erreur.
+          data-shake={error ? error.tries % 2 : undefined}
         />
-        <button className="btn" type="submit" disabled={state.kind === "sending"}>
-          {state.kind === "sending" ? "Examen…" : "Postuler"}
-        </button>
+        <div aria-live="assertive">
+          {error ? (
+            <p className="s-error" id={`${id}-msg`}>
+              <Alert size={16} />
+              {error.message}
+            </p>
+          ) : null}
+        </div>
       </div>
       <div className="wl-hp" aria-hidden="true">
         <label htmlFor={`${id}-website`}>Ne pas remplir</label>
         <input id={`${id}-website`} type="text" name="website" tabIndex={-1} autoComplete="off" />
       </div>
-      <div aria-live="assertive">
-        {state.kind === "error" ? (
-          <p className="notice" id={`${id}-msg`}>
-            <span className="label">Refusé</span>
-            <span>{state.message}</span>
-          </p>
-        ) : null}
-      </div>
+      <button className="s-btn s-btn--block" type="submit" disabled={state.kind === "sending"}>
+        {state.kind === "sending" ? "Envoi…" : "Postuler"}
+      </button>
       <p className="wl-note" id={`${id}-note`}>
-        Liste d’attente : un email au lancement, désinscription sur simple demande.{" "}
-        <Link href="/confidentialite">Confidentialité</Link>.
+        Un seul email, à l’ouverture. Votre adresse ne sert à rien d’autre et vous pouvez la faire retirer sur
+        simple demande. <Link href="/confidentialite">Confidentialité</Link>.
       </p>
     </form>
   );

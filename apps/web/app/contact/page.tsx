@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import LegalShell from "@/components/LegalShell";
 import { SITE } from "@/lib/site";
@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Contact",
   description: "Contacter l’éditeur de Sapios : questions, données personnelles, signalements, presse.",
 };
+
+export const viewport: Viewport = { themeColor: "#FFFFFF", colorScheme: "light" };
 
 export default function ContactPage() {
   return (
