@@ -211,3 +211,32 @@ l'app membre et le site public.
    justificatif » n'est pas faite (elle demande de rouvrir une décision, donc une règle à écrire).
 5. **Motifs de retrait d'un texte** : cinq phrases prêtes (coordonnées, propos injurieux, contenu sexuel, donnée sur un
    tiers, publicité), modifiables avant envoi, adressées au membre (obligation de motivation du DSA).
+
+## Lot 1 : app membre (agent app, 22 oct. 2026)
+
+Profil intellectuel, likes ciblés, critères et test d'admission dans `apps/mobile`, sur les RPC du lot 1.
+
+1. **Fiche complète pour chaque carte** : `get_feed` ne renvoie pas les identifiants des photos ni toutes les
+   réponses ; la découverte appelle `get_profile` pour la carte affichée et la suivante. Tant que la fiche n'est pas
+   arrivée, le cœur d'une photo aime tout le profil et l'aperçu de réponse n'a pas de cœur (pas de position).
+2. **Croix « passer » ancrée sous le profil** (barre fixe au-dessus des onglets) au lieu de flotter sur la carte : elle
+   ne cache plus jamais un texte.
+3. **Éditeurs du profil sous `/settings/*`** (`me`, `question`, `field`, `test`) : la règle de routage autorise
+   `/settings` dans tous les états, donc pendant la relecture du diplôme (« montrez-nous le reste »). Les critères
+   vivent en `/criteria`, réservé aux paliers qui voient la découverte.
+4. **Réponses limitées à 200 caractères dans l'interface** (250 en base). Pas de réordonnancement des réponses : un
+   like cible une position (`answer:<n>`).
+5. **Réordonner les livres** : un échange passe par une place libre (les identifiants suivent les textes) ; bibliothèque
+   pleine (5 livres), les deux lignes sont réécrites (nouveaux identifiants, filtre automatique rejoué). Un livre
+   retiré par la modération ne se déplace pas. Saisie à la main, titres seuls (D4), pas d'appel à Open Library.
+6. **L'âge recherché se règle dans les critères** pour les membres qui voient la découverte ; « Modifier mon profil »
+   n'écrit plus `age_min` / `age_max` dans ce cas (il ne les écrase pas). L'onboarding garde son curseur.
+7. **Niveaux proposés dans les critères** : Bac+3, Bac+5, Bac+8 (niveaux normalisés 6, 7, 8 : un Bac+3 admis par lot
+   voit la découverte).
+8. **Contester un retrait** : bouton « Contester » qui ouvre un email à l'éditeur (pas de RPC dédiée, comme prévu).
+9. **Test d'admission dans l'app** : mêmes questions que la landing (`QUIZ`), rien d'enregistré sauf
+   `show_quiz_badge`. Le partage télécharge l'image story du site (`EXPO_PUBLIC_SITE_URL/test/partage/story`) et
+   ouvre la feuille de partage sur téléphone ; sur le web, partage du navigateur, sinon l'image s'ouvre dans un onglet.
+10. **Signaler un texte précis** (`report_user` avec `p_content_kind`) : pas encore proposé dans l'écran de
+    signalement ; on signale la personne, comme avant.
+

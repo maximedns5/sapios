@@ -142,6 +142,8 @@ Secret partagé : variable d'env `SAPIOS_INTERNAL_SECRET` côté Edge Functions,
 Clés minimales (le seed les remplit, le back-office les édite) :
 `verdict.unlimited`, `verdict.standard`, `verdict.waitlist`, `verdict.refused`, `verdict.uninstall`, `verdict.rejected`, `verdict.needs_more`, `scan.title`, `scan.log.authenticity`, `scan.log.level`, `scan.log.einstein`, `scan.pending`, `feed.empty`, `match.title`, `onboarding.consent`, `push.match`, `push.message`, `push.verdict`.
 Lot 1 : `prompt.<key>` (une par question du catalogue), `feed.empty_filters`.
+Lot 1, app (repli local dans `apps/mobile/src/lib/copy.tsx`, surchargeable depuis « Textes ») : `feed.ranking`
+(« Comment nous choisissons vos profils »), `intellect.sensitive`, `intellect.thesis_warning`, `likes.teaser`, `quiz.badge`.
 
 ## 7. Comptes de test (seed local uniquement)
 
