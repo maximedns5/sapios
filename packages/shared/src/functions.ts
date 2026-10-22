@@ -11,6 +11,7 @@ export const EDGE_FUNCTIONS = {
   notify: "notify",
   deleteAccount: "delete-account",
   purgeDiplomas: "purge-diplomas",
+  searchBooks: "search-books",
 } as const;
 
 /** En-tête du secret partagé des fonctions appelées par la base. */
@@ -161,3 +162,27 @@ export type PurgeDiplomasRequest = Record<string, never>;
 export interface PurgeDiplomasResponse {
   purged: number;
 }
+
+// --- search-books (JWT utilisateur) : relais vers Open Library ---------------------------------
+// Open Library ne voit que le texte cherché et l'adresse du serveur, jamais celle du membre.
+
+export const BOOK_SEARCH_MIN_LENGTH = 2;
+export const BOOK_SEARCH_MAX_LENGTH = 100;
+export const BOOK_SEARCH_MAX_RESULTS = 8;
+/** Quota par membre : nombre de recherches par fenêtre de `BOOK_SEARCH_WINDOW_SECONDS`. */
+export const BOOK_SEARCH_LIMIT = 30;
+export const BOOK_SEARCH_WINDOW_SECONDS = 60;
+
+export interface SearchBooksRequest {
+  q: string;
+}
+export interface BookSuggestion {
+  title: string;
+  author: string | null;
+  /** Identifiant d'œuvre Open Library (`OL123W`), enregistré dans `profile_books.ol_work_id`. */
+  ol_work_id: string | null;
+}
+export interface SearchBooksResponse {
+  results: BookSuggestion[];
+}
+export type SearchBooksErrorCode = CommonErrorCode | "invalid_query" | "rate_limited" | "upstream_unavailable";
