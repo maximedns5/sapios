@@ -377,14 +377,14 @@ isOneToOne: false
                   ]
                 },"waitlist_signups": {
                   Row: {
-                    "created_at": string,"email": string,"id": string,"source": string | null
+                    "city": string | null,"created_at": string,"email": string,"id": string,"level": number | null,"source": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"email": string,"id"?: string,"source"?: string | null
+                    "city"?: string | null,"created_at"?: string,"email": string,"id"?: string,"level"?: number | null,"source"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"email"?: string,"id"?: string,"source"?: string | null
+                    "city"?: string | null,"created_at"?: string,"email"?: string,"id"?: string,"level"?: number | null,"source"?: string | null
                   }
                   Relationships: [
                     
@@ -418,6 +418,9 @@ isOneToOne: false
 "admin_admit_waitlist":
 { Args: { "p_tier"?: Database["public"]['Enums']["access_tier"],"p_user_ids": (string)[] }; Returns: number
                            },
+"admin_get_report_context":
+{ Args: { "p_report_id": string }; Returns: Json
+                           },
 "admin_get_submission":
 { Args: { "p_id": string }; Returns: {
               "attempts": number,"birthdate": string,"confidence": number,"created_at": string,"display_name": string,"doc_sha256": string,"email": string,"extracted": Json,"field_verified": Database["public"]['Enums']["study_field"],"file_deleted_at": string,"id": string,"institution_verified": string,"legal_name": string,"level_verified": number,"mime": string,"moderator_note": string,"rejection_reason": string,"reviewed_at": string,"reviewer_id": string,"signals": (string)[],"status": Database["public"]['Enums']["submission_status"],"storage_path": string,"user_id": string
@@ -449,6 +452,9 @@ isOneToOne: false
                            },
 "admin_stats":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_update_settings":
+{ Args: { "p_values": Json }; Returns: Json
                            },
 "apply_diploma_review":
 { Args: { "p_decision": string,"p_field"?: Database["public"]['Enums']["study_field"],"p_institution"?: string,"p_level": number,"p_reason": string,"p_reviewer": string,"p_submission": string }; Returns: Json
