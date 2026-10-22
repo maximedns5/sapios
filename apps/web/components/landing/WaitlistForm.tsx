@@ -13,6 +13,17 @@ type State =
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
 
+// Niveau déclaré (facultatif, jamais vérifié ici) sur l'échelle des diplômes de l'app (1 à 8).
+const LEVEL_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "", label: "Je préfère ne pas le dire" },
+  { value: "8", label: "Bac+8 · doctorat" },
+  { value: "7", label: "Bac+5 · master, ingénieur, grande école" },
+  { value: "6", label: "Bac+3 · licence, BUT" },
+  { value: "5", label: "Bac+2 · BTS, DUT" },
+  { value: "4", label: "Bac" },
+];
+const CITY_MAX = 80;
+
 function emailProblem(email: string): string | null {
   if (!email) return "Indiquez votre email.";
   if (!email.includes("@")) return "Il manque le « @ » de l’adresse.";
@@ -31,6 +42,8 @@ export default function WaitlistForm() {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
+  const [level, setLevel] = useState("");
+  const [city, setCity] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -54,7 +67,12 @@ export default function WaitlistForm() {
     try {
       const supabase = createClient();
       // Insertion seule, sans select de retour : anon ne lit rien. Un doublon (23505) vaut succès.
-      const { error } = await supabase.from("waitlist_signups").insert({ email: value, source: signupSource() });
+      const { error } = await supabase.from("waitlist_signups").insert({
+        email: value,
+        source: signupSource(),
+        level: level ? Number(level) : null,
+        city: city.trim().slice(0, CITY_MAX) || null,
+      });
       if (error && error.code !== "23505") throw error;
       setState({ kind: "done", email: value });
     } catch {
@@ -156,6 +174,42 @@ export default function WaitlistForm() {
           ) : null}
         </div>
       </div>
+      <div className="wl-row">
+        <div className="s-field">
+          <label className="s-label" htmlFor={`${id}-level`}>
+            Votre diplôme <span className="s-optional">facultatif</span>
+          </label>
+          <select
+            id={`${id}-level`}
+            className="s-input s-select"
+            name="level"
+            value={level}
+            onChange={(e) => setLevel(e.target.value)}
+          >
+            {LEVEL_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="s-field">
+          <label className="s-label" htmlFor={`${id}-city`}>
+            Votre ville <span className="s-optional">facultatif</span>
+          </label>
+          <input
+            id={`${id}-city`}
+            className="s-input"
+            type="text"
+            name="city"
+            autoComplete="address-level2"
+            placeholder="Paris, Lyon…"
+            maxLength={CITY_MAX}
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          />
+        </div>
+      </div>
       <div className="wl-hp" aria-hidden="true">
         <label htmlFor={`${id}-website`}>Ne pas remplir</label>
         <input id={`${id}-website`} type="text" name="website" tabIndex={-1} autoComplete="off" />
@@ -164,8 +218,9 @@ export default function WaitlistForm() {
         {state.kind === "sending" ? "Envoi…" : "Postuler"}
       </button>
       <p className="wl-note" id={`${id}-note`}>
-        Un seul email, à l’ouverture. Votre adresse ne sert à rien d’autre et vous pouvez la faire retirer sur
-        simple demande. <Link href="/confidentialite">Confidentialité</Link>.
+        Un seul email, à l’ouverture. Diplôme et ville nous aident à ouvrir ville par ville ; rien n’est vérifié
+        ici, votre diplôme le sera dans l’app. Vous pouvez tout faire retirer sur simple demande.{" "}
+        <Link href="/confidentialite">Confidentialité</Link>.
       </p>
     </form>
   );

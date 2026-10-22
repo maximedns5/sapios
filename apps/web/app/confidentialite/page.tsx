@@ -46,6 +46,10 @@ export default function ConfidentialitePage() {
         <h3>Liste d’attente (ce site)</h3>
         <ul>
           <li>Adresse email, provenance de l’inscription (page d’accueil ou test d’admission) et date.</li>
+          <li>
+            Si vous les indiquez : niveau de diplôme déclaré et ville. Ils servent seulement à préparer l’ouverture,
+            ville par ville ; le niveau n’est pas vérifié à ce stade.
+          </li>
         </ul>
         <h3>Test d’admission (ce site)</h3>
         <ul>

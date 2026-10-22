@@ -170,12 +170,15 @@ Sixtine → photo d'Hippolyte `unlimited@`).
 ### Back-office
 
 - **Diplômes** : `review-diploma` `decide` accepte `institution` (≤ 200) et `field` (`StudyField`), pris en compte à
-  l'approbation ; à rendre obligatoires dans l'interface. `admin_list_submissions` / `admin_get_submission`
+  l'approbation ; obligatoires dans l'interface depuis le lot 1 back-office. `admin_list_submissions` / `admin_get_submission`
   renvoient `institution_verified`, `field_verified`. Rattrapage : `admin_set_member_institution(user, institution, field)`.
 - **Contenus** : `admin_list_flagged_content(p_status default 'open')` (texte courant, question, motifs, signalement
   lié) ; `admin_moderate_content(id, 'keep' | 'remove', motif)` (motif obligatoire pour `remove`, envoyé au membre).
   Libellés des motifs : `contentFlagReasonLabel`.
 - **Questions** : écriture directe dans `profile_prompts` (RLS admins) + textes `prompt.<key>` dans « Textes ».
-- **Réglages** : `app_settings` `feed_radius_km` (rayon par défaut), `affinity_weight_*`, `moderation_blocklist`.
+- **Réglages** : `app_settings` `feed_radius_km` (rayon par défaut), `affinity_weight_*`, `moderation_blocklist`,
+  écrits par `admin_update_settings(p_values)` (bornes vérifiées, journalisé) depuis la page « Découverte ».
 - **Signalements** : `reports.content_kind` / `content_item_id` pointent vers le texte visé (aussi présent dans la file).
+  Contexte d'un signalement : `admin_get_report_context(report_id)`.
+- **Liste d'attente du site** : `waitlist_signups.level` (1 à 8, déclaré) et `city`, facultatifs.
 - **Statistiques** : `admin_stats().content_flags_open`.

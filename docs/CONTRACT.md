@@ -49,7 +49,7 @@ Celles du brief §5, avec ces précisions :
 
 - `user_access` : `user_id` PK, `level int`, `tier access_tier`, `copy_key text`, `source_submission_id`, `granted_at`, `granted_by`. Pas de ligne = pas encore de verdict.
 - `degree_submissions` : contrainte `check (status <> 'approved' or (reviewer_id is not null and level_verified is not null))`. Colonne en plus : `attempts int default 0` (essais d'extraction), `moderator_note text`. Le client ne lit ni `signals`, ni `moderator_note`, ni `extracted` (il passe par la vue `my_submissions`).
-- `waitlist_signups` (landing) : `id`, `email citext unique`, `source text`, `created_at`. `anon` peut seulement `insert`. Aucune lecture hors admins.
+- `waitlist_signups` (landing) : `id`, `email citext unique`, `source text`, `level smallint null` (1 à 8, déclaré, jamais vérifié), `city text null` (1 à 80 caractères), `created_at`. `anon` peut seulement `insert` (`email`, `source`, `level`, `city`). Aucune lecture hors admins.
 - `app_copy` : PK (`key`, `locale`), `locale` par défaut `fr`.
 
 Lot 1 (migrations `20261022090000` à `20261022090500`) :
@@ -108,6 +108,8 @@ Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `an
 | `admin_list_flagged_content(p_status content_flag_status default 'open')` | `setof` (entrée de la file + texte courant, question, signalement lié) | `forbidden` |
 | `admin_moderate_content(p_flag_id uuid, p_decision text /* keep\|remove */, p_reason text default null)` | `void` (motif obligatoire pour `remove`, envoyé au membre) | `forbidden`, `invalid_decision`, `reason_required`, `not_found`, `already_handled` |
 | `admin_set_member_institution(p_user uuid, p_institution text, p_field study_field)` | `void` (rattrapage d'un membre validé) | `forbidden`, `not_found`, `invalid_institution` |
+| `admin_update_settings(p_values jsonb)` | `jsonb` (valeurs enregistrées). Clés admises : `feed_radius_km` (5 à 200), `affinity_weight_field` / `_book` / `_prompt` / `_institution` (entiers 0 à 20), `moderation_blocklist` (tableau de mots, nettoyés en minuscules, 300 au plus, 40 caractères chacun). Avant / après dans `audit_log` (`settings.update`) | `forbidden`, `invalid_input`, `invalid_value`, `unknown_setting` |
+| `admin_get_report_context(p_report_id uuid)` | `jsonb { target, reporter, photos, answers, books, thesis, content, reports_against, relationship }` : la personne signalée, le texte visé, son historique, match et blocages entre les deux. Jamais les messages | `forbidden`, `not_found` |
 
 Réservées à `service_role` (jamais `authenticated`) :
 - `apply_diploma_review(p_submission uuid, p_reviewer uuid, p_decision text /* approve|reject|needs_more */, p_level int, p_reason text, p_institution text default null, p_field study_field default null)` → `jsonb { user_id, tier, level, copy_key }`. Une seule transaction : soumission, `user_access` (établissement et domaine compris), `audit_log`.

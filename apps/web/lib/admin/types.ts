@@ -1,4 +1,13 @@
-import type { AccessTier, Extraction, SubmissionStatus } from "@sapios/shared";
+import type {
+  AccessTier,
+  ContentFlagStatus,
+  ContentKind,
+  Extraction,
+  PhotoModeration,
+  StudyField,
+  SubmissionStatus,
+  ThesisVisibility,
+} from "@sapios/shared";
 
 export type ReportStatus = "open" | "actioned" | "dismissed";
 export type ProfileStatus = "onboarding" | "active" | "paused" | "banned";
@@ -26,6 +35,8 @@ export interface SubmissionRow {
   birthdate: string | null;
   display_name: string | null;
   email?: string | null;
+  institution_verified?: string | null;
+  field_verified?: StudyField | null;
 }
 
 export interface ReportRow {
@@ -38,6 +49,8 @@ export interface ReportRow {
   handled_by: string | null;
   handled_at: string | null;
   created_at: string;
+  content_kind?: ContentKind | null;
+  content_item_id?: string | null;
 }
 
 export interface PolicyRow {
@@ -73,5 +86,81 @@ export interface WaitlistSignup {
   id: string;
   email: string;
   source: string | null;
+  level: number | null;
+  city: string | null;
   created_at: string;
+}
+
+/** Ligne de `admin_list_flagged_content` (file des textes à modérer). */
+export interface FlaggedContentRow {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  email: string | null;
+  kind: ContentKind;
+  item_id: string | null;
+  prompt_key: string | null;
+  /** Texte actuel ; nul si le membre l'a supprimé depuis. */
+  current_text: string | null;
+  item_status: PhotoModeration | null;
+  /** Texte au moment où il a été repéré. */
+  excerpt: string;
+  reasons: string[];
+  source: "auto" | "report";
+  report_id: string | null;
+  report_reason: string | null;
+  report_details: string | null;
+  status: ContentFlagStatus;
+  decision_reason: string | null;
+  handled_by: string | null;
+  handled_at: string | null;
+  created_at: string;
+}
+
+export interface PromptRow {
+  key: string;
+  active: boolean;
+  position: number;
+  created_at?: string;
+}
+
+/** `admin_get_report_context` : de quoi décider sans changer d'écran (audit n° 23). */
+export interface ReportContext {
+  target: {
+    id: string;
+    display_name: string | null;
+    status: ProfileStatus | null;
+    city: string | null;
+    bio: string | null;
+    study_field: StudyField | null;
+    created_at: string;
+    last_active_at: string | null;
+    age: number | null;
+    legal_name: string | null;
+    email: string | null;
+    tier: AccessTier | null;
+    level: number | null;
+    institution: string | null;
+    source_submission_id: string | null;
+  } | null;
+  reporter: { id: string; display_name: string | null; status: ProfileStatus | null; reports_filed: number } | null;
+  photos: Array<{ id: string; storage_path: string; moderation_status: PhotoModeration }>;
+  answers: Array<{ id: string; position: number; prompt_key: string; answer: string; moderation_status: PhotoModeration }>;
+  books: Array<{ id: string; title: string; author: string | null; moderation_status: PhotoModeration }>;
+  thesis: { line: string; visibility: ThesisVisibility; moderation_status: PhotoModeration } | null;
+  content: {
+    kind: ContentKind;
+    item_id: string | null;
+    text: string | null;
+    prompt_key: string | null;
+    flag_id: string | null;
+    flag_status: ContentFlagStatus | null;
+  } | null;
+  reports_against: { open: number; total: number; actioned: number; reasons: string[] };
+  relationship: {
+    matched_at: string | null;
+    unmatched_at: string | null;
+    reporter_blocked: boolean;
+    target_blocked: boolean;
+  };
 }

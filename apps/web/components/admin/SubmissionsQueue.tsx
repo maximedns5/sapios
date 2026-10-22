@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { MANUAL_REVIEW_SIGNAL, type SubmissionStatus } from "@sapios/shared";
+import { MANUAL_REVIEW_SIGNAL, studyFieldLabel, type StudyField, type SubmissionStatus } from "@sapios/shared";
 import { describeError } from "@/lib/admin/errors";
 import { ageFrom, confidenceValue, fmtAgo, fmtDateTime, levelText, pct, STATUS_LABELS } from "@/lib/admin/format";
 import { compareNames, NAME_MATCH_LABELS } from "@/lib/admin/names";
@@ -24,23 +24,41 @@ export function allSignals(row: Pick<SubmissionRow, "signals" | "extracted">): s
   return Array.from(new Set([...own, ...model]));
 }
 
+type Verified = { institution: string | null; study_field: StudyField | null; source_submission_id: string | null };
+
 export default function SubmissionsQueue({ status }: { status: SubmissionStatus }) {
   const [rows, setRows] = useState<SubmissionRow[] | null>(null);
+  // Validés : établissement et domaine retenus pour le membre, pour repérer ceux à saisir (rattrapage).
+  const [verified, setVerified] = useState<Record<string, Verified>>({});
   const [error, setError] = useState<string | null>(null);
   // Colonnes de l'extraction IA, masquées quand toute la liste est en revue manuelle.
   const ai = !rows || rows.some((r) => !isManualReview(r));
 
   const load = useCallback(() => {
-    createClient()
-      .rpc("admin_list_submissions", { p_status: status })
-      .then(async ({ data, error }) => {
-        if (error) setError(await describeError(error));
-        else {
-          setError(null);
-          setRows((data ?? []) as SubmissionRow[]);
-        }
-      });
+    const supabase = createClient();
+    supabase.rpc("admin_list_submissions", { p_status: status }).then(async ({ data, error }) => {
+      if (error) {
+        setError(await describeError(error));
+        return;
+      }
+      const list = (data ?? []) as SubmissionRow[];
+      setError(null);
+      setRows(list);
+      if (status !== "approved" || !list.length) return;
+      const access = await supabase
+        .from("user_access")
+        .select("user_id, institution, study_field, source_submission_id")
+        .in("user_id", Array.from(new Set(list.map((r) => r.user_id))));
+      setVerified(
+        Object.fromEntries(((access.data ?? []) as Array<Verified & { user_id: string }>).map((a) => [a.user_id, a])),
+      );
+    });
   }, [status]);
+  const approved = status === "approved";
+  const toFill = approved && rows ? rows.filter((r) => {
+    const v = verified[r.user_id];
+    return v?.source_submission_id === r.id && (!v.institution || !v.study_field);
+  }).length : 0;
 
   useEffect(load, [load]);
 
@@ -66,6 +84,7 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
         {rows ? (
           <span className="label" role="status">
             {rows.length} soumission{rows.length > 1 ? "s" : ""}
+            {toFill ? ` · ${toFill} établissement${toFill > 1 ? "s" : ""} à saisir` : ""}
           </span>
         ) : null}
       </div>
@@ -92,6 +111,7 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
                 ) : null}
                 <th scope="col">Signaux</th>
                 {ai ? <th scope="col">Nom</th> : null}
+                {approved ? <th scope="col">Établissement</th> : null}
                 <th scope="col">
                   <span className="sr-only">Action</span>
                 </th>
@@ -160,6 +180,29 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
                         >
                           {match === "match" ? "Concordant" : match === "partial" ? "Partiel" : match === "mismatch" ? "Divergent" : "—"}
                         </span>
+                      </td>
+                    ) : null}
+                    {approved ? (
+                      <td data-label="Établissement">
+                        {(() => {
+                          const v = verified[row.user_id];
+                          const institution = row.institution_verified ?? (v?.source_submission_id === row.id ? v.institution : null);
+                          const field = row.field_verified ?? (v?.source_submission_id === row.id ? v.study_field : null);
+                          if (institution && field) {
+                            return (
+                              <>
+                                <span className="strong">{institution}</span>
+                                <br />
+                                <span className="muted">{studyFieldLabel(field)}</span>
+                              </>
+                            );
+                          }
+                          return v?.source_submission_id === row.id ? (
+                            <span className="badge badge--solid">À saisir</span>
+                          ) : (
+                            <span className="muted">Niveau retenu ailleurs</span>
+                          );
+                        })()}
                       </td>
                     ) : null}
                     <td className="span">

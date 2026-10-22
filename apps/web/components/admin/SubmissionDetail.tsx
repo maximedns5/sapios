@@ -1,14 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useMemo, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   EDGE_FUNCTIONS,
+  INSTITUTION_MAX_LENGTH,
   signalLabel,
+  STUDY_FIELD_LABELS,
+  STUDY_FIELDS,
+  studyFieldLabel,
   type AccessTier,
+  type ReviewDecideRequest,
   type ReviewDecideResponse,
   type ReviewDecision,
   type ReviewSignedUrlResponse,
+  type StudyField,
 } from "@sapios/shared";
 import { describeError, errorCode, errorMessage, isMissingFunction } from "@/lib/admin/errors";
 import {
@@ -45,9 +52,17 @@ const MORE_REASONS = [
   "Envoyez le diplôme lui-même, pas une attestation d’inscription",
 ];
 
+type Access = {
+  level: number | null;
+  tier: AccessTier;
+  institution: string | null;
+  study_field: StudyField | null;
+  source_submission_id: string | null;
+};
+
 interface Loaded {
   row: SubmissionRow;
-  access: { level: number | null; tier: AccessTier } | null;
+  access: Access | null;
   policies: PolicyRow[];
   history: Array<{ id: string; status: SubmissionRow["status"]; created_at: string; level_verified: number | null }>;
 }
@@ -75,7 +90,11 @@ async function loadSubmission(id: string): Promise<Loaded | null> {
   }
 
   const [access, policies, history] = await Promise.all([
-    supabase.from("user_access").select("level, tier").eq("user_id", row.user_id).maybeSingle(),
+    supabase
+      .from("user_access")
+      .select("level, tier, institution, study_field, source_submission_id")
+      .eq("user_id", row.user_id)
+      .maybeSingle(),
     supabase.from("access_policy").select("*").order("min_level", { ascending: false }),
     supabase
       .from("degree_submissions")
@@ -150,6 +169,12 @@ function DocumentViewer({ row }: { row: SubmissionRow }) {
   const left = Math.max(0, Math.round((expiresAt - now) / 1000));
   const expired = Boolean(url) && left === 0;
   const isPdf = row.mime === "application/pdf";
+  // Loupe : un clic grossit ×2,5 au point visé, la souris déplace la zone lue, un second clic revient.
+  const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
+  const aim = (e: React.MouseEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 };
+  };
 
   return (
     <section className="detail-doc" aria-label="Document soumis">
@@ -192,9 +217,22 @@ function DocumentViewer({ row }: { row: SubmissionRow }) {
         ) : isPdf ? (
           <iframe src={`${url}#navpanes=0&view=FitH`} title={`Diplôme de ${row.legal_name ?? row.display_name ?? "ce membre"} (PDF)`} />
         ) : (
-          // URL signée externe et éphémère : next/image n'apporte rien ici.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={`Diplôme soumis par ${row.legal_name ?? row.display_name ?? "ce membre"}`} />
+          <button
+            type="button"
+            className={zoom ? "doc-zoom is-zoomed" : "doc-zoom"}
+            aria-pressed={Boolean(zoom)}
+            aria-label={zoom ? "Revenir à la vue entière" : "Agrandir (loupe)"}
+            onClick={(e) => setZoom(zoom ? null : aim(e))}
+            onMouseMove={(e) => (zoom ? setZoom(aim(e)) : undefined)}
+          >
+            {/* URL signée externe et éphémère : next/image n'apporte rien ici. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={`Diplôme soumis par ${row.legal_name ?? row.display_name ?? "ce membre"}`}
+              style={zoom ? { transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
+            />
+          </button>
         )}
       </div>
       {url && !expired && !purged ? (
@@ -202,6 +240,7 @@ function DocumentViewer({ row }: { row: SubmissionRow }) {
           <a className="adm-link" href={url} target="_blank" rel="noreferrer noopener">
             Ouvrir dans un onglet
           </a>
+          {!isPdf ? <span className="label">Clic : loupe</span> : null}
           <button type="button" className="adm-link" onClick={fetchUrl} disabled={busy}>
             Renouveler le lien
           </button>
@@ -212,6 +251,27 @@ function DocumentViewer({ row }: { row: SubmissionRow }) {
 }
 
 /* ───────────── Décision ───────────── */
+
+const DECISIONS = [
+  ["approve", "Valider", "V"],
+  ["reject", "Refuser", "R"],
+  ["needs_more", "À compléter", "C"],
+] as const;
+
+/** Un raccourci ne doit jamais voler une frappe destinée à un champ. */
+function isTyping(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  if (el.isContentEditable || el.tagName === "TEXTAREA" || el.tagName === "SELECT") return true;
+  if (el.tagName === "INPUT") return !["radio", "checkbox"].includes((el as HTMLInputElement).type);
+  return false;
+}
+
+/** Entrée sur un bouton ou un lien l'active déjà : ne pas envoyer le formulaire en plus. */
+function isActivatable(target: EventTarget | null): boolean {
+  const tag = (target as HTMLElement | null)?.tagName;
+  return tag === "BUTTON" || tag === "A";
+}
 
 function DecisionForm({
   row,
@@ -225,10 +285,14 @@ function DecisionForm({
   onDecided: (result: ReviewDecideResponse, decision: ReviewDecision) => void;
 }) {
   const id = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const checkRef = useRef<HTMLInputElement>(null);
   const estimate = row.extracted?.level_estimate ?? null;
   const validEstimate = estimate != null && estimate >= 1 && estimate <= 8 ? estimate : null;
   const [decision, setDecision] = useState<ReviewDecision>("approve");
   const [level, setLevel] = useState<number | null>(validEstimate);
+  const [institution, setInstitution] = useState(row.extracted?.institution ?? access?.institution ?? "");
+  const [field, setField] = useState<StudyField | "">(access?.study_field ?? "");
   const [checked, setChecked] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -237,19 +301,63 @@ function DecisionForm({
   const policy = level ? policyFor(level, policies) : null;
   const keepsHigher =
     decision === "approve" && access?.level != null && level != null && access.level > level ? access : null;
+  const institutionOk = institution.trim().length >= 2 && institution.trim().length <= INSTITUTION_MAX_LENGTH;
 
-  const canSubmit =
-    !busy &&
-    (decision === "approve" ? level != null && checked : reason.trim().length >= 3 && reason.trim().length <= 500);
+  const missing =
+    decision === "approve"
+      ? [!level && "le niveau", !institutionOk && "l’établissement", !field && "le domaine", !checked && "la case d’examen"].filter(
+          Boolean,
+        )
+      : reason.trim().length < 3
+        ? ["le motif"]
+        : [];
+  const canSubmit = !busy && missing.length === 0 && reason.trim().length <= 500;
+
+  // Raccourcis (audit n° 22) : 1 à 8 niveau, X case d'examen, V / R / C décision, Entrée envoi.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
+      const k = e.key.toLowerCase();
+      if (k === "enter") {
+        if (isActivatable(e.target)) return;
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+        return;
+      }
+      if (/^[1-8]$/.test(k)) {
+        setDecision("approve");
+        setLevel(Number(k));
+      } else if (k === "v") setDecision("approve");
+      else if (k === "r") setDecision("reject");
+      else if (k === "c") setDecision("needs_more");
+      else if (k === "x") setChecked((c) => !c);
+      else return;
+      e.preventDefault();
+      setError(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canSubmit) {
+      if (missing.length) setError(`Il manque ${missing.join(", ")}.`);
+      if (decision === "approve" && !checked) checkRef.current?.focus();
+      return;
+    }
     setBusy(true);
     setError(null);
-    const body =
+    const body: ReviewDecideRequest =
       decision === "approve"
-        ? { action: "decide", submission_id: row.id, decision, level }
+        ? {
+            action: "decide",
+            submission_id: row.id,
+            decision,
+            level: level ?? undefined,
+            institution: institution.trim(),
+            field: field || undefined,
+          }
         : { action: "decide", submission_id: row.id, decision, reason: reason.trim() };
     const { data, error } = await createClient().functions.invoke<ReviewDecideResponse>(EDGE_FUNCTIONS.reviewDiploma, {
       body,
@@ -272,7 +380,7 @@ function DecisionForm({
         : "Demander un complément";
 
   return (
-    <form className="panel" onSubmit={submit} aria-labelledby={`${id}-title`}>
+    <form ref={formRef} className="panel panel--decide" onSubmit={submit} aria-labelledby={`${id}-title`} noValidate>
       <div className="panel-h">
         <h2 className="label" id={`${id}-title`}>
           Décision du modérateur
@@ -281,23 +389,18 @@ function DecisionForm({
       </div>
       <div className="panel-b decide">
         <div className="seg" role="group" aria-label="Type de décision">
-          {(
-            [
-              ["approve", "Valider"],
-              ["reject", "Refuser"],
-              ["needs_more", "À compléter"],
-            ] as const
-          ).map(([value, label]) => (
+          {DECISIONS.map(([value, label, key]) => (
             <button
               key={value}
               type="button"
               aria-pressed={decision === value}
+              aria-keyshortcuts={key}
               onClick={() => {
                 setDecision(value);
                 setError(null);
               }}
             >
-              {label}
+              {label} <kbd>{key}</kbd>
             </button>
           ))}
         </div>
@@ -306,8 +409,7 @@ function DecisionForm({
           <>
             <fieldset style={{ border: 0, display: "grid", gap: 8 }}>
               <legend className="label" style={{ marginBottom: 8 }}>
-                Niveau validé (obligatoire)
-                {validEstimate ? " — l’estimation de l’IA est présélectionnée, à confirmer" : ""}
+                Niveau validé · touches 1 à 8{validEstimate ? " · estimation de l’IA présélectionnée" : ""}
               </legend>
               <div className="levels">
                 {LEVELS.map((l) => (
@@ -318,6 +420,7 @@ function DecisionForm({
                       value={l.level}
                       checked={level === l.level}
                       onChange={() => setLevel(l.level)}
+                      aria-keyshortcuts={String(l.level)}
                     />
                     <span className="n">
                       <LevelLabel label={l.label} />
@@ -334,6 +437,46 @@ function DecisionForm({
                 ))}
               </div>
             </fieldset>
+
+            <div className="decide-row">
+              <div className="field">
+                <label className="label" htmlFor={`${id}-inst`}>
+                  Établissement
+                </label>
+                <input
+                  id={`${id}-inst`}
+                  className="input"
+                  required
+                  aria-required="true"
+                  value={institution}
+                  maxLength={INSTITUTION_MAX_LENGTH}
+                  placeholder="Tel qu’écrit sur le diplôme"
+                  onChange={(e) => setInstitution(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="field">
+                <label className="label" htmlFor={`${id}-field`}>
+                  Domaine
+                </label>
+                <select
+                  id={`${id}-field`}
+                  className="select"
+                  required
+                  aria-required="true"
+                  value={field}
+                  onChange={(e) => setField(e.target.value as StudyField | "")}
+                >
+                  <option value="">Choisir…</option>
+                  {STUDY_FIELDS.map((f) => (
+                    <option key={f} value={f}>
+                      {STUDY_FIELD_LABELS[f]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {level ? (
               <p className="notice notice--outline">
                 <span className="label">Effet</span>
@@ -362,9 +505,15 @@ function DecisionForm({
               </p>
             ) : null}
             <label className="check">
-              <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
+              <input
+                ref={checkRef}
+                type="checkbox"
+                checked={checked}
+                onChange={(e) => setChecked(e.target.checked)}
+                aria-keyshortcuts="X"
+              />
               <span>
-                J’ai examiné le document original, le nom du titulaire et le niveau.
+                J’ai examiné le document original, le nom du titulaire et le niveau. <kbd>X</kbd>
                 {isManualReview(row) ? null : " L’extraction IA n’est qu’une proposition."}
               </span>
             </label>
@@ -399,10 +548,95 @@ function DecisionForm({
         <div aria-live="assertive">{error ? <ErrorNotice message={error} /> : null}</div>
 
         <div className="form-actions">
-          <button className="btn" type="submit" disabled={!canSubmit}>
-            {busy ? "Envoi…" : submitLabel}
+          <button className="btn" type="submit" disabled={busy} aria-keyshortcuts="Enter">
+            {busy ? "Envoi…" : submitLabel} <kbd className="on-ink">Entrée</kbd>
           </button>
         </div>
+        <p className="label shortcuts" aria-hidden="true">
+          1–8 niveau · X examiné · V valider · R refuser · C compléter · Entrée envoyer
+        </p>
+      </div>
+    </form>
+  );
+}
+
+/* ───────────── Établissement d'un membre déjà validé (rattrapage) ───────────── */
+
+function InstitutionBackfill({ userId, access, onSaved }: { userId: string; access: Access; onSaved: () => void }) {
+  const id = useId();
+  const [open, setOpen] = useState(!access.institution || !access.study_field);
+  const [institution, setInstitution] = useState(access.institution ?? "");
+  const [field, setField] = useState<StudyField | "">(access.study_field ?? "");
+  const [state, setState] = useState<{ kind: "idle" | "saving" | "saved" } | { kind: "error"; message: string }>({
+    kind: "idle",
+  });
+  const valid = institution.trim().length >= 2 && institution.trim().length <= INSTITUTION_MAX_LENGTH && field !== "";
+
+  if (!open) {
+    return (
+      <p>
+        <button type="button" className="adm-link" onClick={() => setOpen(true)}>
+          Corriger l’établissement ou le domaine
+        </button>
+      </p>
+    );
+  }
+  return (
+    <form
+      className="field"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!valid) return;
+        setState({ kind: "saving" });
+        const { error } = await createClient().rpc("admin_set_member_institution", {
+          p_user: userId,
+          p_institution: institution.trim(),
+          p_field: field as StudyField,
+        });
+        if (error) setState({ kind: "error", message: await describeError(error) });
+        else {
+          setState({ kind: "saved" });
+          onSaved();
+        }
+      }}
+    >
+      <p className="label">
+        {access.institution ? "Corriger" : "À saisir : membre validé avant l’enregistrement de l’établissement"}
+      </p>
+      <div className="decide-row">
+        <div className="field">
+          <label className="label" htmlFor={`${id}-inst`}>
+            Établissement
+          </label>
+          <input
+            id={`${id}-inst`}
+            className="input"
+            value={institution}
+            maxLength={INSTITUTION_MAX_LENGTH}
+            onChange={(e) => setInstitution(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label className="label" htmlFor={`${id}-field`}>
+            Domaine
+          </label>
+          <select id={`${id}-field`} className="select" value={field} onChange={(e) => setField(e.target.value as StudyField | "")}>
+            <option value="">Choisir…</option>
+            {STUDY_FIELDS.map((f) => (
+              <option key={f} value={f}>
+                {STUDY_FIELD_LABELS[f]}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="form-actions">
+        <button className="btn btn--sm on-ink" type="submit" disabled={!valid || state.kind === "saving"}>
+          Enregistrer
+        </button>
+        <span className="label" aria-live="polite">
+          {state.kind === "saved" ? "Enregistré et journalisé" : state.kind === "error" ? state.message : ""}
+        </span>
       </div>
     </form>
   );
@@ -458,14 +692,13 @@ function ModeratorNote({ row }: { row: SubmissionRow }) {
 /* ───────────── Revue manuelle (sans clé API) ───────────── */
 
 function ManualChecklist({ birthdate }: { birthdate: string | null }) {
+  // Identique pour chaque dossier : repliée par défaut pour garder la décision à l'écran (audit n° 22).
   return (
-    <section className="panel" aria-labelledby="manual-title">
-      <div className="panel-h">
-        <h2 className="label" id="manual-title">
-          Revue manuelle
-        </h2>
-        <span className="label">Aucune extraction IA</span>
-      </div>
+    <details className="panel panel--fold">
+      <summary className="panel-h">
+        <span className="label">Grille de revue manuelle</span>
+        <span className="label">Aucune extraction IA · déplier</span>
+      </summary>
       <div className="panel-b">
         <dl className="kv">
           <dt>Titulaire</dt>
@@ -484,17 +717,29 @@ function ManualChecklist({ birthdate }: { birthdate: string | null }) {
           </dd>
         </dl>
       </div>
-    </section>
+    </details>
   );
 }
 
 /* ───────────── Page ───────────── */
 
+const AUTO_NEXT_KEY = "sapios.admin.autoNext";
+
 export default function SubmissionDetail({ id }: { id: string }) {
+  const router = useRouter();
   const [data, setData] = useState<Loaded | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ res: ReviewDecideResponse; decision: ReviewDecision } | null>(null);
-  const [nextId, setNextId] = useState<string | null>(null);
+  const [nextId, setNextId] = useState<string | null | undefined>(undefined);
+  // Lu au premier rendu : la case n'apparaît qu'une fois le dossier chargé, côté client.
+  const [autoNext, setAutoNext] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      return window.localStorage.getItem(AUTO_NEXT_KEY) !== "0";
+    } catch {
+      return true; // stockage indisponible : on garde le passage automatique
+    }
+  });
 
   const load = useCallback(() => {
     const request = UUID_RE.test(id) ? loadSubmission(id) : Promise.resolve(null);
@@ -518,6 +763,13 @@ export default function SubmissionDetail({ id }: { id: string }) {
     },
     [id, load],
   );
+
+  // Passage automatique au dossier suivant, après un court délai pour lire la confirmation.
+  useEffect(() => {
+    if (!result || !nextId || !autoNext) return;
+    const t = window.setTimeout(() => router.push(`/admin/diplomes/${nextId}`), 1500);
+    return () => window.clearTimeout(t);
+  }, [result, nextId, autoNext, router]);
 
   const row = data?.row;
   const signals = useMemo(() => (row ? allSignals(row) : []), [row]);
@@ -546,6 +798,8 @@ export default function SubmissionDetail({ id }: { id: string }) {
   const open = OPEN_STATUSES.includes(row.status);
   const ageAtAward =
     row.birthdate && ex?.year_awarded ? ex.year_awarded - new Date(`${row.birthdate}T00:00:00Z`).getUTCFullYear() : null;
+  // Rattrapage seulement sur la soumission qui donne le niveau retenu.
+  const isSource = data.access?.source_submission_id === row.id;
 
   const fields: Array<[string, React.ReactNode]> = ex
     ? [
@@ -566,32 +820,29 @@ export default function SubmissionDetail({ id }: { id: string }) {
 
   return (
     <>
-      <Link className="adm-back label" href={`/admin/diplomes?statut=${open ? "needs_review" : row.status}`}>
-        ← File des diplômes
-      </Link>
-      <div className="adm-head" style={{ marginTop: 8 }}>
+      <div className="review-head">
         <div>
-          <p className="label">
-            Soumis le {fmtDateTime(row.created_at)} ·{" "}
-            {manual ? "revue manuelle" : `${row.attempts} essai${row.attempts > 1 ? "s" : ""} d’extraction`}
-          </p>
+          <Link className="adm-back label" href={`/admin/diplomes?statut=${open ? "needs_review" : row.status}`}>
+            ← File des diplômes
+          </Link>
           <h1>
             {row.display_name ?? "Sans prénom"}
             {age != null ? <em>, {age} ans</em> : null}
           </h1>
           <p className="lead">
             Nom légal : <strong>{row.legal_name ?? "non renseigné"}</strong>
-            {row.email ? ` · ${row.email}` : ""}
+            {row.email ? ` · ${row.email}` : ""} · soumis le {fmtDateTime(row.created_at)}
+            {manual ? " · revue manuelle" : ` · ${row.attempts} essai${row.attempts > 1 ? "s" : ""} d’extraction`}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <StatusBadge status={row.status} />
           <TierBadge tier={data.access?.tier} />
         </div>
       </div>
 
       {result ? (
-        <div style={{ marginBottom: 24, display: "grid", gap: 10 }}>
+        <div style={{ marginBottom: 20, display: "grid", gap: 10 }}>
           <SuccessNotice>
             {result.decision === "approve"
               ? `Diplôme validé. Le membre est au niveau ${result.res.level ?? "—"}, palier ${
@@ -600,15 +851,16 @@ export default function SubmissionDetail({ id }: { id: string }) {
               : result.decision === "reject"
                 ? "Diplôme refusé. Le membre est notifié avec le motif."
                 : "Complément demandé. Le membre est notifié."}
+            {nextId && autoNext ? " Dossier suivant dans un instant…" : ""}
           </SuccessNotice>
           <div className="form-actions">
             {nextId ? (
               <Link className="btn" href={`/admin/diplomes/${nextId}`}>
                 Soumission suivante →
               </Link>
-            ) : (
+            ) : nextId === null ? (
               <span className="label">La file est vide.</span>
-            )}
+            ) : null}
             <Link className="btn btn--ghost" href="/admin/diplomes">
               Retour à la file
             </Link>
@@ -616,10 +868,68 @@ export default function SubmissionDetail({ id }: { id: string }) {
         </div>
       ) : null}
 
-      <div className="detail">
+      <div className="detail detail--review">
         <DocumentViewer row={row} />
 
-        <div style={{ display: "grid", gap: 20 }}>
+        <div className="review-side">
+          {open && !result ? (
+            <>
+              <DecisionForm row={row} access={data.access} policies={data.policies} onDecided={onDecided} />
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={autoNext}
+                  onChange={(e) => {
+                    setAutoNext(e.target.checked);
+                    try {
+                      window.localStorage.setItem(AUTO_NEXT_KEY, e.target.checked ? "1" : "0");
+                    } catch {
+                      // sans stockage, le choix vaut pour cette page
+                    }
+                  }}
+                />
+                <span>Après la décision, ouvrir automatiquement le dossier suivant</span>
+              </label>
+            </>
+          ) : (
+            <section className="panel panel--dark" aria-labelledby="dec-title">
+              <div className="panel-h">
+                <h2 className="label" id="dec-title">
+                  Décision
+                </h2>
+                <StatusBadge status={row.status} />
+              </div>
+              <div className="panel-b" style={{ display: "grid", gap: 16 }}>
+                <dl className="kv">
+                  <dt>Le</dt>
+                  <dd>{fmtDateTime(row.reviewed_at)}</dd>
+                  <dt>Niveau validé</dt>
+                  <dd>{levelText(row.level_verified)}</dd>
+                  {row.status === "approved" ? (
+                    <>
+                      <dt>Établissement</dt>
+                      <dd className={row.institution_verified || data.access?.institution ? undefined : "empty"}>
+                        {row.institution_verified ?? (isSource ? data.access?.institution : null) ?? "non saisi"}
+                      </dd>
+                      <dt>Domaine</dt>
+                      <dd className={row.field_verified || data.access?.study_field ? undefined : "empty"}>
+                        {studyFieldLabel(row.field_verified ?? (isSource ? data.access?.study_field : null)) ?? "non saisi"}
+                      </dd>
+                    </>
+                  ) : (
+                    <>
+                      <dt>Motif</dt>
+                      <dd>{row.rejection_reason ?? "—"}</dd>
+                    </>
+                  )}
+                </dl>
+                {row.status === "approved" && isSource && data.access ? (
+                  <InstitutionBackfill userId={row.user_id} access={data.access} onSaved={load} />
+                ) : null}
+              </div>
+            </section>
+          )}
+
           <section className="panel" aria-labelledby="sig-title">
             <div className="panel-h">
               <h2 className="label" id="sig-title">
@@ -705,29 +1015,6 @@ export default function SubmissionDetail({ id }: { id: string }) {
                       : "Aucune extraction disponible pour ce document."}
                   </p>
                 )}
-              </div>
-            </section>
-          )}
-
-          {open && !result ? (
-            <DecisionForm row={row} access={data.access} policies={data.policies} onDecided={onDecided} />
-          ) : (
-            <section className="panel panel--dark" aria-labelledby="dec-title">
-              <div className="panel-h">
-                <h2 className="label" id="dec-title">
-                  Décision
-                </h2>
-                <StatusBadge status={row.status} />
-              </div>
-              <div className="panel-b">
-                <dl className="kv">
-                  <dt>Le</dt>
-                  <dd>{fmtDateTime(row.reviewed_at)}</dd>
-                  <dt>Niveau validé</dt>
-                  <dd>{levelText(row.level_verified)}</dd>
-                  <dt>Motif</dt>
-                  <dd>{row.rejection_reason ?? "—"}</dd>
-                </dl>
               </div>
             </section>
           )}
