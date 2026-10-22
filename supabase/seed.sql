@@ -205,6 +205,72 @@ select pg_temp.seed_profile('22222222-2222-4222-8222-000000000013', 'Aristide', 
   '{woman}', '1989-05-28', 25, 45, 'En pause pour finir ma thèse.', 'Paris',
   48.8580, 2.3480, interval '10 days', 'paused', 7);
 
+-- Profil intellectuel (lot 1) : domaines, établissements vérifiés, réponses, livres, thèses.
+-- Écrit en postgres : le filtre de modération ne s'applique pas aux données de démonstration.
+update public.profiles p set study_field = v.field::public.study_field
+from (values
+  ('11111111-1111-4111-8111-000000000001', 'computing'),
+  ('11111111-1111-4111-8111-000000000002', 'philosophy'),
+  ('11111111-1111-4111-8111-000000000003', 'engineering'),
+  ('11111111-1111-4111-8111-000000000004', 'economics'),
+  ('22222222-2222-4222-8222-000000000001', 'engineering'),
+  ('22222222-2222-4222-8222-000000000002', 'engineering'),
+  ('22222222-2222-4222-8222-000000000003', 'letters'),
+  ('22222222-2222-4222-8222-000000000004', 'health'),
+  ('22222222-2222-4222-8222-000000000005', 'sciences'),
+  ('22222222-2222-4222-8222-000000000006', 'computing'),
+  ('22222222-2222-4222-8222-000000000007', 'law'),
+  ('22222222-2222-4222-8222-000000000008', 'mathematics'),
+  ('22222222-2222-4222-8222-000000000009', 'economics'),
+  ('22222222-2222-4222-8222-000000000010', 'sciences'),
+  ('22222222-2222-4222-8222-000000000011', 'history')
+) as v (id, field)
+where p.id = v.id::uuid;
+
+update public.user_access ua set institution = v.institution, study_field = p.study_field
+from (values
+  ('11111111-1111-4111-8111-000000000002', 'Sorbonne Université'),
+  ('11111111-1111-4111-8111-000000000003', 'École des ponts ParisTech'),
+  ('11111111-1111-4111-8111-000000000004', 'Sciences Po'),
+  ('22222222-2222-4222-8222-000000000001', 'École polytechnique'),
+  ('22222222-2222-4222-8222-000000000003', 'École normale supérieure'),
+  ('22222222-2222-4222-8222-000000000008', 'Sorbonne Université')
+) as v (id, institution), public.profiles p
+where ua.user_id = v.id::uuid and p.id = ua.user_id;
+
+update public.profiles set show_institution = true, show_quiz_badge = true
+where id in ('11111111-1111-4111-8111-000000000002', '22222222-2222-4222-8222-000000000003');
+
+insert into public.profile_answers (user_id, position, prompt_key, answer) values
+  ('11111111-1111-4111-8111-000000000002', 0, 'three_hours', 'La querelle des universaux. Personne ne m''arrête avant le dessert.'),
+  ('11111111-1111-4111-8111-000000000002', 1, 'winning_debate', 'Le Paris-Brest est une démonstration, pas un dessert.'),
+  ('11111111-1111-4111-8111-000000000003', 0, 'three_hours', 'Le cadastre napoléonien. Si, si.'),
+  ('11111111-1111-4111-8111-000000000003', 1, 'secret_reread', 'Les Trois Mousquetaires. Pour la méthode, évidemment.'),
+  ('11111111-1111-4111-8111-000000000004', 0, 'first_date', 'Un café, puis un débat sur la TVA. Je paie, au centime près.'),
+  ('22222222-2222-4222-8222-000000000001', 0, 'three_hours', 'Les ponts suspendus. Tous. Surtout celui de Tancarville.'),
+  ('22222222-2222-4222-8222-000000000002', 0, 'conversation_crush', 'Quelqu''un qui range ses livres par couleur, et qui l''assume.'),
+  ('22222222-2222-4222-8222-000000000003', 0, 'typo_peeve', '« Au jour d''aujourd''hui ». Je ne m''en remets pas.'),
+  ('22222222-2222-4222-8222-000000000003', 1, 'secret_reread', 'La Princesse de Clèves. En version annotée, évidemment.'),
+  ('22222222-2222-4222-8222-000000000005', 0, 'useless_fact', 'Une cuillère d''étoile à neutrons pèse un milliard de tonnes.'),
+  ('22222222-2222-4222-8222-000000000006', 0, 'teach_me', 'Les p-values. Promis, c''est romantique.'),
+  ('22222222-2222-4222-8222-000000000008', 0, 'useless_fact', 'Le nombre de Graham ne tient pas dans l''univers observable.'),
+  ('22222222-2222-4222-8222-000000000008', 1, 'three_hours', 'La conjecture de Collatz. Elle est fausse, je le sens.'),
+  ('22222222-2222-4222-8222-000000000011', 0, 'winning_debate', 'Le Moyen Âge n''était pas si sombre.');
+
+insert into public.profile_books (user_id, position, title, author) values
+  ('11111111-1111-4111-8111-000000000002', 0, 'Les Essais', 'Montaigne'),
+  ('11111111-1111-4111-8111-000000000002', 1, 'La Montagne magique', 'Thomas Mann'),
+  ('11111111-1111-4111-8111-000000000002', 2, 'Le Deuxième Sexe', 'Simone de Beauvoir'),
+  ('11111111-1111-4111-8111-000000000003', 0, 'Les Essais', 'Montaigne'),
+  ('22222222-2222-4222-8222-000000000001', 0, 'Les Essais', 'Montaigne'),
+  ('22222222-2222-4222-8222-000000000003', 0, 'La Princesse de Clèves', 'Madame de La Fayette'),
+  ('22222222-2222-4222-8222-000000000003', 1, 'Les Trois Mousquetaires', 'Alexandre Dumas'),
+  ('22222222-2222-4222-8222-000000000008', 0, 'Gödel, Escher, Bach', 'Douglas Hofstadter');
+
+insert into public.profile_theses (user_id, line, visibility) values
+  ('11111111-1111-4111-8111-000000000002', 'Wittgenstein et les jeux de langage du quotidien.', 'matches'),
+  ('22222222-2222-4222-8222-000000000008', 'Une conjecture sur les graphes, et beaucoup de café.', 'everyone');
+
 -- Interactions de démonstration :
 --  * standard@ et standard2@ sont matchés, avec une conversation ;
 --  * member01 et member02 ont liké standard@ (un like de sa part crée un match) ;
@@ -217,6 +283,14 @@ insert into public.swipes (swiper_id, target_id, direction, created_at) values
   ('22222222-2222-4222-8222-000000000002', '11111111-1111-4111-8111-000000000003', 'like', now() - interval '3 hours'),
   ('22222222-2222-4222-8222-000000000003', '11111111-1111-4111-8111-000000000002', 'like', now() - interval '5 hours'),
   ('22222222-2222-4222-8222-000000000008', '11111111-1111-4111-8111-000000000002', 'like', now() - interval '1 hour');
+
+-- Likes ciblés (lot 1) : Gaspard a aimé une réponse de Camille, Sixtine une photo d'Hippolyte.
+update public.swipes set liked_item = 'answer:0', comment = 'Je veux la version de 3 h. Avec les annexes.'
+ where swiper_id = '22222222-2222-4222-8222-000000000001' and target_id = '11111111-1111-4111-8111-000000000003';
+update public.swipes s set liked_item = 'photo:' || ph.id, comment = 'Cette bibliothèque derrière vous, elle est rangée par auteur ou par humeur ?'
+  from public.profile_photos ph
+ where s.swiper_id = '22222222-2222-4222-8222-000000000003' and s.target_id = '11111111-1111-4111-8111-000000000002'
+   and ph.user_id = s.target_id and ph.position = 0;
 
 insert into public.matches (id, user_a, user_b, created_at)
 values ('33333333-3333-4333-8333-000000000001', '11111111-1111-4111-8111-000000000003',

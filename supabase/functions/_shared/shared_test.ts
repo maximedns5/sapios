@@ -24,7 +24,7 @@ Deno.test("la version de zod des fonctions est celle du paquet partagé", async 
 Deno.test("packages/shared : seuls des imports compatibles Deno dans les fichiers importés par les fonctions", async () => {
   const shim = await Deno.readTextFile(new URL("shared.ts", import.meta.url));
   const files = [...shim.matchAll(/packages\/shared\/src\/([\w-]+\.ts)/g)].map((m) => m[1]);
-  assertEquals(files.length, 4);
+  assertEquals(files.length, 5);
   for (const file of files) {
     const src = await Deno.readTextFile(new URL(file, sharedSrc));
     for (const m of src.matchAll(/^\s*(import|export)\s+(type\s+)?[^;]*?from\s+["']([^"']+)["']/gm)) {
