@@ -24,6 +24,14 @@ export const FALLBACK_COPY: Record<string, string> = {
   'intellect.thesis_warning': 'Un sujet de thèse permet souvent de retrouver un nom complet en ligne. D’où « après un match » par défaut.',
   'likes.teaser': 'Elles sont déjà dans votre découverte. Likez-les en retour pour faire match.',
   'quiz.badge': 'QI : non communiqué. Par modestie.',
+  'affinity.book_one': 'Vous avez tous deux lu « {title} ». Ou prétendu.',
+  'affinity.books_many': '{count} livres en commun, dont « {title} ».',
+  'affinity.same_field': 'Même domaine : {field}. L’interdisciplinarité attendra.',
+  'affinity.prompt_one': 'Vous avez répondu à la même question : « {prompt} ».',
+  'affinity.prompts_many': '{count} questions en commun.',
+  'affinity.same_institution': 'Même établissement : {institution}.',
+  'profile.thesis_footnote': 'Les autres en ont fait 400 pages.',
+  'library.empty': 'Aucun livre pour l’instant. Les titres en commun rapprochent les esprits.',
   'match.title': 'Intellectuellement compatibles.',
   'onboarding.consent':
     'Les genres que vous recherchez révèlent votre orientation sexuelle, une donnée sensible. Nous ne l’utilisons que pour composer votre feed, jamais pour autre chose. Votre consentement est facultatif, séparé et révocable à tout moment depuis votre compte ; sans lui, vous ne pourrez pas apparaître dans le feed.',
@@ -73,6 +81,14 @@ export function CopyProvider({ children, userId }: { children: ReactNode; userId
 
 export function useCopy() {
   return useContext(Ctx);
+}
+
+/**
+ * Remplit les emplacements d'un texte du back-office : « Vous avez tous deux lu « {title} ». »
+ * Un emplacement inconnu reste tel quel, pour qu'une faute de frappe se voie au lieu de disparaître.
+ */
+export function fill(text: string, vars: Record<string, string | number>): string {
+  return text.replace(/\{(\w+)\}/g, (all, name: string) => (name in vars ? String(vars[name]) : all));
 }
 
 /** « Accès illimité. Bienvenue chez vous. » → [« Accès illimité. », « Bienvenue chez vous. »] : titre et suite. */

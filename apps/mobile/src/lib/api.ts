@@ -6,7 +6,9 @@ import {
   type DiscoveryPrefs,
   type DiscoverySort,
   type LikedItem,
+  type ContentKind,
   type ProfileView,
+  type SearchBooksResponse,
   type StudyField,
   type SubmitDiplomaResponse,
 } from '@sapios/shared';
@@ -84,9 +86,18 @@ export const api = {
   matches: () => rpc<'get_matches', MatchRow[]>('get_matches'),
   unmatch: (matchId: string) => rpc('unmatch', { p_match_id: matchId }),
   block: (target: string) => rpc('block_user', { p_target: target }),
-  report: (target: string, reason: string, details: string) => rpc('report_user', { p_target: target, p_reason: reason, p_details: details }),
+  /** Signalement d'une personne, ou d'un de ses textes (`content` : type et identifiant ; nul pour la thèse). */
+  report: (target: string, reason: string, details: string, content?: { kind: ContentKind; item: string | null } | null) =>
+    rpc('report_user', {
+      p_target: target,
+      p_reason: reason,
+      p_details: details,
+      ...(content ? { p_content_kind: content.kind, ...(content.item ? { p_content_item: content.item } : {}) } : {}),
+    }),
   exportData: () => rpc('export_my_data'),
   submitDiploma: (storagePath: string, mime: string) =>
     invoke<SubmitDiplomaResponse>(EDGE_FUNCTIONS.submitDiploma, { storage_path: storagePath, mime }),
   deleteAccount: () => invoke<DeleteAccountResponse>(EDGE_FUNCTIONS.deleteAccount),
+  /** Recherche de livres, relayée par le serveur : Open Library ne voit jamais l'adresse du membre. */
+  searchBooks: (q: string) => invoke<SearchBooksResponse>(EDGE_FUNCTIONS.searchBooks, { q }),
 };

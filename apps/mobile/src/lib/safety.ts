@@ -1,3 +1,4 @@
+import type { ContentKind } from '@sapios/shared';
 import { router } from 'expo-router';
 
 import { api } from './api';
@@ -55,6 +56,20 @@ export async function unmatchUser(overlay: Overlay, matchId: string, name: strin
   }
 }
 
-export function openReport(userId: string, name: string, matchId?: string) {
-  router.push({ pathname: '/report/[userId]', params: { userId, name, ...(matchId ? { matchId } : {}) } });
+/** Texte signalé : réponse ou livre (identifiant), phrase de thèse (pas d'identifiant : une par membre). */
+export type ReportTarget = { kind: ContentKind; item: string | null; label: string; text: string };
+
+/** Signaler une personne, ou l'un de ses textes : le formulaire cite alors le texte visé. */
+export function openReport(userId: string, name: string, matchId?: string, content?: ReportTarget) {
+  router.push({
+    pathname: '/report/[userId]',
+    params: {
+      userId,
+      name,
+      ...(matchId ? { matchId } : {}),
+      ...(content
+        ? { contentKind: content.kind, ...(content.item ? { contentItem: content.item } : {}), quote: content.text.slice(0, 300), quoteLabel: content.label }
+        : {}),
+    },
+  });
 }

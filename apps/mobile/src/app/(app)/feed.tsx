@@ -257,6 +257,7 @@ export default function Feed() {
               <Rise duration={500} distance={28}>
                 <ProfileBody
                   data={data}
+                  onReport={(target) => openReport(current.id, current.display_name, undefined, target)}
                   like={{
                     onLike: (target) => decide('like', { target }),
                     onReply: (target) => setReply(target),

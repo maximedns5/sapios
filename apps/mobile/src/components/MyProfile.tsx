@@ -1,6 +1,4 @@
 import {
-  BOOK_AUTHOR_MAX_LENGTH,
-  BOOK_TITLE_MAX_LENGTH,
   levelLabel,
   MAX_ANSWERS,
   MAX_BOOKS,
@@ -30,6 +28,7 @@ import { signedPhotoUrls } from '@/lib/media';
 import { loadOwnProfile, loadPhotos, MAX_PHOTOS } from '@/lib/profile';
 import { alpha, colors, radius, space } from '@/lib/theme';
 import type { OwnProfile, Photo as PhotoRow } from '@/lib/types';
+import { BookSearch } from './BookSearch';
 import { Button, IconButton } from './Button';
 import { Segmented, Switch } from './Controls';
 import { Field } from './Field';
@@ -155,8 +154,6 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
   const [institution, setInstitution] = useState<{ institution: string | null; field: StudyField | null }>({ institution: null, field: null });
   const [thesis, setThesis] = useState('');
   const [visibility, setVisibility] = useState<ThesisVisibility>('matches');
-  const [bookTitle, setBookTitle] = useState('');
-  const [bookAuthor, setBookAuthor] = useState('');
   const [busy, setBusy] = useState(false);
 
   const reload = useCallback(async () => {
@@ -371,28 +368,20 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
                 ))}
               </View>
             ) : (
-              <Small>Aucun livre pour l’instant. Les titres en commun rapprochent les esprits.</Small>
+              <Small>{t('library.empty')}</Small>
             )}
             {books.length < MAX_BOOKS ? (
-              <View style={{ gap: 10 }}>
-                <Field testID="book-title" label="Ajouter un livre" placeholder="Titre" value={bookTitle} onChangeText={setBookTitle} maxLength={BOOK_TITLE_MAX_LENGTH} />
-                <Field testID="book-author" placeholder="Auteur (facultatif)" accessibilityLabel="Auteur du livre" value={bookAuthor} onChangeText={setBookAuthor} maxLength={BOOK_AUTHOR_MAX_LENGTH} />
-                <Button
-                  testID="book-add"
-                  label="Ajouter à ma bibliothèque"
-                  variant="secondary"
-                  size="md"
-                  disabled={!bookTitle.trim() || busy}
-                  icon={<PlusIcon size={18} />}
-                  onPress={() =>
-                    run(async () => {
-                      await addBook(books, bookTitle, bookAuthor);
-                      setBookTitle('');
-                      setBookAuthor('');
-                    })
-                  }
-                />
-              </View>
+              <BookSearch
+                disabled={busy}
+                onAdd={async (book) => {
+                  let saved = false;
+                  await run(async () => {
+                    await addBook(books, book.title, book.author, book.olWorkId);
+                    saved = true;
+                  });
+                  return saved;
+                }}
+              />
             ) : (
               <Small weight="bold" color={colors.accent}>
                 Bibliothèque complète.

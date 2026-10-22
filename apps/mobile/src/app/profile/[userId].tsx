@@ -113,6 +113,7 @@ export default function ProfileScreen() {
           <Rise>
             <ProfileBody
               data={data}
+              onReport={self ? undefined : (target) => openReport(data.id, data.display_name, matchId, target)}
               like={
                 canAnswer
                   ? {

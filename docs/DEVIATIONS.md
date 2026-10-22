@@ -228,7 +228,7 @@ Profil intellectuel, likes ciblés, critères et test d'admission dans `apps/mob
    like cible une position (`answer:<n>`).
 5. **Réordonner les livres** : un échange passe par une place libre (les identifiants suivent les textes) ; bibliothèque
    pleine (5 livres), les deux lignes sont réécrites (nouveaux identifiants, filtre automatique rejoué). Un livre
-   retiré par la modération ne se déplace pas. Saisie à la main, titres seuls (D4), pas d'appel à Open Library.
+   retiré par la modération ne se déplace pas. Titres seuls (D4) ; recherche Open Library depuis les finitions.
 6. **L'âge recherché se règle dans les critères** pour les membres qui voient la découverte ; « Modifier mon profil »
    n'écrit plus `age_min` / `age_max` dans ce cas (il ne les écrase pas). L'onboarding garde son curseur.
 7. **Niveaux proposés dans les critères** : Bac+3, Bac+5, Bac+8 (niveaux normalisés 6, 7, 8 : un Bac+3 admis par lot
@@ -237,6 +237,25 @@ Profil intellectuel, likes ciblés, critères et test d'admission dans `apps/mob
 9. **Test d'admission dans l'app** : mêmes questions que la landing (`QUIZ`), rien d'enregistré sauf
    `show_quiz_badge`. Le partage télécharge l'image story du site (`EXPO_PUBLIC_SITE_URL/test/partage/story`) et
    ouvre la feuille de partage sur téléphone ; sur le web, partage du navigateur, sinon l'image s'ouvre dans un onglet.
-10. **Signaler un texte précis** (`report_user` avec `p_content_kind`) : pas encore proposé dans l'écran de
-    signalement ; on signale la personne, comme avant.
+10. **Signaler un texte précis** : fait dans les finitions du lot 1 (ci-dessous).
+
+## Lot 1 : finitions (22 oct. 2026)
+
+1. **Signaler un texte précis** : un petit drapeau sur chaque réponse, livre et phrase de thèse (découverte et fiche)
+   ouvre le formulaire de signalement, qui cite le texte et appelle `report_user` avec `p_content_kind` et
+   `p_content_item`. `get_profile` renvoie pour cela l'`id` de chaque réponse et de chaque livre. « Bloquer aussi »
+   n'est pas coché d'office quand on signale un texte (il l'est pour une personne). La bio n'a pas de drapeau : elle
+   n'est pas un `content_kind` ; on signale alors la personne.
+2. **Recherche de livres par Open Library** (FEATURES §1, « Prestataires ») : Edge Function `search-books`, relais
+   authentifié. Open Library ne voit que le texte cherché et l'adresse du serveur. Délai de 4 s, 8 résultats au plus,
+   `User-Agent` avec l'adresse de contact (`SAPIOS_CONTACT_EMAIL`, sinon `contact@sapios.app`). Une panne ne renvoie
+   que `upstream_unavailable`, sans message : l'URL contient la recherche et ne doit pas finir dans les journaux.
+   Quota en base (`private.rate_limits`, fenêtre fixe de 60 s, 30 recherches par membre) plutôt qu'en mémoire : les
+   instances des Edge Functions sont éphémères et multiples. La saisie à la main reste possible ; une œuvre choisie
+   dans le catalogue enregistre `ol_work_id`. Open Library n'est pas un sous-traitant (aucune donnée de compte) ; la
+   politique de confidentialité le mentionne quand même.
+3. **Textes modifiables** : les clés de l'app du lot 1 sont dans `app_copy` (migration `20261023090000`), y compris
+   les phrases de « Pourquoi ce profil » avec emplacements `{title}`, `{count}`… Le back-office nomme les groupes et
+   refuse un texte qui perd un emplacement. Les questions du test d'admission restent dans `packages/shared/src/quiz.ts` :
+   la landing les affiche à des visiteurs anonymes, qui ne lisent pas `app_copy`.
 

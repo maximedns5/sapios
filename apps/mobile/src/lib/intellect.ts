@@ -9,6 +9,7 @@ import {
   type ThesisVisibility,
 } from '@sapios/shared';
 
+import { fill } from './copy';
 import { AppError, fromPostgrest } from './errors';
 import { supabase } from './supabase';
 
@@ -84,11 +85,14 @@ export function freeAnswerPosition(answers: Pick<MyAnswer, 'position'>[]): numbe
   return null;
 }
 
-export async function addBook(books: MyBook[], title: string, author: string): Promise<void> {
+/** `olWorkId` : œuvre choisie dans la recherche Open Library ; absent pour une saisie à la main. */
+export async function addBook(books: MyBook[], title: string, author: string, olWorkId?: string | null): Promise<void> {
   const used = new Set(books.map((b) => b.position));
   const position = [0, 1, 2, 3, 4].find((i) => !used.has(i));
   if (position == null) throw new AppError('books_limit');
-  const { error } = await supabase.from('profile_books').insert({ position, title: title.trim(), author: author.trim() || null });
+  const { error } = await supabase
+    .from('profile_books')
+    .insert({ position, title: title.trim(), author: author.trim() || null, ol_work_id: olWorkId ?? null });
   if (error) throw fromPostgrest(error);
 }
 
@@ -161,18 +165,19 @@ export function affinitySentences(reasons: AffinityReason[] | null | undefined, 
   for (const r of reasons ?? []) {
     if (r.kind === 'shared_books' && r.count > 0) {
       const title = r.titles?.[0];
-      out.push(
-        r.count === 1 && title
-          ? `Vous avez tous deux lu « ${title} ». Ou prétendu.`
-          : `${r.count} livres en commun${title ? `, dont « ${title} »` : ''}.`,
-      );
+      if (!title) out.push(`${r.count} livres en commun.`);
+      else out.push(fill(t(r.count === 1 ? 'affinity.book_one' : 'affinity.books_many'), { title, count: r.count }));
     } else if (r.kind === 'same_field') {
-      out.push(`Même domaine : ${studyFieldLabel(r.field) ?? ''}. L’interdisciplinarité attendra.`);
+      out.push(fill(t('affinity.same_field'), { field: studyFieldLabel(r.field) ?? '' }));
     } else if (r.kind === 'shared_prompts' && r.count > 0) {
       const first = r.prompt_keys?.[0];
-      out.push(r.count === 1 && first ? `Vous avez répondu à la même question : « ${promptText(t, first)} ».` : `${r.count} questions en commun.`);
+      out.push(
+        r.count === 1 && first
+          ? fill(t('affinity.prompt_one'), { prompt: promptText(t, first) })
+          : fill(t('affinity.prompts_many'), { count: r.count }),
+      );
     } else if (r.kind === 'same_institution') {
-      out.push(`Même établissement : ${r.institution}.`);
+      out.push(fill(t('affinity.same_institution'), { institution: r.institution }));
     }
   }
   return out;
