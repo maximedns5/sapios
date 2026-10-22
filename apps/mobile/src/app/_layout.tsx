@@ -77,6 +77,7 @@ export default function RootLayout() {
                   <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: colors.bg } }}>
                     <Stack.Screen name="match/[matchId]" options={{ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } }} />
                     <Stack.Screen name="report/[userId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+                    <Stack.Screen name="criteria" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
                   </Stack>
                 </InboxProvider>
               </OverlayProvider>

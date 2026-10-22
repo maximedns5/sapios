@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_PROMPTS, promptCopyKey } from '@sapios/shared';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { supabase } from './supabase';
@@ -15,6 +16,14 @@ export const FALLBACK_COPY: Record<string, string> = {
   'review.delay': 'Réponse sous 48 h, souvent plus tôt.',
   'review.notice': 'Inutile de rester sur cette page : le verdict s’affichera ici à votre prochaine visite.',
   'feed.empty': 'Tous les profils qui vous correspondent sont passés. Revenez demain, ou lisez un livre.',
+  'feed.empty_filters': 'Personne ne remplit vos critères. Ils sont peut-être trop élevés. Même pour nous.',
+  'feed.ranking':
+    'L’âge et la distance filtrent. Les niveaux et domaines choisis passent ensuite en premier, puis vos affinités (même domaine, livres et questions en commun), puis l’activité récente. Aucun profil n’est mis en avant contre paiement.',
+  'intellect.sensitive':
+    'Visibles par les membres admis. Évitez la santé, la religion, la politique et tout ce qui permettrait de vous retrouver (téléphone, réseaux sociaux).',
+  'intellect.thesis_warning': 'Un sujet de thèse permet souvent de retrouver un nom complet en ligne. D’où « après un match » par défaut.',
+  'likes.teaser': 'Elles sont déjà dans votre découverte. Likez-les en retour pour faire match.',
+  'quiz.badge': 'QI : non communiqué. Par modestie.',
   'match.title': 'Intellectuellement compatibles.',
   'onboarding.consent':
     'Les genres que vous recherchez révèlent votre orientation sexuelle, une donnée sensible. Nous ne l’utilisons que pour composer votre feed, jamais pour autre chose. Votre consentement est facultatif, séparé et révocable à tout moment depuis votre compte ; sans lui, vous ne pourrez pas apparaître dans le feed.',
@@ -22,6 +31,9 @@ export const FALLBACK_COPY: Record<string, string> = {
   'push.message': 'Nouveau message. Probablement sans faute d’orthographe.',
   'push.verdict': 'Votre verdict est tombé. Asseyez-vous.',
 };
+
+// Questions du profil : le texte du back-office (`prompt.<key>`) prime, le catalogue livré sert de repli.
+for (const [key, text] of Object.entries(DEFAULT_PROMPTS)) FALLBACK_COPY[promptCopyKey(key)] = text;
 
 const CACHE_KEY = 'sapios.copy.fr';
 

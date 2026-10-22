@@ -63,7 +63,15 @@ export default function Review() {
   const [pushMessage, setPushMessage] = useState<string | null>(null);
   const [bio, setBio] = useState<string | null>(null);
   const sub = state?.latest_submission;
-  const completion = profileCompletion({ photos: state?.onboarding.photos_count ?? 0, bio });
+  const intellect = state?.intellect;
+  const completion = profileCompletion({
+    photos: state?.onboarding.photos_count ?? 0,
+    bio,
+    answers: intellect?.answers ?? 0,
+    books: intellect?.books ?? 0,
+    field: !!intellect?.study_field,
+    thesis: !!intellect?.thesis,
+  });
 
   useEffect(() => {
     if (userId) loadOwnProfile(userId).then((p) => setBio(p.bio)).catch(() => {});
@@ -139,9 +147,9 @@ export default function Review() {
         </Rise>
 
         <Rise delay={450} style={{ backgroundColor: colors.surface, borderRadius: radius.card, padding: 20, gap: 12 }}>
-          <Heading size={17}>En attendant, complétez votre profil</Heading>
+          <Heading size={17}>Pendant que nous relisons votre diplôme, montrez-nous le reste</Heading>
           <Body size={14.5} secondary>
-            Une bio et quelques photos de plus : de quoi donner envie de vous écrire, le jour venu.
+            Trois réponses, quelques livres, votre sujet de thèse : les profils complets reçoivent plus de likes.
           </Body>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <ProgressBar value={completion.value} label="Profil complété" />
@@ -149,8 +157,8 @@ export default function Review() {
               {Math.round(completion.value * 100)} %
             </Body>
           </View>
-          <Button testID="review-complete" label="Compléter mon profil" size="md" onPress={() => router.push('/settings/profile')} />
-          <Button label="Mes photos" variant="ghost" size="md" onPress={() => router.push('/settings/photos')} />
+          <Button testID="review-complete" label="Compléter mon profil" size="md" onPress={() => router.push('/settings/me')} />
+          <Button testID="review-test" label="Le test d’admission, pour rire" variant="ghost" size="md" onPress={() => router.push('/settings/test')} />
         </Rise>
 
         <View style={{ gap: 8 }}>

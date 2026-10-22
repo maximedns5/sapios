@@ -101,7 +101,7 @@ export function useOverlay(): OverlayContext {
   return ctx;
 }
 
-function Backdrop({ onPress }: { onPress: () => void }) {
+export function Backdrop({ onPress }: { onPress: () => void }) {
   return (
     <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(26,25,24,0.45)' }]}>
       <Pressable accessibilityLabel="Fermer" tabIndex={-1} style={[StyleSheet.absoluteFill, { cursor: 'default' } as object]} onPress={onPress} />
@@ -110,7 +110,7 @@ function Backdrop({ onPress }: { onPress: () => void }) {
 }
 
 /** Feuille montante : coins de 28 px, poignée, contenu blanc. */
-function SheetFrame({ children, testID }: { children: ReactNode; testID?: string }) {
+export function SheetFrame({ children, testID }: { children: ReactNode; testID?: string }) {
   const insets = useSafeAreaInsets();
   return (
     <Animated.View entering={SlideInDown.duration(380)} exiting={SlideOutDown.duration(220)} style={{ width: '100%' }}>

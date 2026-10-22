@@ -26,6 +26,20 @@ export function onCandidateDropped(listener: (id: string) => void): () => void {
   };
 }
 
+// Critères de découverte modifiés : la file locale est périmée, la découverte repart de zéro.
+const resetListeners = new Set<() => void>();
+
+export function resetFeed() {
+  resetListeners.forEach((listener) => listener());
+}
+
+export function onFeedReset(listener: () => void): () => void {
+  resetListeners.add(listener);
+  return () => {
+    resetListeners.delete(listener);
+  };
+}
+
 export function describe(c: Pick<Candidate, 'city' | 'distance_km'>): string {
   const parts: string[] = [];
   if (c.city) parts.push(c.city);

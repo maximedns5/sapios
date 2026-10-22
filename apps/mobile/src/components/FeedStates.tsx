@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
+import { splitHeadline } from '@/lib/copy';
 import { colors, ease, radius } from '@/lib/theme';
 import { Button } from './Button';
 import { CheckIcon, ChevronRightIcon, HeartIcon, ReplayIcon, SlidersIcon, UserIcon, WifiIcon } from './Icons';
@@ -51,8 +52,13 @@ function Option({ icon, title, sub, onPress, testID }: { icon: ReactNode; title:
   );
 }
 
-/** Fin de sélection : tout a été vu. Des leviers réels (critères, profil, likes), jamais une impasse. */
-export function EndOfSelection({ text, seesLikers, onRefresh }: { text: string; seesLikers: boolean; onRefresh: () => void }) {
+/**
+ * Fin de sélection : tout a été vu, ou les critères excluent tout le monde (`tooStrict`, d'après
+ * count_discovery). Des leviers réels (critères, profil, likes), jamais une impasse.
+ */
+export function EndOfSelection({ text, seesLikers, onRefresh, tooStrict }: { text: string; seesLikers: boolean; onRefresh: () => void; tooStrict?: boolean }) {
+  // « Personne ne remplit vos critères. Ils sont peut-être trop élevés. » : titre, puis la suite.
+  const [head, rest] = splitHeadline(text);
   return (
     <View style={{ gap: 18, paddingTop: 12 }} testID="feed-empty">
       <View style={{ height: 190, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -61,25 +67,32 @@ export function EndOfSelection({ text, seesLikers, onRefresh }: { text: string; 
         ))}
         <PopIn delay={650} style={{ position: 'absolute' }}>
           <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFFFFF' }}>
-            <CheckIcon size={26} stroke={2.8} color="#FFFFFF" />
+            {tooStrict ? <SlidersIcon size={24} color="#FFFFFF" /> : <CheckIcon size={26} stroke={2.8} color="#FFFFFF" />}
           </View>
         </PopIn>
       </View>
       <View style={{ gap: 8 }}>
         <MaskUp delay={300}>
           <Title size={28} align="center">
-            Vous avez tout vu pour aujourd’hui
+            {tooStrict ? head : 'Vous avez tout vu pour aujourd’hui'}
           </Title>
         </MaskUp>
         <Rise delay={420}>
           <Body secondary align="center">
-            {text}
+            {tooStrict ? rest : text}
           </Body>
         </Rise>
       </View>
+      {tooStrict ? (
+        <Rise delay={480}>
+          <Button testID="empty-widen" label="Élargir mes critères" onPress={() => router.push('/criteria')} icon={<SlidersIcon size={20} color="#FFFFFF" />} />
+        </Rise>
+      ) : null}
       <Rise delay={520} style={{ gap: 10 }}>
-        <Option testID="empty-criteria" icon={<SlidersIcon size={20} color={colors.accent} />} title="Élargir mes critères" sub="Âge recherché et ville" onPress={() => router.push('/settings/profile')} />
-        <Option testID="empty-profile" icon={<UserIcon size={20} color={colors.accent} />} title="Compléter mon profil" sub="Une bio et jusqu’à six photos" onPress={() => router.navigate('/account')} />
+        {tooStrict ? null : (
+          <Option testID="empty-criteria" icon={<SlidersIcon size={20} color={colors.accent} />} title="Élargir mes critères" sub="Âge, distance, niveaux, domaines" onPress={() => router.push('/criteria')} />
+        )}
+        <Option testID="empty-profile" icon={<UserIcon size={20} color={colors.accent} />} title="Compléter mon profil" sub="Réponses, bibliothèque, photos" onPress={() => router.navigate('/account')} />
         {seesLikers ? <Option icon={<HeartIcon size={20} color={colors.accent} />} title="Voir qui vous a liké" sub="Un like en retour, et c’est un match" onPress={() => router.navigate('/likes')} /> : null}
       </Rise>
       <Button label="Actualiser" variant="ghost" onPress={onRefresh} icon={<ReplayIcon size={18} color={colors.muted} />} />

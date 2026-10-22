@@ -1,3 +1,4 @@
+import { parseLikedItem } from '@sapios/shared';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, TextInput, View, type TextInputInstance } from 'react-native';
@@ -87,7 +88,7 @@ export function Conversation({ matchId, onLeave }: { matchId: string; onLeave?: 
       }
       const { data, error: e } = await supabase
         .from('messages')
-        .select('id, match_id, sender_id, body, read_at, created_at')
+        .select('id, match_id, sender_id, body, read_at, created_at, context, liked_item, from_like')
         .eq('match_id', matchId)
         .order('created_at', { ascending: false })
         .limit(200);
@@ -255,6 +256,7 @@ export function Conversation({ matchId, onLeave }: { matchId: string; onLeave?: 
               );
               return (
                 <Pressable disabled={!m.failed} onPress={() => retry(m)} style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
+                  {m.from_like ? <LikedQuote mine={mine} name={name} item={m.liked_item ?? null} context={m.context ?? null} /> : null}
                   {animate ? (
                     <PopIn duration={360} overshoot={1.06} style={{ alignItems: mine ? 'flex-end' : 'flex-start', width: '100%' }}>
                       {bubble}
@@ -317,6 +319,28 @@ export function Conversation({ matchId, onLeave }: { matchId: string; onLeave?: 
         </KeyboardAvoidingView>
       </View>
     </ToneProvider>
+  );
+}
+
+/** Au-dessus d'un mot né d'un like : ce qui a été aimé (réponse citée, ou la photo). */
+function LikedQuote({ mine, name, item, context }: { mine: boolean; name: string; item: string | null; context: string | null }) {
+  const kind = parseLikedItem(item).kind;
+  const what = kind === 'answer' ? 'réponse' : kind === 'photo' ? 'photo' : 'profil';
+  const label = mine ? `Vous avez aimé ${kind === 'profile' ? 'son profil' : `sa ${what}`}` : `${name} a aimé ${kind === 'profile' ? 'votre profil' : `votre ${what}`}`;
+  return (
+    <View
+      testID="liked-quote"
+      style={{ maxWidth: '86%', alignSelf: mine ? 'flex-end' : 'flex-start', borderLeftWidth: 3, borderColor: colors.accent, backgroundColor: colors.surfaceSoft, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 4, gap: 2 }}
+    >
+      <Small size={13} weight="semibold" color={colors.accent}>
+        {label}
+      </Small>
+      {context ? (
+        <Body size={14.5} weight="semibold" style={{ lineHeight: 20 }}>
+          « {context} »
+        </Body>
+      ) : null}
+    </View>
   );
 }
 

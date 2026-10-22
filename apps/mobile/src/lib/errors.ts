@@ -63,6 +63,12 @@ const MESSAGES: Record<string, string> = {
   not_allowed: 'Réservé à l’accès illimité.',
   not_found: 'Introuvable.',
   forbidden: 'Action non autorisée.',
+  invalid_item: 'Cet élément n’est plus sur son profil.',
+  comment_too_long: '140 caractères maximum. L’esprit de synthèse est aussi une qualité.',
+  // Profil intellectuel
+  prompt_taken: 'Vous avez déjà répondu à cette question.',
+  prompt_inactive: 'Cette question n’est plus proposée. Choisissez-en une autre.',
+  books_limit: 'Cinq livres maximum. Les autres resteront sur la table de nuit.',
   // Diplôme
   invalid_path: 'Chemin de fichier refusé. Recommencez l’envoi.',
   invalid_type: 'Format refusé : PDF, JPEG, PNG ou WEBP uniquement.',

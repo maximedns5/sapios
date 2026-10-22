@@ -1,22 +1,40 @@
 import { GENDERS } from '@sapios/shared';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { AppError, errorMessage } from '@/lib/errors';
 import { AGE_MAX, AGE_MIN, GENDER_SENTENCE, loadOwnProfile, saveOwnProfile, SEEKING_LABEL } from '@/lib/profile';
 import type { Gender } from '@/lib/types';
+import { colors, radius } from '@/lib/theme';
 import { Button } from './Button';
 import { OptionCard, RangeSlider } from './Controls';
 import { Field } from './Field';
 import { LocateButton } from './LocateButton';
 import { Spinner } from './motion';
 import { Notice } from './Notice';
-import { Heading } from './Text';
+import { ChevronRightIcon } from './Icons';
+import { Body, Heading, Small } from './Text';
 
 const BIO_MAX = 500;
 
-/** Modification du profil public : prénom, genre, recherche, âge, ville, bio. */
-export function ProfileForm({ userId, consentGiven, submitLabel, onSaved }: { userId: string; consentGiven: boolean; submitLabel: string; onSaved: () => Promise<unknown> | void }) {
+/**
+ * Modification du profil public : prénom, genre, recherche, âge, ville, bio. `criteriaLink` : membre
+ * qui voit la découverte, l'âge recherché se règle au seul endroit des critères.
+ */
+export function ProfileForm({
+  userId,
+  consentGiven,
+  submitLabel,
+  onSaved,
+  criteriaLink,
+}: {
+  userId: string;
+  consentGiven: boolean;
+  submitLabel: string;
+  onSaved: () => Promise<unknown> | void;
+  criteriaLink?: boolean;
+}) {
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
@@ -52,8 +70,8 @@ export function ProfileForm({ userId, consentGiven, submitLabel, onSaved }: { us
         display_name: name,
         gender,
         ...(consentGiven ? { seeking_genders: seeking } : {}),
-        age_min: Math.min(...ages),
-        age_max: Math.max(...ages),
+        // Avec les critères, l'âge recherché s'enregistre là-bas : ne pas l'écraser ici.
+        ...(criteriaLink ? {} : { age_min: Math.min(...ages), age_max: Math.max(...ages) }),
         bio: bio.trim(),
         city: city.trim(),
       });
@@ -97,7 +115,24 @@ export function ProfileForm({ userId, consentGiven, submitLabel, onSaved }: { us
       ) : (
         <Notice title="Genres recherchés" message="Masqués : vous n’avez pas donné votre consentement pour cette donnée sensible." icon="lock" />
       )}
-      <RangeSlider testID="age-range" label="Âge recherché" min={AGE_MIN} max={AGE_MAX} low={ages[0]} high={ages[1]} onChange={(lo, hi) => setAges([lo, hi])} />
+      {criteriaLink ? (
+        <Pressable testID="age-criteria" accessibilityRole="link" accessibilityLabel={`Âge recherché : ${ages[0]} à ${ages[1]} ans. Modifier dans mes critères`} onPress={() => router.push('/criteria')}>
+          {({ pressed }) => (
+            <View style={{ backgroundColor: pressed ? colors.line : colors.surface, borderRadius: radius.card, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Small size={13}>Âge recherché</Small>
+                <Body weight="bold">
+                  {ages[0]} – {ages[1]} ans
+                </Body>
+                <Small>Se règle avec vos critères de découverte.</Small>
+              </View>
+              <ChevronRightIcon size={18} color={colors.muted} />
+            </View>
+          )}
+        </Pressable>
+      ) : (
+        <RangeSlider testID="age-range" label="Âge recherché" min={AGE_MIN} max={AGE_MAX} low={ages[0]} high={ages[1]} onChange={(lo, hi) => setAges([lo, hi])} />
+      )}
       <View style={{ gap: 6 }}>
         <Field testID="city" label="Ville" value={city} onChangeText={setCity} placeholder="Paris" autoCapitalize="words" maxLength={60} />
         <LocateButton />

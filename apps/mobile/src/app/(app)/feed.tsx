@@ -1,3 +1,4 @@
+import type { DiscoveryCounts, ProfileView } from '@sapios/shared';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -7,15 +8,16 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { Button, IconButton } from '@/components/Button';
 import { EndOfSelection, FeedSkeleton, LoadError } from '@/components/FeedStates';
-import { CrossIcon, DotsIcon, VerifiedBadge } from '@/components/Icons';
+import { CrossIcon, DotsIcon, SlidersIcon, VerifiedBadge } from '@/components/Icons';
 import { haptic, MaskUp, Rise } from '@/components/motion';
 import { useOverlay } from '@/components/Overlay';
-import { ProfileBody } from '@/components/ProfileBody';
+import { ProfileBody, profileFromCandidate, profileFromView, type LikeTarget } from '@/components/ProfileBody';
+import { ReplySheet } from '@/components/ReplySheet';
 import { Body, Small, Title } from '@/components/Text';
 import { Wordmark } from '@/components/Wordmark';
 import { api } from '@/lib/api';
 import { useApp } from '@/lib/app-state';
-import { describe, onCandidateDropped, rememberCandidates } from '@/lib/candidates';
+import { describe, onCandidateDropped, onFeedReset, rememberCandidates } from '@/lib/candidates';
 import { useCopy } from '@/lib/copy';
 import { AppError, errorCode, errorMessage } from '@/lib/errors';
 import { noteOwnMatch } from '@/lib/inbox';
@@ -26,10 +28,12 @@ import { useKeyboardShortcuts } from '@/lib/web';
 
 type Direction = 'like' | 'pass';
 type LoadFailure = { network: boolean; message: string };
+type Like = { target: LikeTarget | null; comment?: string };
 
 /**
- * Découverte, à la Hinge : un profil complet à la fois, photos d'abord. Le cœur sur une photo aime le
- * profil, la croix flottante le passe ; la carte s'en va du côté choisi, la suivante monte.
+ * Découverte, à la Hinge : un profil complet à la fois, photos d'abord. Un cœur sur une photo ou une
+ * réponse aime cet élément, « Répondre » y joint un mot ; la croix passe. La carte s'en va du côté
+ * choisi, la suivante monte. La fiche complète (get_profile) enrichit la carte dès qu'elle arrive.
  */
 export default function Feed() {
   const { state, refresh } = useApp();
@@ -39,10 +43,14 @@ export default function Feed() {
   const isFocused = useIsFocused();
   const reduced = useReducedMotion();
   const [queue, setQueue] = useState<Candidate[]>([]);
+  const [views, setViews] = useState<Record<string, ProfileView>>({});
   const [loading, setLoading] = useState(true);
   const [failure, setFailure] = useState<LoadFailure | null>(null);
+  const [counts, setCounts] = useState<DiscoveryCounts | null>(null);
   const [likesLeft, setLikesLeft] = useState<number | null>(state?.likes_left_today ?? null);
+  const [reply, setReply] = useState<LikeTarget | null>(null);
   const seenIds = useRef(new Set<string>());
+  const asked = useRef(new Set<string>());
   const fetching = useRef(false);
   const busy = useRef(false);
   const unlimited = state?.daily_like_quota == null;
@@ -65,6 +73,7 @@ export default function Feed() {
         const known = new Set(q.map((c) => c.id));
         return [...q, ...rows.filter((r) => !known.has(r.id) && !seenIds.current.has(r.id))];
       });
+      if (!rows.length) api.countDiscovery().then(setCounts).catch(() => setCounts(null));
     } catch (e) {
       setFailure({ network: errorCode(e) === 'network', message: errorMessage(e) });
     } finally {
@@ -88,6 +97,18 @@ export default function Feed() {
     [],
   );
 
+  // Critères modifiés : la file chargée ne correspond plus, on repart de zéro.
+  useEffect(
+    () =>
+      onFeedReset(() => {
+        setQueue([]);
+        setCounts(null);
+        setLoading(true);
+        load();
+      }),
+    [load],
+  );
+
   // Fin de pause (ou accès retrouvé) : la file chargée pendant la pause était vide, on la recharge.
   const canSee = !!state?.can_browse && !paused;
   useEffect(() => {
@@ -97,6 +118,21 @@ export default function Feed() {
   }, [canSee, load]);
 
   const current = queue[0];
+  const nextId = queue[1]?.id;
+
+  // Fiche complète de la carte affichée et de la suivante : identifiants des photos (likes ciblés),
+  // toutes les réponses, livres, thèse visible.
+  useEffect(() => {
+    for (const id of [current?.id, nextId]) {
+      if (!id || asked.current.has(id)) continue;
+      asked.current.add(id);
+      api
+        .profile(id)
+        .then((view) => setViews((v) => ({ ...v, [id]: view })))
+        .catch(() => asked.current.delete(id));
+    }
+  }, [current?.id, nextId]);
+
   // Nouvelle carte affichée : l'animation de sortie repart de zéro (après le rendu, sans clignotement).
   useEffect(() => {
     out.value = 0;
@@ -107,12 +143,16 @@ export default function Feed() {
   const showQuota = useCallback(() => overlay.toast(errorMessage(new AppError('quota_exceeded'))), [overlay]);
 
   const commit = useCallback(
-    async (card: Candidate, direction: Direction) => {
+    async (card: Candidate, direction: Direction, like?: Like) => {
       seenIds.current.add(card.id);
       setQueue((q) => q.filter((c) => c.id !== card.id));
       if (queue.length <= 4) load();
+      const putBack = () => {
+        seenIds.current.delete(card.id);
+        setQueue((q) => [card, ...q.filter((c) => c.id !== card.id)]);
+      };
       try {
-        const res = await api.swipe(card.id, direction);
+        const res = await api.swipe(card.id, direction, like?.target?.item ?? null, like?.comment ?? null);
         if (direction === 'like' && !unlimited) setLikesLeft((n) => Math.max(0, (n ?? 1) - 1));
         if (res.matched && res.match_id) {
           noteOwnMatch(res.match_id);
@@ -123,10 +163,19 @@ export default function Feed() {
       } catch (e) {
         const code = errorCode(e);
         if (code === 'quota_exceeded') {
-          seenIds.current.delete(card.id);
-          setQueue((q) => [card, ...q]);
+          putBack();
           setLikesLeft(0);
           showQuota();
+        } else if (code === 'invalid_item' || code === 'comment_too_long' || code === 'invalid_input') {
+          // L'élément a disparu (photo retirée, réponse modifiée) : la carte revient, fiche relue.
+          putBack();
+          asked.current.delete(card.id);
+          setViews((v) => {
+            const next = { ...v };
+            delete next[card.id];
+            return next;
+          });
+          overlay.toast(errorMessage(e));
         } else if (code === 'not_eligible') {
           refresh();
         } else if (code !== 'target_unavailable') {
@@ -138,7 +187,7 @@ export default function Feed() {
   );
 
   const decide = useCallback(
-    (direction: Direction) => {
+    (direction: Direction, like?: Like) => {
       const card = queue[0];
       if (!card || busy.current) return;
       if (direction === 'like' && locked) {
@@ -149,11 +198,11 @@ export default function Feed() {
       if (direction === 'pass') haptic.selection();
       side.value = direction === 'like' ? 1 : -1;
       if (reduced) {
-        commit(card, direction);
+        commit(card, direction, like);
         return;
       }
       out.value = withTiming(1, { duration: 280, easing: ease.in }, (done) => {
-        if (done) scheduleOnRN(commit, card, direction);
+        if (done) scheduleOnRN(commit, card, direction, like);
       });
     },
     [commit, locked, out, queue, reduced, showQuota, side],
@@ -164,9 +213,9 @@ export default function Feed() {
     transform: [{ translateX: side.value * out.value * 120 }, { rotate: `${side.value * out.value * 4}deg` }, { scale: 1 - out.value * 0.04 }],
   }));
 
-  // Clavier : ← passer, → aimer (onglet affiché, aucune saisie en cours).
+  // Clavier : ← passer, → aimer tout le profil (onglet affiché, aucune saisie ni feuille ouverte).
   const shortcuts = useMemo(() => ({ ArrowLeft: () => decide('pass'), ArrowRight: () => decide('like') }), [decide]);
-  useKeyboardShortcuts(shortcuts, isFocused && !!current && !paused && !loading);
+  useKeyboardShortcuts(shortcuts, isFocused && !!current && !paused && !loading && !reply);
 
   const more = (c: Candidate) =>
     overlay.sheet(c.display_name, [
@@ -175,16 +224,23 @@ export default function Feed() {
       { label: 'Bloquer', testID: 'feed-block', destructive: true, onPress: () => blockUser(overlay, c.id, c.display_name, '/feed') },
     ]);
 
-  const meta = current ? [current.age != null ? `${current.age} ans` : null, describe(current) || null].filter(Boolean).join(' · ') : '';
+  const data = current ? (views[current.id] ? profileFromView(views[current.id], current) : profileFromCandidate(current)) : null;
+  const meta = data ? [data.age != null ? `${data.age} ans` : null, describe(data) || null].filter(Boolean).join(' · ') : '';
+  const tooStrict = !!counts && counts.matching === 0 && counts.total > 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }} testID="feed">
-      <View style={{ height: 56, paddingLeft: space.gutter, paddingRight: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ height: 56, paddingLeft: space.gutter, paddingRight: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <Wordmark size={30} />
-        <View testID="likes-left" accessibilityLiveRegion="polite" style={{ backgroundColor: locked ? colors.line : colors.surface, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 7 }}>
-          <Small weight="bold" size={13} color={locked ? colors.muted : colors.text}>
-            {unlimited ? 'Likes illimités' : `${likesLeft ?? 0} like${(likesLeft ?? 0) > 1 ? 's' : ''} aujourd’hui`}
-          </Small>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View testID="likes-left" accessibilityLiveRegion="polite" style={{ backgroundColor: locked ? colors.line : colors.surface, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 7 }}>
+            <Small weight="bold" size={13} color={locked ? colors.muted : colors.text}>
+              {unlimited ? 'Likes illimités' : `${likesLeft ?? 0} like${(likesLeft ?? 0) > 1 ? 's' : ''} aujourd’hui`}
+            </Small>
+          </View>
+          <IconButton testID="open-criteria" label="Critères de découverte" onPress={() => router.push('/criteria')}>
+            <SlidersIcon size={20} />
+          </IconButton>
         </View>
       </View>
 
@@ -194,26 +250,31 @@ export default function Feed() {
         </View>
       ) : paused ? (
         <PausedState />
-      ) : current ? (
+      ) : current && data ? (
         <>
           <Animated.View style={[{ flex: 1 }, leaving]}>
-            <ScrollView key={current.id} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 110 }}>
+            <ScrollView key={current.id} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 24 }}>
               <Rise duration={500} distance={28}>
                 <ProfileBody
-                  candidate={current}
-                  like={{ onLike: () => decide('like'), locked, onLocked: showQuota }}
+                  data={data}
+                  like={{
+                    onLike: (target) => decide('like', { target }),
+                    onReply: (target) => setReply(target),
+                    locked,
+                    onLocked: showQuota,
+                  }}
                   header={
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                       <View style={{ flex: 1, gap: 2 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                           <Title testID="card-name" size={30} numberOfLines={1} style={{ flexShrink: 1 }}>
-                            {current.display_name}
+                            {data.display_name}
                           </Title>
                           <VerifiedBadge />
                         </View>
                         {meta ? <Body muted size={15}>{meta}</Body> : null}
                       </View>
-                      <IconButton label={`Plus d’options pour ${current.display_name}`} onPress={() => more(current)} testID="feed-more">
+                      <IconButton label={`Plus d’options pour ${data.display_name}`} onPress={() => more(current)} testID="feed-more">
                         <DotsIcon size={20} />
                       </IconButton>
                     </View>
@@ -222,10 +283,12 @@ export default function Feed() {
               </Rise>
             </ScrollView>
           </Animated.View>
-          <View style={{ position: 'absolute', left: 20, bottom: 20 }}>
-            <IconButton testID="pass" label="Passer" accessibilityHint="Raccourci clavier : flèche gauche" variant="floating" size={60} onPress={() => decide('pass')}>
-              <CrossIcon size={24} stroke={2.4} color={colors.text} />
+          {/* Barre d'action sous le profil (et non par-dessus) : la croix ne cache jamais un texte. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, borderTopWidth: 1, borderColor: colors.line, backgroundColor: colors.bg }}>
+            <IconButton testID="pass" label={`Passer ${data.display_name}`} accessibilityHint="Raccourci clavier : flèche gauche" variant="floating" size={56} onPress={() => decide('pass')}>
+              <CrossIcon size={22} stroke={2.4} color={colors.text} />
             </IconButton>
+            <Small style={{ flex: 1 }}>Aimez une photo ou une réponse, ou passez.</Small>
           </View>
         </>
       ) : failure ? (
@@ -242,7 +305,8 @@ export default function Feed() {
       ) : (
         <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.xl }}>
           <EndOfSelection
-            text={t('feed.empty')}
+            text={tooStrict ? t('feed.empty_filters') : t('feed.empty')}
+            tooStrict={tooStrict}
             seesLikers={!!state?.sees_likers}
             onRefresh={() => {
               setLoading(true);
@@ -251,6 +315,19 @@ export default function Feed() {
           />
         </ScrollView>
       )}
+
+      {reply && current ? (
+        <ReplySheet
+          name={current.display_name}
+          target={reply}
+          onClose={() => setReply(null)}
+          onSend={(comment) => {
+            const target = reply;
+            setReply(null);
+            setTimeout(() => decide('like', { target, comment }), 120);
+          }}
+        />
+      ) : null}
     </View>
   );
 }

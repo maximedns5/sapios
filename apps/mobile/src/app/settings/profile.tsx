@@ -18,6 +18,7 @@ export default function EditProfile() {
         <ProfileForm
           userId={userId}
           consentGiven={state.onboarding.consent_sensitive}
+          criteriaLink={state.can_browse}
           submitLabel="Enregistrer"
           onSaved={async () => {
             await refresh();

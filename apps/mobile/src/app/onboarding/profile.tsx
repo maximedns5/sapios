@@ -1,10 +1,10 @@
-import { GENDERS } from '@sapios/shared';
+import { GENDERS, STUDY_FIELD_LABELS, STUDY_FIELDS, type StudyField } from '@sapios/shared';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { Button } from '@/components/Button';
-import { OptionCard, RangeSlider } from '@/components/Controls';
+import { Chip, ChipRow, OptionCard, RangeSlider } from '@/components/Controls';
 import { Field } from '@/components/Field';
 import { ArrowRightIcon, CheckIcon } from '@/components/Icons';
 import { LocateButton } from '@/components/LocateButton';
@@ -15,12 +15,13 @@ import { StepHeader } from '@/components/StepHeader';
 import { Body, Eyebrow, Small, Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
 import { errorMessage } from '@/lib/errors';
+import { loadMyIntellect, saveIntellectFlags } from '@/lib/intellect';
 import { AGE_MAX, AGE_MIN, GENDER_SENTENCE, loadOwnAge, loadOwnProfile, saveOwnProfile, SEEKING_LABEL, suggestedAgeRange } from '@/lib/profile';
 import { alpha, colors, ease } from '@/lib/theme';
 import type { Gender } from '@/lib/types';
 
 const BIO_MAX = 500;
-type Step = 'name' | 'gender' | 'seeking' | 'where' | 'bio' | 'done';
+type Step = 'name' | 'gender' | 'seeking' | 'field' | 'where' | 'bio' | 'done';
 
 /** Cercle décoratif d'accent qui grandit à chaque sous-étape. */
 function Blob({ index }: { index: number }) {
@@ -53,19 +54,20 @@ function Intro({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: 
 }
 
 /**
- * Étape 3 : le profil, une question par écran (prénom, genre, recherche, ville et âge, bio), puis une
- * célébration avant les photos. Tout est enregistré d'un coup à la fin ; « retour » ne perd rien.
+ * Étape 3 : le profil, une question par écran (prénom, genre, recherche, domaine, ville et âge, bio),
+ * puis une célébration avant les photos. Tout est enregistré d'un coup à la fin ; « retour » ne perd rien.
  */
 export default function OnboardingProfile() {
   const { userId, state, refresh } = useApp();
   const consent = !!state?.onboarding.consent_sensitive;
-  const steps: Step[] = consent ? ['name', 'gender', 'seeking', 'where', 'bio'] : ['name', 'gender', 'where', 'bio'];
+  const steps: Step[] = consent ? ['name', 'gender', 'seeking', 'field', 'where', 'bio'] : ['name', 'gender', 'field', 'where', 'bio'];
   const [index, setIndex] = useState(0);
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
   const [seeking, setSeeking] = useState<Gender[]>([]);
+  const [field, setField] = useState<StudyField | null>(null);
   const [city, setCity] = useState('');
   const [ages, setAges] = useState<[number, number]>([25, 40]);
   const [suggested, setSuggested] = useState(false);
@@ -75,8 +77,9 @@ export default function OnboardingProfile() {
 
   useEffect(() => {
     if (!userId) return;
-    Promise.all([loadOwnProfile(userId), loadOwnAge(userId)])
-      .then(([p, age]) => {
+    Promise.all([loadOwnProfile(userId), loadOwnAge(userId), loadMyIntellect(userId).catch(() => null)])
+      .then(([p, age, mine]) => {
+        setField(mine?.studyField ?? null);
         setName(p.display_name ?? '');
         setGender(p.gender);
         setSeeking(p.seeking_genders ?? []);
@@ -109,6 +112,7 @@ export default function OnboardingProfile() {
         bio: bio.trim(),
         city: city.trim(),
       });
+      if (field) await saveIntellectFlags(userId, { study_field: field });
       setDone(true);
     } catch (e) {
       setError(errorMessage(e));
@@ -139,7 +143,7 @@ export default function OnboardingProfile() {
         ) : (
           <Button
             testID="profile-next"
-            label={index === steps.length - 1 ? (bio.trim() ? 'Enregistrer' : 'Passer et enregistrer') : 'Continuer'}
+            label={index === steps.length - 1 ? (bio.trim() ? 'Enregistrer' : 'Passer et enregistrer') : step === 'field' && !field ? 'Passer' : 'Continuer'}
             disabled={!valid}
             loading={saving}
             onPress={next}
@@ -191,6 +195,21 @@ export default function OnboardingProfile() {
                     />
                   </Rise>
                 ))}
+              </View>
+            </>
+          ) : null}
+
+          {step === 'field' ? (
+            <>
+              <Intro eyebrow="Ce qui vous anime" title="Votre domaine" sub="Celui de vos études. Il s’affiche sur votre profil et rapproche les esprits voisins. Modifiable plus tard." />
+              <View role="radiogroup" accessibilityLabel="Votre domaine">
+                <ChipRow>
+                  {STUDY_FIELDS.map((f, i) => (
+                    <Rise key={f} delay={200 + i * 35}>
+                      <Chip radio testID={`field-${f}`} label={STUDY_FIELD_LABELS[f]} active={field === f} onPress={() => setField(field === f ? null : f)} />
+                    </Rise>
+                  ))}
+                </ChipRow>
               </View>
             </>
           ) : null}

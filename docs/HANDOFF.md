@@ -182,3 +182,17 @@ Sixtine → photo d'Hippolyte `unlimited@`).
   Contexte d'un signalement : `admin_get_report_context(report_id)`.
 - **Liste d'attente du site** : `waitlist_signups.level` (1 à 8, déclaré) et `city`, facultatifs.
 - **Statistiques** : `admin_stats().content_flags_open`.
+
+## Lot 1 : app membre (agent app) : pour le back-office et la suite
+
+- **Fait dans l'app** : « Mon profil » (réponses, bibliothèque, domaine, phrase de thèse et sa visibilité, badges
+  établissement et test, avis de retrait), choix de la question, domaine à l'onboarding, likes ciblés avec mot
+  (découverte et fiche), onglet Likes (élément aimé, mot, ou nombre seul), citation au-dessus des messages nés d'un
+  like, critères de découverte (`/criteria`) avec compte en direct, fin de sélection « critères trop stricts »,
+  test d'admission (`/settings/test`).
+- **Textes** : les questions et `feed.empty_filters` viennent de `app_copy` ; les nouvelles clés de l'app
+  (`feed.ranking`, `intellect.sensitive`, `intellect.thesis_warning`, `likes.teaser`, `quiz.badge`) n'ont qu'un repli
+  local : les ajouter dans « Textes » pour les rendre modifiables sans redéployer.
+- **Reste à faire** : signaler un texte précis depuis la fiche (`report_user` + `p_content_kind`) ; recherche de
+  livres (Open Library, par une Edge Function relais) ; couverture des écrans par des tests de bout en bout.
+

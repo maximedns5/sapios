@@ -3,7 +3,7 @@ import type { MyState, VerdictVariant } from './types';
 /** Écran cible et chemins autorisés pour un état donné (routage piloté par get_my_state). */
 export type Route = { target: string; allowed: string[] };
 
-const APP_PATHS = ['/feed', '/likes', '/messages', '/account', '/chat', '/match', '/profile', '/report', '/settings'];
+const APP_PATHS = ['/feed', '/likes', '/messages', '/account', '/criteria', '/chat', '/match', '/profile', '/report', '/settings'];
 const DIPLOMA_FLOW = ['/diploma', '/diploma/analysis', '/diploma/review'];
 
 export const IN_REVIEW = ['pending', 'processing', 'needs_review'] as const;
