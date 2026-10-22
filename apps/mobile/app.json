@@ -7,8 +7,8 @@
     "icon": "./assets/images/icon.png",
     "scheme": "sapios",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#0B0B0B",
-    "primaryColor": "#0B0B0B",
+    "backgroundColor": "#FFFFFF",
+    "primaryColor": "#4338E0",
     "ios": {
       "bundleIdentifier": "app.sapios.mobile",
       "supportsTablet": false,
@@ -22,7 +22,7 @@
     "android": {
       "package": "app.sapios.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0B0B",
+        "backgroundColor": "#4338E0",
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "monochromeImage": "./assets/images/adaptive-icon.png"
       },
@@ -46,9 +46,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B0B0B",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 220
+          "imageWidth": 128
         }
       ],
       "expo-font",
@@ -74,7 +74,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#0B0B0B"
+          "color": "#4338E0"
         }
       ]
     ],
