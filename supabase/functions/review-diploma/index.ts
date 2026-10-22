@@ -8,6 +8,8 @@ import { dispatch, notifyDepsFromEnv } from "../_shared/notify.ts";
 import {
   type AccessTier,
   DIPLOMA_BUCKET,
+  INSTITUTION_MAX_LENGTH,
+  isStudyField,
   isValidLevel,
   REVIEW_DECISIONS,
   type ReviewDecideResponse,
@@ -45,6 +47,7 @@ const BUSINESS_ERROR_STATUS: Record<string, number> = {
   forbidden: 403,
   invalid_decision: 400,
   invalid_level: 400,
+  invalid_institution: 400,
   already_decided: 409,
 };
 
@@ -60,6 +63,11 @@ async function decide(
   if (decision === "approve" && !isValidLevel(level)) throw new HttpError(400, "invalid_level");
   if (level !== null && !isValidLevel(level)) throw new HttpError(400, "invalid_level");
   const reason = asString(body.reason)?.trim() || null;
+  // Établissement et domaine vérifiés : facultatifs, enregistrés seulement à l'approbation.
+  const institution = asString(body.institution)?.trim() || null;
+  if (institution && institution.length > INSTITUTION_MAX_LENGTH) throw new HttpError(400, "invalid_institution");
+  const field = body.field ?? null;
+  if (field !== null && !isStudyField(field)) throw new HttpError(400, "invalid_field");
 
   const { data, error } = await db.rpc("apply_diploma_review", {
     p_submission: submissionId,
@@ -67,6 +75,8 @@ async function decide(
     p_decision: decision,
     p_level: decision === "approve" ? level : null,
     p_reason: reason,
+    p_institution: decision === "approve" ? institution : null,
+    p_field: decision === "approve" ? field : null,
   });
   if (error) {
     // Erreur métier : `raise exception '<code>' using errcode = 'P0001'`.

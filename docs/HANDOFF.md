@@ -125,3 +125,57 @@ Rien de bloquant : l'app tourne de bout en bout contre les migrations et le seed
 3. **Mobile (version web)** : les emails ouvrent `<SAPIOS_APP_URL>/` (verdict) et `<SAPIOS_APP_URL>/chat/<match_id>`
    (match). Déconnecté, `Gate` renvoie sur `/sign-in` et perd la destination : la garder pour l'ouvrir après la
    connexion serait plus agréable. Facultatif.
+
+## Lot 1 : base de données (agent base) : pour les agents app et back-office
+
+Tout est en place côté base (migrations `20261022090000` à `20261022090500`, 408 tests pgTAP). Types :
+`packages/shared/src/intellect.ts` (`StudyField`, `STUDY_FIELD_LABELS`, `ProfileView`, `DiscoveryPrefs`,
+`DiscoveryCounts`, `AffinityReason`, `MemberNotice`, `likedPhoto`, `likedAnswer`, `parseLikedItem`, limites).
+Seed local : domaines, réponses, livres, thèses et deux likes ciblés (Gaspard → réponse de Camille `standard@`,
+Sixtine → photo d'Hippolyte `unlimited@`).
+
+### App membre
+
+- **Mon profil** (écriture directe, RLS) :
+  - réponses : `upsert({ position, prompt_key, answer }, { onConflict: "user_id,position" })` dans `profile_answers`,
+    sans `user_id` ni `moderation_status` (refusés) ; suppression par `position`. Erreur `prompt_inactive` (P0001)
+    si la question a été désactivée ; `23505` si la question est déjà utilisée à une autre position.
+  - catalogue : `profile_prompts` (`active`, ordre `position`) + texte `app_copy` `prompt.<key>` (repli : `DEFAULT_PROMPTS`).
+  - livres : `profile_books` (`position` 0–4, `title`, `author`, `ol_work_id` facultatif), même principe.
+  - thèse : `upsert({ line, visibility }, { onConflict: "user_id" })` dans `profile_theses` ; `delete` pour l'effacer.
+    Libellé : `thesisLabel(level)`.
+  - domaine et options : `profiles.update({ study_field, show_institution, show_quiz_badge })`.
+  - un texte `moderation_status = 'rejected'` reste visible de son auteur seulement : l'afficher « retiré » ;
+    l'avis motivé arrive dans `get_my_state().notices` (`kind: 'content_removed'`), à marquer lu par `ack_notice(id)`.
+  - `get_my_state().intellect` donne `{ answers, books, thesis, study_field }` pour l'anneau de complétion.
+- **Fiche profil** : `get_profile(p_target)` → `ProfileView` (photos avec `id`, réponses, livres, thèse si permise,
+  niveau, domaine vérifié, établissement si affiché, affinités, `match_id`, `my_swipe`). `not_found` si invisible.
+- **Like ciblé** : `swipe(p_target, 'like', likedPhoto(id) | likedAnswer(position) | null, comment | null)` ;
+  erreurs `invalid_item`, `comment_too_long` (140), `invalid_input` (élément ou mot sur un pass).
+- **Onglet Likes** : `sees_likers` → `get_likers()` (élément aimé chez moi : `liked_item`, `liked_prompt_key`,
+  `liked_text`, `liked_photo_path` ; `comment`, `level`, `study_field`, `liked_at`). Sinon, le nombre seul :
+  `get_my_state().likes_received` ou `get_likes_count()`.
+- **Chat** : les premiers messages d'un match peuvent venir des likes (`from_like = true`) ; `context` = réponse
+  citée, `liked_item` = élément aimé (photo : `parseLikedItem`, chemin via `profile_photos.id`).
+- **Découverte** : `get_feed` renvoie en plus `level`, `study_field`, `field_verified`, `institution`,
+  `preview_prompt_key`, `preview_answer`, `quiz_badge`, `affinity_score`, `affinity_reasons` (`AffinityReason[]`,
+  à rédiger côté app : « Vous avez tous deux lu *Les Essais* »). Feed vide : `count_discovery()` → `matching = 0` et
+  `total > 0` = critères trop stricts (texte `feed.empty_filters`, bouton « Élargir ») ; `total = 0` = plus personne.
+- **Critères** : `get_discovery_prefs()` / `set_discovery_prefs(...)` (paramètres nuls = inchangés ; l'âge y est
+  enregistré) ; aperçu « Environ n profils » et « + n profils » : `count_discovery(p_max_distance_km := 100, …)`
+  sans enregistrer.
+- **Signaler un texte** : `report_user(p_target, p_reason, p_details, p_content_kind, p_content_item)`
+  (`answer`/`book` + id de l'élément, `thesis` + null).
+
+### Back-office
+
+- **Diplômes** : `review-diploma` `decide` accepte `institution` (≤ 200) et `field` (`StudyField`), pris en compte à
+  l'approbation ; à rendre obligatoires dans l'interface. `admin_list_submissions` / `admin_get_submission`
+  renvoient `institution_verified`, `field_verified`. Rattrapage : `admin_set_member_institution(user, institution, field)`.
+- **Contenus** : `admin_list_flagged_content(p_status default 'open')` (texte courant, question, motifs, signalement
+  lié) ; `admin_moderate_content(id, 'keep' | 'remove', motif)` (motif obligatoire pour `remove`, envoyé au membre).
+  Libellés des motifs : `contentFlagReasonLabel`.
+- **Questions** : écriture directe dans `profile_prompts` (RLS admins) + textes `prompt.<key>` dans « Textes ».
+- **Réglages** : `app_settings` `feed_radius_km` (rayon par défaut), `affinity_weight_*`, `moderation_blocklist`.
+- **Signalements** : `reports.content_kind` / `content_item_id` pointent vers le texte visé (aussi présent dans la file).
+- **Statistiques** : `admin_stats().content_flags_open`.

@@ -1,6 +1,7 @@
 // Corps et réponses des Edge Functions (contrat §5). Erreurs : `{ error: "<code>" }`.
 // Seuls des imports de type sont permis ici (effacés à la compilation) : les Edge Functions
 // importent aussi ce fichier.
+import type { StudyField } from "./intellect.ts";
 import type { AccessTier, SubmissionStatus } from "./tiers.ts";
 
 export const EDGE_FUNCTIONS = {
@@ -104,6 +105,10 @@ export interface ReviewDecideRequest {
   /** Obligatoire pour `approve`, entier de 1 à 8. */
   level?: number;
   reason?: string;
+  /** Établissement lu sur le diplôme (200 caractères au plus), pris en compte à l'approbation. */
+  institution?: string;
+  /** Domaine d'études vérifié, pris en compte à l'approbation. */
+  field?: StudyField;
 }
 /** Valeurs renvoyées par `apply_diploma_review` ; `tier`/`level` restent nuls si le compte n'a pas encore de palier. */
 export interface ReviewDecideResponse {
@@ -118,6 +123,8 @@ export type ReviewDiplomaErrorCode =
   | "invalid_action"
   | "invalid_decision"
   | "invalid_level"
+  | "invalid_institution"
+  | "invalid_field"
   | "not_found"
   | "file_purged"
   /** Toute autre erreur métier levée par `apply_diploma_review` est renvoyée telle quelle. */
