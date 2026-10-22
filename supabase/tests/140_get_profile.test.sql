@@ -35,10 +35,10 @@ select results_eq(
   $$values ('Membre 2'::text, 30, 7, 'history'::text, true, 'Sorbonne Université'::text, true, false)$$,
   'identité publique, niveau, domaine vérifié, établissement affiché, badge');
 select is(jsonb_array_length(public.get_profile(pg_temp.uid(2)) -> 'photos'), 2, 'photos');
-select is(public.get_profile(pg_temp.uid(2)) -> 'answers',
+select is((select jsonb_agg(e - 'id') from jsonb_array_elements(public.get_profile(pg_temp.uid(2)) -> 'answers') e),
   '[{"position": 0, "prompt_key": "three_hours", "answer": "Le cadastre napoléonien."}]'::jsonb,
   'réponses, sans les textes retirés');
-select is(public.get_profile(pg_temp.uid(2)) -> 'books',
+select is((select jsonb_agg(e - 'id') from jsonb_array_elements(public.get_profile(pg_temp.uid(2)) -> 'books') e),
   '[{"position": 0, "title": "Les Essais", "author": "Montaigne"}]'::jsonb, 'livres');
 select is(public.get_profile(pg_temp.uid(2)) -> 'thesis', 'null'::jsonb, 'thèse « après un match » : absente sans match');
 select is(public.get_profile(pg_temp.uid(2)) -> 'affinity',

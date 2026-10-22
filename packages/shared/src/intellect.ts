@@ -176,8 +176,9 @@ export interface ProfileView {
   quiz_badge: boolean;
   thesis: { line: string; visibility?: ThesisVisibility } | null;
   photos: { id: string; path: string; position: number }[];
-  answers: { position: number; prompt_key: string; answer: string }[];
-  books: { position: number; title: string; author: string | null }[];
+  /** `id` : cible d'un signalement précis (`report_user`, `p_content_item`). */
+  answers: { id: string; position: number; prompt_key: string; answer: string }[];
+  books: { id: string; position: number; title: string; author: string | null }[];
   affinity: Affinity | null;
   match_id: string | null;
   my_swipe: "like" | "pass" | null;
