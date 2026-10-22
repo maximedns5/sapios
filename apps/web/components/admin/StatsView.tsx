@@ -21,6 +21,7 @@ interface Stats {
   messages_total: number | null;
   waitlist_signups: number | null;
   reports_open: number | null;
+  content_flags_open?: number | null;
   source: "rpc" | "fallback";
 }
 
@@ -170,6 +171,11 @@ export default function StatsView() {
               <span className="label">Signalements ouverts</span>
               <span className="v">{n(stats.reports_open)}</span>
               <span className="s">Traiter →</span>
+            </Link>
+            <Link href="/admin/contenus" className="kpi" style={{ textDecoration: "none" }}>
+              <span className="label">Textes à modérer</span>
+              <span className="v">{n(stats.content_flags_open)}</span>
+              <span className="s">Réponses, livres, thèses →</span>
             </Link>
           </div>
 

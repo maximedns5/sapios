@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { levelLabel } from "@sapios/shared";
+import LevelLabel from "@/components/LevelLabel";
 import { describeError, isMissingFunction } from "@/lib/admin/errors";
 import { fmtAgo, fmtDateTime, levelText, numberFr, PROFILE_STATUS_LABELS, TIER_LABELS } from "@/lib/admin/format";
 import type { ProfileStatus, WaitlistMember, WaitlistSignup } from "@/lib/admin/types";
@@ -67,7 +69,7 @@ async function loadMembers(): Promise<WaitlistMember[]> {
 async function loadSignups(): Promise<{ rows: WaitlistSignup[]; total: number | null }> {
   const { data, error, count } = await createClient()
     .from("waitlist_signups")
-    .select("id, email, source, created_at", { count: "exact" })
+    .select("id, email, source, level, city, created_at", { count: "exact" })
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) throw error;
@@ -268,7 +270,12 @@ function Signups() {
 
   const csvHref = useMemo(() => {
     if (!data?.rows.length) return null;
-    const lines = ["email;source;created_at", ...data.rows.map((r) => [r.email, r.source, r.created_at].map(csvCell).join(";"))];
+    const lines = [
+      "email;niveau;ville;source;created_at",
+      ...data.rows.map((r) =>
+        [r.email, r.level != null ? levelLabel(r.level) : null, r.city, r.source, r.created_at].map(csvCell).join(";"),
+      ),
+    ];
     return `data:text/csv;charset=utf-8,${encodeURIComponent(lines.join("\n"))}`;
   }, [data]);
 
@@ -294,6 +301,8 @@ function Signups() {
             <thead>
               <tr>
                 <th scope="col">Email</th>
+                <th scope="col">Niveau déclaré</th>
+                <th scope="col">Ville</th>
                 <th scope="col">Source</th>
                 <th scope="col">Inscription</th>
               </tr>
@@ -304,6 +313,10 @@ function Signups() {
                   <td className="span strong" style={{ wordBreak: "break-all" }}>
                     {r.email}
                   </td>
+                  <td data-label="Niveau déclaré">
+                    {r.level != null ? <LevelLabel label={levelLabel(r.level)} /> : <span className="muted">—</span>}
+                  </td>
+                  <td data-label="Ville">{r.city ?? <span className="muted">—</span>}</td>
                   <td data-label="Source">{r.source ?? "—"}</td>
                   <td data-label="Inscription">{fmtDateTime(r.created_at)}</td>
                 </tr>

@@ -6,20 +6,23 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import SignOutButton from "./SignOutButton";
 
-type Counts = { diplomas: number | null; reports: number | null; waitlist: number | null };
+type Counts = { diplomas: number | null; reports: number | null; content: number | null; waitlist: number | null };
 
 const NAV: Array<{ href: string; label: string; count?: keyof Counts }> = [
   { href: "/admin", label: "Vue d’ensemble" },
   { href: "/admin/diplomes", label: "Diplômes", count: "diplomas" },
   { href: "/admin/signalements", label: "Signalements", count: "reports" },
+  { href: "/admin/contenus", label: "Contenus", count: "content" },
   { href: "/admin/liste-attente", label: "Liste d’attente", count: "waitlist" },
   { href: "/admin/paliers", label: "Paliers" },
+  { href: "/admin/decouverte", label: "Découverte" },
+  { href: "/admin/questions", label: "Questions" },
   { href: "/admin/textes", label: "Textes" },
 ];
 
 export default function AdminShell({ email, children }: { email: string; children: React.ReactNode }) {
   const pathname = usePathname();
-  const [counts, setCounts] = useState<Counts>({ diplomas: null, reports: null, waitlist: null });
+  const [counts, setCounts] = useState<Counts>({ diplomas: null, reports: null, content: null, waitlist: null });
 
   useEffect(() => {
     const supabase = createClient();
@@ -28,10 +31,16 @@ export default function AdminShell({ email, children }: { email: string; childre
     Promise.all([
       supabase.from("degree_submissions").select("id", head).eq("status", "needs_review"),
       supabase.from("reports").select("id", head).eq("status", "open"),
+      supabase.from("content_flags").select("id", head).eq("status", "open"),
       supabase.from("user_access").select("user_id", head).eq("tier", "waitlist"),
-    ]).then(([d, r, w]) => {
+    ]).then(([d, r, c, w]) => {
       if (!alive) return;
-      setCounts({ diplomas: d.error ? null : d.count, reports: r.error ? null : r.count, waitlist: w.error ? null : w.count });
+      setCounts({
+        diplomas: d.error ? null : d.count,
+        reports: r.error ? null : r.count,
+        content: c.error ? null : c.count,
+        waitlist: w.error ? null : w.count,
+      });
     });
     return () => {
       alive = false;

@@ -144,9 +144,10 @@ Détail et marche à suivre : `docs/EMAILS.md`.
 2. **Landing** : la transposition du spot au défilement (GSAP, Lenis, Splitting.js, brief « Landing page ») est
    remplacée par une page courte animée en CSS ; les trois bibliothèques sont retirées. Bouton « Postuler » fixé en
    bas sur téléphone (audit n° 02), bloc « Pour de vrai » (n° 01), suite expliquée après l'inscription (n° 03).
-3. **Liste d'attente** : le formulaire ne demande toujours que l'email. Niveau et ville, prévus sur la maquette,
-   attendent deux colonnes dans `waitlist_signups` : on ne demande pas une donnée qu'on n'enregistre pas.
-   `source` vaut `landing`, ou `test` quand l'inscription suit le test.
+3. **Liste d'attente** : email obligatoire ; niveau de diplôme déclaré et ville facultatifs (colonnes `level` et
+   `city` de `waitlist_signups`, lot 1 back-office), mentionnés dans la politique de confidentialité. Le niveau n'est
+   pas vérifié à ce stade : il sert seulement à préparer l'ouverture. `source` vaut `landing`, ou `test` quand
+   l'inscription suit le test.
 4. **Test d'admission** (fonctionnalité 2, option A, décision ouverte n° 6 du brief) : un gag assumé, dix
    questions, chronomètre de 3 minutes, résultat « QI estimé : 130 » pour tout le monde, mention « test non
    scientifique » à l'entrée et au résultat. Tout se passe dans le navigateur : rien n'est envoyé ni enregistré,
@@ -186,3 +187,27 @@ Contrat mis à jour (§1, §2, §3, §5, §6) ; formes jsonb typées dans `packa
 9. **Avis au membre** : table `member_notices` (motif d'un retrait, obligation de motivation du DSA), lus via
    `get_my_state().notices`, marqués lus par `ack_notice`.
 10. **Extension `unaccent`** ajoutée (comparaison des titres de livres, des établissements et de la liste de mots).
+
+## Lot 1 : back-office (22 oct. 2026)
+
+Le back-office garde sa charte noir et blanc : c'est un outil interne, la « direction simple » ne concerne que
+l'app membre et le site public.
+
+1. **Établissement et domaine obligatoires à la validation** (dans l'interface ; `apply_diploma_review` les garde
+   facultatifs pour les appels existants). L'établissement est prérempli par l'extraction IA quand elle existe.
+   Rattrapage des membres validés avant le lot 1 : sur la soumission qui donne leur niveau (file « Validé », mention
+   « À saisir »), par `admin_set_member_institution`.
+2. **Revue d'un diplôme (audit n° 22)** : document à gauche sur environ 60 % de la largeur avec une loupe (clic),
+   décision collée à droite et visible sans défiler sur un écran de 900 px, grille de revue manuelle repliée,
+   raccourcis (1 à 8 niveau, X case d'examen, V / R / C décision, Entrée envoi ; jamais pendant la saisie dans un
+   champ), passage automatique au dossier suivant après 1,5 s (désactivable, choix gardé dans le navigateur).
+   Non fait : le niveau déclaré par le membre (n° 08), qui n'existe pas en base, et la vignette dans la file.
+3. **Réglages de la découverte et de la modération** par `admin_update_settings` (validé, journalisé) plutôt que
+   par écriture directe : les autres écrans de configuration (paliers, textes, questions) écrivent toujours en direct
+   sous la RLS admin, sans trace.
+4. **Signalements (audit n° 23)** : contexte complet par `admin_get_report_context` (photos, profil, diplôme validé,
+   texte visé, historique, match et blocages). Les messages ne sont pas montrés : le formulaire de signalement ne
+   l'annonce pas au membre. Pour « Diplôme douteux », un lien mène au diplôme validé ; l'action « Demander un nouveau
+   justificatif » n'est pas faite (elle demande de rouvrir une décision, donc une règle à écrire).
+5. **Motifs de retrait d'un texte** : cinq phrases prêtes (coordonnées, propos injurieux, contenu sexuel, donnée sur un
+   tiers, publicité), modifiables avant envoi, adressées au membre (obligation de motivation du DSA).
