@@ -1,20 +1,41 @@
-import { levelLabel } from '@sapios/shared';
+import {
+  BOOK_AUTHOR_MAX_LENGTH,
+  BOOK_TITLE_MAX_LENGTH,
+  levelLabel,
+  MAX_ANSWERS,
+  MAX_BOOKS,
+  studyFieldLabel,
+  THESIS_MAX_LENGTH,
+  thesisLabel,
+  type MemberNotice,
+  type StudyField,
+  type ThesisVisibility,
+} from '@sapios/shared';
+import * as Linking from 'expo-linking';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
+import { api } from '@/lib/api';
 import { useApp } from '@/lib/app-state';
 import { profileCompletion } from '@/lib/completion';
+import { useCopy } from '@/lib/copy';
+import { CONTACT_EMAIL } from '@/lib/env';
+import { errorMessage } from '@/lib/errors';
+import { addBook, freeAnswerPosition, loadMyIntellect, loadOwnInstitution, promptText, removeBook, saveIntellectFlags, saveThesis, swapBooks, type MyIntellect } from '@/lib/intellect';
 import { useLayout } from '@/lib/layout';
 import { signedPhotoUrls } from '@/lib/media';
 import { loadOwnProfile, loadPhotos, MAX_PHOTOS } from '@/lib/profile';
-import { colors, radius, space } from '@/lib/theme';
+import { alpha, colors, radius, space } from '@/lib/theme';
 import type { OwnProfile, Photo as PhotoRow } from '@/lib/types';
 import { Button, IconButton } from './Button';
-import { EditIcon, EyeIcon, GearIcon, PlusIcon, VerifiedBadge } from './Icons';
+import { Segmented, Switch } from './Controls';
+import { Field } from './Field';
+import { AlertIcon, BookIcon, BuildingIcon, CapIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, EditIcon, EyeIcon, GearIcon, PlusIcon, SparkIcon, VerifiedBadge } from './Icons';
 import { MaskUp, Rise, useCountUp } from './motion';
+import { useOverlay } from './Overlay';
 import { Photo } from './Photo';
 import { Body, Heading, Small, Title } from './Text';
 
@@ -54,18 +75,99 @@ function CompletionRing({ value, photo, name }: { value: number; photo?: { path:
   );
 }
 
+function SectionTitle({ title, count }: { title: string; count?: string }) {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+      <Heading size={18}>{title}</Heading>
+      {count ? <Small weight="bold">{count}</Small> : null}
+    </View>
+  );
+}
+
+/** Carte pointillée « ajouter » (photo, réponse). */
+function AddCard({ title, sub, onPress, testID }: { title: string; sub: string; onPress: () => void; testID?: string }) {
+  return (
+    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={`${title}. ${sub}`} onPress={onPress}>
+      {({ pressed }) => (
+        <View style={{ borderRadius: radius.card, padding: 18, borderWidth: 2, borderStyle: 'dashed', borderColor: pressed ? colors.accent : colors.disabled, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+            <PlusIcon size={18} stroke={2.6} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Body weight="bold">{title}</Body>
+            <Small>{sub}</Small>
+          </View>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+/** Avis de retrait d'un texte : le motif (obligation de motivation), compris ou contesté. */
+function RemovalNotice({ notice, onAck }: { notice: MemberNotice; onAck: () => void }) {
+  const what = notice.payload.content_kind === 'answer' ? 'Une de vos réponses' : notice.payload.content_kind === 'book' ? 'Un livre de votre bibliothèque' : 'Votre phrase de thèse';
+  return (
+    <View testID="removal-notice" accessibilityRole="alert" style={{ backgroundColor: alpha(colors.danger, 0.06), borderRadius: radius.card, padding: 18, gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <AlertIcon size={18} color={colors.danger} />
+        <Body weight="bold" size={15.5} color={colors.danger}>
+          {what} a été retiré{notice.payload.content_kind === 'answer' ? 'e' : ''}
+        </Body>
+      </View>
+      <Body size={14.5} secondary style={{ lineHeight: 21 }}>
+        « {notice.payload.excerpt} »
+      </Body>
+      <Body size={14.5}>
+        <Body size={14.5} weight="bold">
+          Motif :{' '}
+        </Body>
+        {notice.payload.reason}
+      </Body>
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+        <Button label="J’ai compris" size="md" onPress={onAck} style={{ flex: 1 }} />
+        <Button
+          label="Contester"
+          size="md"
+          variant="secondary"
+          style={{ flex: 1 }}
+          onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Contestation d’un retrait de contenu')}&body=${encodeURIComponent(`Avis ${notice.id}\n\n`)}`)}
+        />
+      </View>
+    </View>
+  );
+}
+
 /**
- * Onglet « Profil » : son propre profil, tel qu'il se construit (photos, bio, repères), avec l'anneau
- * de complétion. Réglages du compte derrière la roue crantée. Les réponses aux questions et la
- * bibliothèque (profil intellectuel) viendront s'ajouter ici.
+ * « Mon profil » : son propre profil tel qu'il se construit, avec l'anneau de complétion. Photos,
+ * réponses aux questions, bibliothèque, domaine et phrase de thèse, badges ; réglages du compte
+ * derrière la roue crantée. `mode="stack"` : ouvert depuis l'attente du verdict (retour en haut).
  */
-export function MyProfile() {
-  const { state, userId } = useApp();
+export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
+  const { state, userId, refresh } = useApp();
+  const { t } = useCopy();
+  const { toast } = useOverlay();
   const insets = useSafeAreaInsets();
   const { columnWidth } = useLayout();
   const [profile, setProfile] = useState<OwnProfile | null>(null);
   const [photos, setPhotos] = useState<PhotoRow[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
+  const [mine, setMine] = useState<MyIntellect | null>(null);
+  const [institution, setInstitution] = useState<{ institution: string | null; field: StudyField | null }>({ institution: null, field: null });
+  const [thesis, setThesis] = useState('');
+  const [visibility, setVisibility] = useState<ThesisVisibility>('matches');
+  const [bookTitle, setBookTitle] = useState('');
+  const [bookAuthor, setBookAuthor] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const reload = useCallback(async () => {
+    if (!userId) return;
+    const next = await loadMyIntellect(userId).catch(() => null);
+    if (next) {
+      setMine(next);
+      setThesis(next.thesis?.line ?? '');
+      setVisibility(next.thesis?.visibility ?? 'matches');
+    }
+  }, [userId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -77,18 +179,49 @@ export function MyProfile() {
           setUrls(await signedPhotoUrls(list.map((p) => p.storage_path)));
         })
         .catch(() => {});
-    }, [userId]),
+      loadOwnInstitution(userId).then(setInstitution).catch(() => {});
+      reload();
+    }, [reload, userId]),
   );
+
+  const run = async (action: () => Promise<unknown>, done?: string) => {
+    setBusy(true);
+    try {
+      await action();
+      await reload();
+      refresh();
+      if (done) toast(done);
+    } catch (e) {
+      toast(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (!state) return null;
   const name = profile?.display_name ?? 'Vous';
-  const completion = profileCompletion({ photos: photos.length, bio: profile?.bio });
+  const answers = mine?.answers ?? [];
+  const books = mine?.books ?? [];
+  const field = mine?.studyField ?? null;
+  const completion = profileCompletion({ photos: photos.length, bio: profile?.bio, answers: answers.filter((a) => a.moderation_status !== 'rejected').length, books: books.length, field: !!field, thesis: !!mine?.thesis });
   const tile = (columnWidth - space.gutter * 2 - 20) / 3;
   const main = photos[0];
   const meta = [state.level ? `${levelLabel(state.level)} validé` : null, profile?.city || null].filter(Boolean).join(' · ');
+  const free = freeAnswerPosition(answers);
+  const thesisDirty = (mine?.thesis?.line ?? '') !== thesis.trim();
+  const notices = (state.notices ?? []).filter((n) => n.kind === 'content_removed');
 
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }} testID="account">
+  const header =
+    mode === 'stack' ? (
+      <View style={{ height: 60, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <IconButton label="Retour" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} testID="header-back">
+          <ChevronLeftIcon />
+        </IconButton>
+        <IconButton label="Compte et réglages" onPress={() => router.push('/settings')} testID="open-settings">
+          <GearIcon size={20} />
+        </IconButton>
+      </View>
+    ) : (
       <View style={{ height: 64, paddingLeft: space.gutter, paddingRight: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <MaskUp>
           <Title size={30}>Mon profil</Title>
@@ -97,7 +230,28 @@ export function MyProfile() {
           <GearIcon size={20} />
         </IconButton>
       </View>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.xl, gap: 26 }}>
+    );
+
+  const section = (delay: number, children: ReactNode) => (
+    <Rise delay={delay} style={{ gap: 12 }}>
+      {children}
+    </Rise>
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }} testID="account">
+      {header}
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.xl + (mode === 'stack' ? insets.bottom : 0), gap: 26 }}>
+        {mode === 'stack' ? (
+          <MaskUp>
+            <Title size={30}>Mon profil</Title>
+          </MaskUp>
+        ) : null}
+
+        {notices.map((n) => (
+          <RemovalNotice key={n.id} notice={n} onAck={() => run(() => api.ackNotice(n.id))} />
+        ))}
+
         <Rise style={{ flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 6 }}>
           <CompletionRing value={completion.value} photo={main ? { path: main.storage_path, url: urls[main.storage_path] } : undefined} name={name} />
           <View style={{ flex: 1, gap: 2 }}>
@@ -108,86 +262,310 @@ export function MyProfile() {
               {state.level ? <VerifiedBadge size={20} /> : null}
             </View>
             {meta ? <Small size={14}>{meta}</Small> : null}
-            <Body weight="semibold" size={14} color={colors.accent} style={{ marginTop: 4 }}>
+            <Body weight="semibold" size={14} color={colors.accent} style={{ marginTop: 4 }} testID="completion-next">
               {completion.next ?? 'Profil complet. Bravo.'}
             </Body>
           </View>
         </Rise>
 
-        <Rise delay={100} style={{ gap: 12 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <Heading size={18}>Mes photos</Heading>
-            <Small weight="bold">
-              {photos.length} / {MAX_PHOTOS}
-            </Small>
-          </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            {[...photos, ...(photos.length < MAX_PHOTOS ? [null] : [])].map((p, i) =>
-              p ? (
-                <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`Photo ${i + 1}${i === 0 ? ', principale' : ''}. Gérer mes photos`} onPress={() => router.push('/settings/photos')}>
-                  <Photo path={p.storage_path} url={urls[p.storage_path]} name={name} initialSize={28} style={{ width: tile, height: tile * (4 / 3), borderRadius: 16 }} />
+        {section(
+          80,
+          <>
+            <SectionTitle title="Mes photos" count={`${photos.length} / ${MAX_PHOTOS}`} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {[...photos, ...(photos.length < MAX_PHOTOS ? [null] : [])].map((p, i) =>
+                p ? (
+                  <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`Photo ${i + 1}${i === 0 ? ', principale' : ''}. Gérer mes photos`} onPress={() => router.push('/settings/photos')}>
+                    <Photo path={p.storage_path} url={urls[p.storage_path]} name={name} initialSize={28} style={{ width: tile, height: tile * (4 / 3), borderRadius: 16 }} />
+                  </Pressable>
+                ) : (
+                  <Pressable key={`add-${i}`} accessibilityRole="button" accessibilityLabel="Ajouter une photo" onPress={() => router.push('/settings/photos')}>
+                    <View style={{ width: tile, height: tile * (4 / 3), borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.disabled, backgroundColor: colors.surfaceSoft, alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+                        <PlusIcon size={16} stroke={2.6} color="#FFFFFF" />
+                      </View>
+                    </View>
+                  </Pressable>
+                ),
+              )}
+            </View>
+          </>,
+        )}
+
+        {section(
+          140,
+          <>
+            <SectionTitle title="Mes réponses" count={`${answers.length} / ${MAX_ANSWERS}`} />
+            {answers.map((a) => {
+              const removed = a.moderation_status === 'rejected';
+              const label = promptText(t, a.prompt_key);
+              return (
+                <View key={a.id} testID={`my-answer-${a.position}`} style={{ backgroundColor: removed ? colors.surfaceSoft : colors.surface, borderRadius: radius.card, padding: 18, flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Small weight="semibold" size={13.5}>
+                      {label}
+                    </Small>
+                    <Body weight="bold" size={17} color={removed ? colors.muted : colors.text} style={{ lineHeight: 24 }}>
+                      {a.answer}
+                    </Body>
+                    {removed ? (
+                      <Small weight="bold" color={colors.danger}>
+                        Retirée par la modération : invisible pour les autres
+                      </Small>
+                    ) : null}
+                  </View>
+                  <IconButton
+                    label={`Modifier la réponse « ${label} »`}
+                    variant="floating"
+                    size={40}
+                    onPress={() => router.push({ pathname: '/settings/question', params: { position: String(a.position) } })}
+                  >
+                    <EditIcon size={17} />
+                  </IconButton>
+                </View>
+              );
+            })}
+            {free != null ? (
+              <AddCard
+                testID="add-answer"
+                title="Ajouter une réponse"
+                sub={answers.length === MAX_ANSWERS - 1 ? 'Plus qu’une question pour compléter ce bloc.' : 'Une question, une réponse courte, avec du caractère.'}
+                onPress={() => router.push({ pathname: '/settings/question', params: { position: String(free) } })}
+              />
+            ) : null}
+            <Small>{t('intellect.sensitive')}</Small>
+          </>,
+        )}
+
+        {section(
+          200,
+          <>
+            <SectionTitle title="Ma bibliothèque" count={`${books.length} / ${MAX_BOOKS}`} />
+            {books.length ? (
+              <View style={{ backgroundColor: colors.surface, borderRadius: radius.card, paddingHorizontal: 16, paddingVertical: 4 }} accessibilityRole="list">
+                {books.map((b, i) => (
+                  <View key={b.id} testID={`my-book-${i}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderColor: colors.line }}>
+                    <BookIcon size={18} color={colors.accent} />
+                    <View style={{ flex: 1 }}>
+                      <Body weight="bold" size={15.5} color={b.moderation_status === 'rejected' ? colors.muted : colors.text}>
+                        {b.title}
+                      </Body>
+                      {b.author ? <Small>{b.author}</Small> : null}
+                      {b.moderation_status === 'rejected' ? (
+                        <Small weight="bold" color={colors.danger}>
+                          Retiré par la modération
+                        </Small>
+                      ) : null}
+                    </View>
+                    {i > 0 && b.moderation_status !== 'rejected' && books[i - 1].moderation_status !== 'rejected' ? (
+                      <IconButton label={`Remonter « ${b.title} »`} variant="plain" size={40} disabled={busy} onPress={() => userId && run(() => swapBooks(userId, books, books[i - 1], b))}>
+                        <View style={{ transform: [{ rotate: '-90deg' }] }}>
+                          <ChevronRightIcon size={18} color={colors.muted} />
+                        </View>
+                      </IconButton>
+                    ) : null}
+                    <IconButton label={`Retirer « ${b.title} »`} variant="plain" size={40} disabled={busy} onPress={() => userId && run(() => removeBook(userId, b.id))}>
+                      <CrossIcon size={17} color={colors.muted} />
+                    </IconButton>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Small>Aucun livre pour l’instant. Les titres en commun rapprochent les esprits.</Small>
+            )}
+            {books.length < MAX_BOOKS ? (
+              <View style={{ gap: 10 }}>
+                <Field testID="book-title" label="Ajouter un livre" placeholder="Titre" value={bookTitle} onChangeText={setBookTitle} maxLength={BOOK_TITLE_MAX_LENGTH} />
+                <Field testID="book-author" placeholder="Auteur (facultatif)" accessibilityLabel="Auteur du livre" value={bookAuthor} onChangeText={setBookAuthor} maxLength={BOOK_AUTHOR_MAX_LENGTH} />
+                <Button
+                  testID="book-add"
+                  label="Ajouter à ma bibliothèque"
+                  variant="secondary"
+                  size="md"
+                  disabled={!bookTitle.trim() || busy}
+                  icon={<PlusIcon size={18} />}
+                  onPress={() =>
+                    run(async () => {
+                      await addBook(books, bookTitle, bookAuthor);
+                      setBookTitle('');
+                      setBookAuthor('');
+                    })
+                  }
+                />
+              </View>
+            ) : (
+              <Small weight="bold" color={colors.accent}>
+                Bibliothèque complète.
+              </Small>
+            )}
+          </>,
+        )}
+
+        {section(
+          260,
+          <>
+            <SectionTitle title="Domaine et thèse" />
+            <Pressable testID="edit-field" accessibilityRole="button" accessibilityLabel={`Domaine : ${studyFieldLabel(field) ?? 'non renseigné'}. Modifier`} onPress={() => router.push('/settings/field')}>
+              {({ pressed }) => (
+                <View style={{ backgroundColor: pressed ? colors.line : colors.surface, borderRadius: radius.card, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <CapIcon size={20} color={colors.accent} />
+                  <View style={{ flex: 1 }}>
+                    <Small size={13}>Domaine</Small>
+                    <Body weight="bold">{studyFieldLabel(field) ?? 'À renseigner'}</Body>
+                  </View>
+                  {field && institution.field === field ? (
+                    <View style={{ backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <Small size={12.5} weight="bold" color={colors.accent}>
+                        Vérifié
+                      </Small>
+                    </View>
+                  ) : null}
+                  <ChevronRightIcon size={18} color={colors.muted} />
+                </View>
+              )}
+            </Pressable>
+            <Field
+              testID="thesis"
+              label={`${thesisLabel(state.level)} en une phrase`}
+              placeholder="Le sujet, en une phrase"
+              value={thesis}
+              onChangeText={setThesis}
+              maxLength={THESIS_MAX_LENGTH}
+              counter
+              multiline
+              style={{ minHeight: 64 }}
+            />
+            <View style={{ gap: 8 }}>
+              <Body weight="semibold" size={14.5}>
+                Qui voit cette phrase ?
+              </Body>
+              <Segmented
+                testID="thesis-visibility"
+                label="Qui voit cette phrase ?"
+                value={visibility}
+                onChange={(v) => {
+                  setVisibility(v);
+                  if (mine?.thesis && userId && !thesisDirty) run(() => saveThesis(userId, mine.thesis!.line, v), v === 'everyone' ? 'Visible par tous les membres.' : 'Visible après un match.');
+                }}
+                options={[
+                  { value: 'matches', label: 'Après un match' },
+                  { value: 'everyone', label: 'Tous les membres' },
+                ]}
+              />
+            </View>
+            {thesisDirty ? (
+              <Button testID="thesis-save" label={thesis.trim() ? 'Enregistrer la phrase' : 'Retirer la phrase'} size="md" disabled={busy} onPress={() => (userId ? run(() => saveThesis(userId, thesis, visibility), thesis.trim() ? 'Phrase enregistrée.' : 'Phrase retirée.') : undefined)} />
+            ) : null}
+            <Small>{t('intellect.thesis_warning')}</Small>
+          </>,
+        )}
+
+        {section(
+          320,
+          <>
+            <SectionTitle title="Badges" />
+            <View style={{ backgroundColor: colors.surface, borderRadius: radius.card, paddingHorizontal: 16 }}>
+              {institution.institution ? (
+                <View style={{ paddingVertical: 14, gap: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <BuildingIcon size={20} color={colors.accent} />
+                    <Body weight="bold" size={15} style={{ flex: 1 }}>
+                      Afficher mon établissement
+                    </Body>
+                    <Switch
+                      testID="toggle-institution"
+                      label={`Afficher « ${institution.institution} · vérifié » sur mon profil`}
+                      value={!!mine?.showInstitution}
+                      disabled={busy}
+                      onChange={(v) => userId && run(() => saveIntellectFlags(userId, { show_institution: v }))}
+                    />
+                  </View>
+                  <View style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 7, opacity: mine?.showInstitution ? 1 : 0.55 }}>
+                    <BuildingIcon size={15} />
+                    <Small size={13.5} weight="semibold" color={colors.text}>
+                      {institution.institution} · vérifié
+                    </Small>
+                  </View>
+                  <Small>Désactivé par défaut. L’établissement vient de votre diplôme vérifié ; l’afficher reste votre choix.</Small>
+                </View>
+              ) : null}
+              <View style={{ paddingVertical: 14, gap: 10, borderTopWidth: institution.institution ? 1 : 0, borderColor: colors.line }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <SparkIcon size={20} color={colors.accent} />
+                  <Body weight="bold" size={15} style={{ flex: 1 }}>
+                    « {t('quiz.badge')} »
+                  </Body>
+                  <Switch testID="toggle-quiz" label={`Afficher « ${t('quiz.badge')} » sur mon profil`} value={!!mine?.showQuizBadge} disabled={busy} onChange={(v) => userId && run(() => saveIntellectFlags(userId, { show_quiz_badge: v }))} />
+                </View>
+                <Pressable accessibilityRole="button" onPress={() => router.push('/settings/test')} testID="open-test">
+                  {({ pressed }) => (
+                    <Body weight="bold" size={14.5} color={colors.accent} style={{ opacity: pressed ? 0.6 : 1 }}>
+                      Passer le test d’admission →
+                    </Body>
+                  )}
                 </Pressable>
-              ) : (
-                <Pressable key={`add-${i}`} accessibilityRole="button" accessibilityLabel="Ajouter une photo" onPress={() => router.push('/settings/photos')}>
-                  <View style={{ width: tile, height: tile * (4 / 3), borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.disabled, backgroundColor: colors.surfaceSoft, alignItems: 'center', justifyContent: 'center' }}>
-                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
-                      <PlusIcon size={16} stroke={2.6} color="#FFFFFF" />
+              </View>
+            </View>
+          </>,
+        )}
+
+        {section(
+          380,
+          <>
+            <SectionTitle title="En quelques mots" />
+            <Pressable accessibilityRole="button" accessibilityLabel={profile?.bio ? 'Modifier ma bio' : 'Écrire ma bio'} onPress={() => router.push('/settings/profile')}>
+              {({ pressed }) =>
+                profile?.bio ? (
+                  <View style={{ backgroundColor: pressed ? colors.line : colors.surface, borderRadius: radius.card, padding: 20, flexDirection: 'row', gap: 12 }}>
+                    <Body weight="bold" size={18} style={{ flex: 1, lineHeight: 25 }}>
+                      {profile.bio}
+                    </Body>
+                    <EditIcon size={18} color={colors.muted} />
+                  </View>
+                ) : (
+                  <View style={{ borderRadius: radius.card, padding: 18, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.disabled, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+                      <PlusIcon size={18} stroke={2.6} color="#FFFFFF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Body weight="bold">Écrire ma bio</Body>
+                      <Small>Une phrase suffit. Elle s’affiche entre vos photos.</Small>
                     </View>
                   </View>
-                </Pressable>
-              ),
-            )}
-          </View>
-        </Rise>
+                )
+              }
+            </Pressable>
+          </>,
+        )}
 
-        <Rise delay={180} style={{ gap: 12 }}>
-          <Heading size={18}>En quelques mots</Heading>
-          <Pressable accessibilityRole="button" accessibilityLabel={profile?.bio ? 'Modifier ma bio' : 'Écrire ma bio'} onPress={() => router.push('/settings/profile')}>
-            {({ pressed }) =>
-              profile?.bio ? (
-                <View style={{ backgroundColor: pressed ? colors.line : colors.surface, borderRadius: radius.card, padding: 20, flexDirection: 'row', gap: 12 }}>
-                  <Body weight="bold" size={18} style={{ flex: 1, lineHeight: 25 }}>
-                    {profile.bio}
+        {section(
+          440,
+          <>
+            <SectionTitle title="Mes repères" />
+            <View style={{ backgroundColor: colors.surface, borderRadius: radius.card, paddingHorizontal: 18, paddingVertical: 4 }}>
+              {[
+                ['Ville', profile?.city || '—'],
+                ['Âge recherché', profile ? `${profile.age_min} – ${profile.age_max} ans` : '—'],
+              ].map(([k, v], i) => (
+                <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderTopWidth: i ? 1 : 0, borderColor: colors.line }}>
+                  <Small size={14.5} weight="semibold">
+                    {k}
+                  </Small>
+                  <Body size={15} weight="bold">
+                    {v}
                   </Body>
-                  <EditIcon size={18} color={colors.muted} />
                 </View>
-              ) : (
-                <View style={{ borderRadius: radius.card, padding: 18, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.disabled, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
-                    <PlusIcon size={18} stroke={2.6} color="#FFFFFF" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Body weight="bold">Écrire ma bio</Body>
-                    <Small>Une phrase suffit. Elle s’affiche sous votre première photo.</Small>
-                  </View>
-                </View>
-              )
-            }
-          </Pressable>
-        </Rise>
-
-        <Rise delay={260} style={{ gap: 12 }}>
-          <Heading size={18}>Mes repères</Heading>
-          <View style={{ backgroundColor: colors.surface, borderRadius: radius.card, paddingHorizontal: 18, paddingVertical: 4 }}>
-            {[
-              ['Ville', profile?.city || '—'],
-              ['Âge recherché', profile ? `${profile.age_min} – ${profile.age_max} ans` : '—'],
-            ].map(([k, v], i) => (
-              <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderTopWidth: i ? 1 : 0, borderColor: colors.line }}>
-                <Small size={14.5} weight="semibold">
-                  {k}
-                </Small>
-                <Body size={15} weight="bold">
-                  {v}
-                </Body>
-              </View>
-            ))}
-          </View>
-          <Button label="Modifier mon profil" variant="secondary" icon={<EditIcon size={18} />} onPress={() => router.push('/settings/profile')} />
-          {userId ? (
-            <Button label="Voir mon profil comme les autres" variant="ghost" icon={<EyeIcon size={18} color={colors.muted} />} onPress={() => router.push({ pathname: '/profile/[userId]', params: { userId, from: 'self' } })} />
-          ) : null}
-        </Rise>
+              ))}
+            </View>
+            <Button label="Modifier mon profil" variant="secondary" icon={<EditIcon size={18} />} onPress={() => router.push('/settings/profile')} />
+            {state.can_browse ? (
+              <Button testID="open-criteria" label="Mes critères de découverte" variant="secondary" onPress={() => router.push('/criteria')} />
+            ) : null}
+            {userId && state.can_browse ? (
+              <Button label="Voir mon profil comme les autres" variant="ghost" icon={<EyeIcon size={18} color={colors.muted} />} onPress={() => router.push({ pathname: '/profile/[userId]', params: { userId, from: 'self' } })} />
+            ) : null}
+          </>,
+        )}
       </ScrollView>
     </View>
   );

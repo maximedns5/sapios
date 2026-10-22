@@ -15,7 +15,7 @@ import { IN_REVIEW } from '@/lib/routing';
 import { alpha, colors, radius } from '@/lib/theme';
 import { TIER_LABEL } from './AdmissionGrid';
 import { Switch } from './Controls';
-import { BellIcon, CapIcon, CheckIcon, DownloadIcon, EditIcon, EyeIcon, ImageIcon, LockIcon, LogoutIcon, MailIcon, ShieldIcon } from './Icons';
+import { BellIcon, BookIcon, CapIcon, CheckIcon, DownloadIcon, EditIcon, EyeIcon, ImageIcon, LockIcon, LogoutIcon, MailIcon, ShieldIcon, SlidersIcon, SparkIcon } from './Icons';
 import { MaskUp, Ripple, Rise } from './motion';
 import { useOverlay } from './Overlay';
 import { Header, Screen } from './Screen';
@@ -188,7 +188,10 @@ export function AccountScreen() {
           <Rise delay={140} style={{ gap: 10 }}>
             <Heading size={16}>Profil</Heading>
             <SettingsGroup>
-              <SettingsRow first testID="edit-profile" icon={<EditIcon size={18} color={colors.accent} />} title="Modifier mon profil" sub="Prénom, âge recherché, ville, bio" onPress={() => router.push('/settings/profile')} />
+              <SettingsRow first testID="edit-profile" icon={<EditIcon size={18} color={colors.accent} />} title="Modifier mon profil" sub="Prénom, ville, bio" onPress={() => router.push('/settings/profile')} />
+              {state.can_browse ? (
+                <SettingsRow testID="edit-criteria" icon={<SlidersIcon size={18} color={colors.accent} />} title="Critères de découverte" sub="Âge, distance, niveaux, domaines" onPress={() => router.push('/criteria')} />
+              ) : null}
               <SettingsRow testID="edit-photos" icon={<ImageIcon size={18} color={colors.accent} />} title="Mes photos" sub={`${state.onboarding.photos_count} / 6`} onPress={() => router.push('/settings/photos')} />
               <SettingsRow
                 icon={<EyeIcon size={18} color={colors.accent} />}
@@ -199,6 +202,14 @@ export function AccountScreen() {
             </SettingsGroup>
           </Rise>
         ) : null}
+
+        <Rise delay={170} style={{ gap: 10 }}>
+          <Heading size={16}>Profil intellectuel</Heading>
+          <SettingsGroup>
+            <SettingsRow first testID="edit-intellect" icon={<BookIcon size={18} color={colors.accent} />} title="Mon profil intellectuel" sub="Réponses, bibliothèque, domaine et thèse" onPress={() => router.push('/settings/me')} />
+            <SettingsRow testID="open-test" icon={<SparkIcon size={18} color={colors.accent} />} title="Test d’admission" sub="Pour rire : sans lien avec l’admission" onPress={() => router.push('/settings/test')} />
+          </SettingsGroup>
+        </Rise>
 
         <Rise delay={200} style={{ gap: 10 }}>
           <Heading size={16}>Données et confidentialité</Heading>
