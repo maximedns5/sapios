@@ -77,11 +77,11 @@ export function OptionCard({
 }
 
 /** Pastille à bascule (sujets, critères, motifs courts). */
-export function Chip({ label, active, onPress, testID, disabled }: { label: string; active: boolean; onPress: () => void; testID?: string; disabled?: boolean }) {
+export function Chip({ label, active, onPress, testID, disabled, radio }: { label: string; active: boolean; onPress: () => void; testID?: string; disabled?: boolean; radio?: boolean }) {
   return (
     <Pressable
       testID={testID}
-      accessibilityRole="checkbox"
+      accessibilityRole={radio ? 'radio' : 'checkbox'}
       accessibilityState={{ checked: active, disabled: !!disabled }}
       disabled={disabled}
       onPress={() => {
@@ -347,3 +347,139 @@ export function ProgressBar({ value, label, height = 6 }: { value: number; label
   );
 }
 
+
+/**
+ * Curseur à une poignée (distance) : glisser, ou flèches du clavier et actions d'accessibilité.
+ * `format` affiche la valeur courante (« 50 km »).
+ */
+export function ValueSlider({
+  min,
+  max,
+  step = 1,
+  value,
+  onChange,
+  label,
+  format = (v: number) => String(v),
+  testID,
+}: {
+  min: number;
+  max: number;
+  step?: number;
+  value: number;
+  onChange: (value: number) => void;
+  label: string;
+  format?: (v: number) => string;
+  testID?: string;
+}) {
+  const [width, setWidth] = useState(0);
+  const track = Math.max(1, width - THUMB);
+  const x = useSharedValue(0);
+  const start = useSharedValue(0);
+  const span = max - min;
+
+  useEffect(() => {
+    x.value = ((value - min) / span) * track;
+  }, [min, span, track, value, x]);
+
+  const snap = (v: number) => Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
+  const emit = (v: number) => onChange(snap(v));
+
+  const pan = usePanGesture({
+    hitSlop: 10,
+    onBegin: () => {
+      'worklet';
+      start.value = x.value;
+    },
+    onUpdate: (e) => {
+      'worklet';
+      const next = Math.min(Math.max(start.value + e.translationX, 0), track);
+      x.value = next;
+      scheduleOnRN(emit, min + (next / track) * span);
+    },
+  });
+
+  const thumbStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+  const fillStyle = useAnimatedStyle(() => ({ width: x.value + THUMB / 2 }));
+  const nudge = (delta: number) => {
+    onChange(snap(value + delta * step));
+    haptic.selection();
+  };
+  const onKeyDown = (e: { nativeEvent: { key: string }; preventDefault?: () => void }) => {
+    const key = e.nativeEvent.key;
+    const delta = key === 'ArrowRight' || key === 'ArrowUp' ? 1 : key === 'ArrowLeft' || key === 'ArrowDown' ? -1 : 0;
+    if (!delta) return;
+    e.preventDefault?.();
+    nudge(delta);
+  };
+
+  return (
+    <View style={{ height: THUMB, justifyContent: 'center' }} testID={testID} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <View style={{ position: 'absolute', left: THUMB / 2, right: THUMB / 2, height: 6, borderRadius: 3, backgroundColor: colors.line }} />
+      <Animated.View style={[{ position: 'absolute', left: 0, height: 6, borderRadius: 3, backgroundColor: colors.accent }, fillStyle]} />
+      {width > 0 ? (
+        <GestureDetector gesture={pan}>
+          <Animated.View
+            accessible
+            focusable
+            accessibilityRole="adjustable"
+            accessibilityLabel={label}
+            accessibilityValue={{ min, max, now: value, text: format(value) }}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            aria-valuenow={value}
+            aria-valuetext={format(value)}
+            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+            onAccessibilityAction={(e: AccessibilityActionEvent) => nudge(e.nativeEvent.actionName === 'increment' ? 1 : -1)}
+            {...(Platform.OS === 'web' ? ({ onKeyDown, tabIndex: 0 } as object) : {})}
+            style={[
+              {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: THUMB,
+                height: THUMB,
+                borderRadius: THUMB / 2,
+                backgroundColor: '#FFFFFF',
+                borderWidth: 2,
+                borderColor: colors.accent,
+                boxShadow: shadow.button,
+                cursor: 'grab',
+              } as object,
+              thumbStyle,
+            ]}
+          />
+        </GestureDetector>
+      ) : null}
+    </View>
+  );
+}
+
+/** Choix exclusif sur une ligne (deux ou trois options) : pastilles, celle choisie en accent. */
+export function Segmented<T extends string>({ options, value, onChange, label, testID }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; label: string; testID?: string }) {
+  return (
+    <View role="radiogroup" accessibilityLabel={label} testID={testID} style={{ flexDirection: 'row', gap: 8, backgroundColor: colors.surface, borderRadius: radius.pill, padding: 4 }}>
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            testID={testID ? `${testID}-${o.value}` : undefined}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: active }}
+            style={{ flex: 1 }}
+            onPress={() => {
+              haptic.selection();
+              onChange(o.value);
+            }}
+          >
+            <View style={{ minHeight: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? colors.bg : 'transparent', boxShadow: active ? shadow.soft : undefined }}>
+              <Body weight="bold" size={14.5} color={active ? colors.text : colors.muted}>
+                {o.label}
+              </Body>
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
