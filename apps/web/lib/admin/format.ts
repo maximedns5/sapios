@@ -116,3 +116,58 @@ export function confidenceValue(c: number | string | null | undefined): number |
 export function pct(n: number | null): string {
   return n == null ? "—" : `${Math.round(n * 100)} %`;
 }
+
+// --- Lot 2 : événements ---------------------------------------------------------------------------
+
+const eventDay = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: "Europe/Paris",
+});
+const eventLongDay = new Intl.DateTimeFormat("fr-FR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Europe/Paris",
+});
+const eventTime = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
+
+/** « 19 h 30 », « 20 h ». */
+export function fmtHour(iso: string): string {
+  const [h, m] = eventTime.format(new Date(iso)).split(":");
+  return m === "00" ? `${Number(h)} h` : `${Number(h)} h ${m}`;
+}
+
+/** « Jeu. 6 nov. · 19 h 30 ». */
+export function fmtEventDate(iso: string): string {
+  const day = eventDay.format(new Date(iso));
+  return `${day.charAt(0).toUpperCase()}${day.slice(1)} · ${fmtHour(iso)}`;
+}
+
+/** « Jeudi 6 novembre 2026 · 19 h 30 à 22 h ». */
+export function fmtEventRange(startIso: string, endIso: string): string {
+  const day = eventLongDay.format(new Date(startIso));
+  return `${day.charAt(0).toUpperCase()}${day.slice(1)} · ${fmtHour(startIso)} à ${fmtHour(endIso)}`;
+}
+
+/** Valeur d'un champ `datetime-local` (heure locale du navigateur) depuis une date ISO. */
+export function toLocalInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Date ISO depuis un champ `datetime-local` ; null si vide ou invalide. */
+export function fromLocalInput(value: string): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+export function csvCell(v: string | number | null | undefined): string {
+  const s = v == null ? "" : String(v);
+  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}

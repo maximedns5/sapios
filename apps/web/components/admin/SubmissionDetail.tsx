@@ -34,7 +34,7 @@ import type { PolicyRow, SubmissionRow } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
 import LevelLabel from "@/components/LevelLabel";
 import { allSignals, isManualReview } from "./SubmissionsQueue";
-import { ErrorNotice, Loading, StatusBadge, SuccessNotice, TierBadge } from "./ui";
+import { ErrorNotice, Loading, ReferredMark, StatusBadge, SuccessNotice, TierBadge } from "./ui";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const OPEN_STATUSES = ["needs_review", "pending", "processing", "needs_more"];
@@ -834,6 +834,12 @@ export default function SubmissionDetail({ id }: { id: string }) {
             {row.email ? ` · ${row.email}` : ""} · soumis le {fmtDateTime(row.created_at)}
             {manual ? " · revue manuelle" : ` · ${row.attempts} essai${row.attempts > 1 ? "s" : ""} d’extraction`}
           </p>
+          {row.referred ? (
+            <p style={{ marginTop: 8 }}>
+              <ReferredMark by={row.referred_by} />
+              <span className="muted"> · la recommandation fait passer devant, elle ne change rien au verdict.</span>
+            </p>
+          ) : null}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <StatusBadge status={row.status} />

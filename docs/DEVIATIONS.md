@@ -298,3 +298,25 @@ Lettres de recommandation et événements gratuits (cadrage §5 et §6, décisio
     l'admin change la date. Les emails d'événement passent par `notify`, sans effet tant que Resend n'est pas configuré.
 15. **Clés des emails d'événement** dans leur propre migration et leur propre liste (`EVENT_EMAIL_COPY_KEYS`) :
     `EMAIL_COPY_KEYS` reste celle du lot 0, vérifiée contre la migration d'origine.
+
+## Lot 2 : back-office (23 oct. 2026)
+
+Pages « Événements », « Inscrits » (par événement) et « Parrainages » ; repères « Prioritaire » dans les files.
+
+1. **Navigation** : les quatre pages de configuration (Paliers, Découverte, Questions, Textes) passent sous un seul
+   onglet « Réglages », avec une barre secondaire, comme sur la maquette du lot 2 : onze onglets ne tenaient plus sur un
+   écran de 1440 px.
+2. **Réglages des lettres** depuis « Parrainages » : `admin_update_settings` accepte en plus
+   `referral_letters_standard`, `referral_letters_unlimited` (0 à 20) et `referral_window_days` (7 à 90), validés et
+   tracés comme les autres (migration `20261025120000_lot2_back_office.sql`).
+3. **`admin_referral_stats`** renvoie en plus `tier` et `level` du parrain (affichage seulement). Les membres qui
+   n'ont recommandé personne n'y figurent pas : un code sans filleul se révoque en le saisissant.
+4. **Pointage par code de billet** : le code est cherché dans les inscrits de l'événement affiché avant tout appel ;
+   un billet d'un autre événement est refusé à l'écran, alors que `admin_check_in(p_ticket_code)` le pointerait.
+5. **Publication** : l'interface exige l'adresse privée avant de publier (les inscrits la reçoivent) ; la base ne
+   l'impose pas. La capacité ne descend pas sous le nombre de places prises.
+6. **Export CSV des inscrits** : seul écran du back-office où figurent les emails (`admin_export_event`) ; le fichier
+   est produit dans le navigateur, rien n'est stocké.
+7. **Landing** : un lien `/?ref=CODE` enregistre l'inscription à la liste d'attente avec `source = ref:CODE` (code
+   normalisé et vérifié) ; la liste d'attente l'affiche « Recommandation · CODE ».
+

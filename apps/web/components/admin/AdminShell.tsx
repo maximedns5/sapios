@@ -8,12 +8,19 @@ import SignOutButton from "./SignOutButton";
 
 type Counts = { diplomas: number | null; reports: number | null; content: number | null; waitlist: number | null };
 
-const NAV: Array<{ href: string; label: string; count?: keyof Counts }> = [
+const NAV: Array<{ href: string; label: string; count?: keyof Counts; group?: readonly string[] }> = [
   { href: "/admin", label: "Vue d’ensemble" },
   { href: "/admin/diplomes", label: "Diplômes", count: "diplomas" },
   { href: "/admin/signalements", label: "Signalements", count: "reports" },
   { href: "/admin/contenus", label: "Contenus", count: "content" },
   { href: "/admin/liste-attente", label: "Liste d’attente", count: "waitlist" },
+  { href: "/admin/evenements", label: "Événements" },
+  { href: "/admin/parrainages", label: "Parrainages" },
+  { href: "/admin/paliers", label: "Réglages", group: ["/admin/paliers", "/admin/decouverte", "/admin/questions", "/admin/textes"] },
+];
+
+// Les réglages tiennent sous un seul onglet ; leurs pages ont une barre secondaire.
+const SETTINGS: Array<{ href: string; label: string }> = [
   { href: "/admin/paliers", label: "Paliers" },
   { href: "/admin/decouverte", label: "Découverte" },
   { href: "/admin/questions", label: "Questions" },
@@ -61,7 +68,10 @@ export default function AdminShell({ email, children }: { email: string; childre
         </Link>
         <nav className="adm-nav label" aria-label="Back-office">
           {NAV.map((item) => {
-            const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+            const active =
+              item.href === "/admin"
+                ? pathname === "/admin"
+                : (item.group ?? [item.href]).some((href) => pathname.startsWith(href));
             const n = item.count ? counts[item.count] : null;
             return (
               <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined}>
@@ -82,6 +92,15 @@ export default function AdminShell({ email, children }: { email: string; childre
           <SignOutButton />
         </div>
       </header>
+      {SETTINGS.some((item) => pathname.startsWith(item.href)) ? (
+        <nav className="adm-subnav label" aria-label="Réglages">
+          {SETTINGS.map((item) => (
+            <Link key={item.href} href={item.href} aria-current={pathname.startsWith(item.href) ? "page" : undefined}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
       <main id="adm-main" className="adm-main">
         {children}
       </main>
