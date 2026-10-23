@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Bodoni_Moda, IBM_Plex_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -51,7 +52,10 @@ export const viewport: Viewport = {
 // Ajoute la classe `js` avant le premier rendu : les styles d'animation n'existent qu'avec JavaScript.
 const bootScript = "document.documentElement.classList.add('js')";
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+// Le nonce de la CSP (proxy.ts) : lire les en-têtes rend chaque page à la demande, condition pour que
+// Next.js pose le nonce sur ses propres scripts.
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html
       lang="fr"
@@ -59,7 +63,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: bootScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: bootScript }} />
       </head>
       <body>{children}</body>
     </html>
