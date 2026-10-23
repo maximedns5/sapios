@@ -20,10 +20,11 @@ select is(
       and not coalesce(p.proconfig @> array['search_path=""'], false)),
   0, 'toutes les fonctions security definer ont search_path vide');
 
+-- Seule exception : l'aperçu d'un code de recommandation, affiché avant l'inscription (lot 2).
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'execute')),
-  null, 'anon n''exécute aucune fonction du schéma public');
+  array['get_referral_preview'], 'anon n''exécute que get_referral_preview dans le schéma public');
 
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -69,14 +70,17 @@ select has_trigger('public', 'degree_submissions', 'degree_submissions_enqueue',
 select has_trigger('public', 'messages', 'messages_notify', 'trigger notify sur les messages');
 select has_trigger('public', 'matches', 'matches_notify', 'trigger notify sur les matches');
 
+-- Seule exception : referrals.referrer_id (on delete set null) garde la priorité du filleul
+-- quand le parrain supprime son compte (lot 2).
 select is(
-  (select array_agg(distinct cl.relname::text order by cl.relname::text)
+  (select array_agg(cl.relname::text || '.' || a.attname::text order by cl.relname::text)
      from pg_constraint con
      join pg_class cl on cl.oid = con.conrelid
      join pg_namespace n on n.oid = cl.relnamespace
+     join pg_attribute a on a.attrelid = con.conrelid and a.attnum = any (con.conkey)
     where con.contype = 'f' and n.nspname = 'public'
       and con.confrelid = 'auth.users'::regclass and con.confdeltype <> 'c'),
-  null, 'toutes les clés étrangères vers auth.users sont en on delete cascade');
+  array['referrals.referrer_id'], 'clés étrangères vers auth.users en cascade, sauf referrals.referrer_id');
 
 select is(
   (select count(*)::int from pg_constraint con where con.conrelid = 'public.audit_log'::regclass and con.contype = 'f'),
