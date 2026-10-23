@@ -205,3 +205,34 @@ Sixtine → photo d'Hippolyte `unlimited@`).
 - **Textes** : `fill(texte, { title })` dans `apps/mobile/src/lib/copy.tsx` remplit les emplacements ; garder la
   même valeur en repli (`FALLBACK_COPY`) et en base pour toute nouvelle clé.
 
+
+## Lot 2 : base de données (agent base) : pour les agents app et back-office
+
+Détail des RPC dans `docs/CONTRACT.md` §3, types dans `packages/shared/src/community.ts`.
+
+### App membre
+
+- **Lien de recommandation** : `referralLink(appUrl, code)` donne `<app>/?ref=<code>`. À l'ouverture, garder `ref`
+  (stockage local) ; sur l'écran de connexion, `get_referral_preview(code)` (anon) renvoie `{ referrer_first_name }` ou
+  null → bandeau `referral.banner`. Après la connexion, `claim_referral(code)` une fois, puis oublier le code. Erreurs
+  silencieuses sauf `invalid_code` (lien périmé) ; `too_late` et `already_referred` : ne rien afficher.
+- **Mes lettres** (Compte → « Recommander quelqu'un », visible si `get_my_state().can_refer`) : `get_my_referral()`
+  → code, `used` / `quota`, `next_letter_at`. Jamais de nom ni de verdict. Textes `referral.*`.
+- **Verdict** : `tier = 'waitlist'` et `referred = true` → `verdict.waitlist.referred` + `verdict.waitlist.referred.detail`.
+- **Agenda** : `list_events()` → `EventSummary[]` ; fiche `get_event(id)` (`venue_*` seulement si inscrit) ;
+  inscription `register_event(id, true)` après acceptation de `events.charter` ; `cancel_registration(id)` ;
+  billet `get_my_ticket(id)` (afficher `ticket_code` en grand, et en QR code si vous en faites un). Paliers sans
+  découverte : liste vide.
+- **Avis** : `get_my_state().notices` contient désormais aussi `event_promoted` et `event_cancelled`
+  (`EventNotice`) ; acquitter avec `ack_notice`. Push `data: { type: "event", event_id }` ; lien des emails :
+  `/events/<id>` (route à créer côté app).
+
+### Back-office
+
+- **Diplômes** et **liste d'attente** : colonnes `referred` / `referred_by` (prénom), lignes recommandées en tête.
+- **Parrainages** : `admin_referral_stats()` ; révoquer `admin_revoke_referral_code(code, disable, reason)` ;
+  rétablir `admin_enable_referrals(user)`. `flagged` signale un parrain dont un filleul est banni.
+- **Événements** : `admin_upsert_event` (création et modification, `draft`/`published`), `admin_list_events`,
+  `admin_list_registrations`, `admin_check_in` (par inscription ou code de billet), `admin_mark_no_shows`,
+  `admin_promote_registration`, `admin_cancel_event(id, motif)`, `admin_export_event`. Prix : gratuit seulement.
+- **Vue d'ensemble** : `admin_stats()` ajoute `referrals_total`, `referred_pending_review`, `events_upcoming`.
