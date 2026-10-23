@@ -155,6 +155,40 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"event_registrations": {
+                  Row: {
+                    "cancelled_at": string | null,"charter_accepted_at": string,"checked_in_at": string | null,"checked_in_by": string | null,"created_at": string,"event_id": string,"id": string,"status": Database["public"]['Enums']["registration_status"],"status_changed_at": string,"ticket_code": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cancelled_at"?: string | null,"charter_accepted_at": string,"checked_in_at"?: string | null,"checked_in_by"?: string | null,"created_at"?: string,"event_id": string,"id"?: string,"status": Database["public"]['Enums']["registration_status"],"status_changed_at"?: string,"ticket_code": string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "cancelled_at"?: string | null,"charter_accepted_at"?: string,"checked_in_at"?: string | null,"checked_in_by"?: string | null,"created_at"?: string,"event_id"?: string,"id"?: string,"status"?: Database["public"]['Enums']["registration_status"],"status_changed_at"?: string,"ticket_code"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "event_registrations_event_id_fkey"
+      columns: ["event_id"]
+isOneToOne: false
+      referencedRelation: "events"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"events": {
+                  Row: {
+                    "allowed_tiers": (Database["public"]['Enums']["access_tier"])[],"cancel_reason": string | null,"cancelled_at": string | null,"capacity": number,"city": string,"created_at": string,"created_by": string | null,"description": string,"ends_at": string,"id": string,"kind": Database["public"]['Enums']["event_kind"],"neighbourhood": string | null,"price_cents": number,"published_at": string | null,"reminder_sent_at": string | null,"starts_at": string,"status": Database["public"]['Enums']["event_status"],"title": string,"updated_at": string,"venue_address": string | null,"venue_name": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "allowed_tiers"?: (Database["public"]['Enums']["access_tier"])[],"cancel_reason"?: string | null,"cancelled_at"?: string | null,"capacity": number,"city": string,"created_at"?: string,"created_by"?: string | null,"description"?: string,"ends_at": string,"id"?: string,"kind": Database["public"]['Enums']["event_kind"],"neighbourhood"?: string | null,"price_cents"?: number,"published_at"?: string | null,"reminder_sent_at"?: string | null,"starts_at": string,"status"?: Database["public"]['Enums']["event_status"],"title": string,"updated_at"?: string,"venue_address"?: string | null,"venue_name"?: string | null
+                  }
+                  Update: {
+                    "allowed_tiers"?: (Database["public"]['Enums']["access_tier"])[],"cancel_reason"?: string | null,"cancelled_at"?: string | null,"capacity"?: number,"city"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string,"ends_at"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["event_kind"],"neighbourhood"?: string | null,"price_cents"?: number,"published_at"?: string | null,"reminder_sent_at"?: string | null,"starts_at"?: string,"status"?: Database["public"]['Enums']["event_status"],"title"?: string,"updated_at"?: string,"venue_address"?: string | null,"venue_name"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"matches": {
                   Row: {
                     "created_at": string,"id": string,"unmatched_at": string | null,"user_a": string,"user_b": string
@@ -321,6 +355,34 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"referral_codes": {
+                  Row: {
+                    "code": string,"created_at": string,"owner_id": string,"revoked_at": string | null,"revoked_by": string | null,"revoked_reason": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"created_at"?: string,"owner_id": string,"revoked_at"?: string | null,"revoked_by"?: string | null,"revoked_reason"?: string | null
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"owner_id"?: string,"revoked_at"?: string | null,"revoked_by"?: string | null,"revoked_reason"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"referrals": {
+                  Row: {
+                    "claimed_at": string,"code": string,"referee_id": string,"referrer_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "claimed_at"?: string,"code": string,"referee_id": string,"referrer_id"?: string | null
+                  }
+                  Update: {
+                    "claimed_at"?: string,"code"?: string,"referee_id"?: string,"referrer_id"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"reports": {
                   Row: {
                     "content_item_id": string | null,"content_kind": Database["public"]['Enums']["content_kind"] | null,"created_at": string,"details": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"reason": string,"reporter_id": string,"status": Database["public"]['Enums']["report_status"],"target_id": string
@@ -351,14 +413,14 @@ isOneToOne: false
                   ]
                 },"user_access": {
                   Row: {
-                    "copy_key": string | null,"created_at": string,"granted_at": string,"granted_by": string | null,"institution": string | null,"level": number | null,"source_submission_id": string | null,"study_field": Database["public"]['Enums']["study_field"] | null,"tier": Database["public"]['Enums']["access_tier"],"user_id": string
+                    "copy_key": string | null,"created_at": string,"granted_at": string,"granted_by": string | null,"institution": string | null,"level": number | null,"referral_disabled": boolean,"source_submission_id": string | null,"study_field": Database["public"]['Enums']["study_field"] | null,"tier": Database["public"]['Enums']["access_tier"],"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "copy_key"?: string | null,"created_at"?: string,"granted_at"?: string,"granted_by"?: string | null,"institution"?: string | null,"level"?: number | null,"source_submission_id"?: string | null,"study_field"?: Database["public"]['Enums']["study_field"] | null,"tier": Database["public"]['Enums']["access_tier"],"user_id": string
+                    "copy_key"?: string | null,"created_at"?: string,"granted_at"?: string,"granted_by"?: string | null,"institution"?: string | null,"level"?: number | null,"referral_disabled"?: boolean,"source_submission_id"?: string | null,"study_field"?: Database["public"]['Enums']["study_field"] | null,"tier": Database["public"]['Enums']["access_tier"],"user_id": string
                   }
                   Update: {
-                    "copy_key"?: string | null,"created_at"?: string,"granted_at"?: string,"granted_by"?: string | null,"institution"?: string | null,"level"?: number | null,"source_submission_id"?: string | null,"study_field"?: Database["public"]['Enums']["study_field"] | null,"tier"?: Database["public"]['Enums']["access_tier"],"user_id"?: string
+                    "copy_key"?: string | null,"created_at"?: string,"granted_at"?: string,"granted_by"?: string | null,"institution"?: string | null,"level"?: number | null,"referral_disabled"?: boolean,"source_submission_id"?: string | null,"study_field"?: Database["public"]['Enums']["study_field"] | null,"tier"?: Database["public"]['Enums']["access_tier"],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -418,12 +480,29 @@ isOneToOne: false
 "admin_admit_waitlist":
 { Args: { "p_tier"?: Database["public"]['Enums']["access_tier"],"p_user_ids": (string)[] }; Returns: number
                            },
+"admin_cancel_event":
+{ Args: { "p_event_id": string,"p_reason": string }; Returns: number
+                           },
+"admin_check_in":
+{ Args: { "p_registration_id"?: string,"p_ticket_code"?: string }; Returns: Json
+                           },
+"admin_enable_referrals":
+{ Args: { "p_user": string }; Returns: undefined
+                           },
+"admin_export_event":
+{ Args: { "p_event_id": string }; Returns: Json
+                           },
 "admin_get_report_context":
 { Args: { "p_report_id": string }; Returns: Json
                            },
 "admin_get_submission":
 { Args: { "p_id": string }; Returns: {
-              "attempts": number,"birthdate": string,"confidence": number,"created_at": string,"display_name": string,"doc_sha256": string,"email": string,"extracted": Json,"field_verified": Database["public"]['Enums']["study_field"],"file_deleted_at": string,"id": string,"institution_verified": string,"legal_name": string,"level_verified": number,"mime": string,"moderator_note": string,"rejection_reason": string,"reviewed_at": string,"reviewer_id": string,"signals": (string)[],"status": Database["public"]['Enums']["submission_status"],"storage_path": string,"user_id": string
+              "attempts": number,"birthdate": string,"confidence": number,"created_at": string,"display_name": string,"doc_sha256": string,"email": string,"extracted": Json,"field_verified": Database["public"]['Enums']["study_field"],"file_deleted_at": string,"id": string,"institution_verified": string,"legal_name": string,"level_verified": number,"mime": string,"moderator_note": string,"referred": boolean,"referred_by": string,"rejection_reason": string,"reviewed_at": string,"reviewer_id": string,"signals": (string)[],"status": Database["public"]['Enums']["submission_status"],"storage_path": string,"user_id": string
+            }[]
+                           },
+"admin_list_events":
+{ Args: { "p_include_past"?: boolean }; Returns: {
+              "allowed_tiers": (Database["public"]['Enums']["access_tier"])[],"attended_count": number,"cancel_reason": string,"cancelled_count": number,"capacity": number,"city": string,"created_at": string,"description": string,"ends_at": string,"id": string,"kind": Database["public"]['Enums']["event_kind"],"neighbourhood": string,"no_show_count": number,"price_cents": number,"published_at": string,"registered_count": number,"starts_at": string,"status": Database["public"]['Enums']["event_status"],"title": string,"updated_at": string,"venue_address": string,"venue_name": string,"waitlisted_count": number
             }[]
                            },
 "admin_list_flagged_content":
@@ -431,18 +510,35 @@ isOneToOne: false
               "created_at": string,"current_text": string,"decision_reason": string,"display_name": string,"email": string,"excerpt": string,"handled_at": string,"handled_by": string,"id": string,"item_id": string,"item_status": Database["public"]['Enums']["photo_moderation"],"kind": Database["public"]['Enums']["content_kind"],"prompt_key": string,"reasons": (string)[],"report_details": string,"report_id": string,"report_reason": string,"source": string,"status": Database["public"]['Enums']["content_flag_status"],"user_id": string
             }[]
                            },
+"admin_list_registrations":
+{ Args: { "p_event_id": string }; Returns: {
+              "checked_in_at": string,"created_at": string,"display_name": string,"id": string,"status": Database["public"]['Enums']["registration_status"],"status_changed_at": string,"ticket_code": string,"user_id": string,"waitlist_rank": number
+            }[]
+                           },
 "admin_list_submissions":
 { Args: { "p_status"?: Database["public"]['Enums']["submission_status"] }; Returns: {
-              "attempts": number,"birthdate": string,"confidence": number,"created_at": string,"display_name": string,"doc_sha256": string,"email": string,"extracted": Json,"field_verified": Database["public"]['Enums']["study_field"],"file_deleted_at": string,"id": string,"institution_verified": string,"legal_name": string,"level_verified": number,"mime": string,"moderator_note": string,"rejection_reason": string,"reviewed_at": string,"reviewer_id": string,"signals": (string)[],"status": Database["public"]['Enums']["submission_status"],"storage_path": string,"user_id": string
+              "attempts": number,"birthdate": string,"confidence": number,"created_at": string,"display_name": string,"doc_sha256": string,"email": string,"extracted": Json,"field_verified": Database["public"]['Enums']["study_field"],"file_deleted_at": string,"id": string,"institution_verified": string,"legal_name": string,"level_verified": number,"mime": string,"moderator_note": string,"referred": boolean,"referred_by": string,"rejection_reason": string,"reviewed_at": string,"reviewer_id": string,"signals": (string)[],"status": Database["public"]['Enums']["submission_status"],"storage_path": string,"user_id": string
             }[]
                            },
 "admin_list_waitlist":
 { Args: Record<PropertyKey, never>; Returns: {
-              "copy_key": string,"created_at": string,"display_name": string,"email": string,"granted_at": string,"level": number,"profile_status": Database["public"]['Enums']["profile_status"],"user_id": string
+              "copy_key": string,"created_at": string,"display_name": string,"email": string,"granted_at": string,"level": number,"profile_status": Database["public"]['Enums']["profile_status"],"referred": boolean,"referred_by": string,"user_id": string
             }[]
+                           },
+"admin_mark_no_shows":
+{ Args: { "p_event_id": string }; Returns: number
                            },
 "admin_moderate_content":
 { Args: { "p_decision": string,"p_flag_id": string,"p_reason"?: string }; Returns: undefined
+                           },
+"admin_promote_registration":
+{ Args: { "p_registration_id": string }; Returns: undefined
+                           },
+"admin_referral_stats":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_revoke_referral_code":
+{ Args: { "p_code": string,"p_disable"?: boolean,"p_reason"?: string }; Returns: undefined
                            },
 "admin_set_member_institution":
 { Args: { "p_field": Database["public"]['Enums']["study_field"],"p_institution": string,"p_user": string }; Returns: undefined
@@ -456,6 +552,9 @@ isOneToOne: false
 "admin_update_settings":
 { Args: { "p_values": Json }; Returns: Json
                            },
+"admin_upsert_event":
+{ Args: { "p_allowed_tiers"?: (Database["public"]['Enums']["access_tier"])[],"p_capacity": number,"p_city": string,"p_description": string,"p_ends_at": string,"p_id": string,"p_kind": Database["public"]['Enums']["event_kind"],"p_neighbourhood": string,"p_starts_at": string,"p_status"?: Database["public"]['Enums']["event_status"],"p_title": string,"p_venue_address": string,"p_venue_name": string }; Returns: string
+                           },
 "apply_diploma_review":
 { Args: { "p_decision": string,"p_field"?: Database["public"]['Enums']["study_field"],"p_institution"?: string,"p_level": number,"p_reason": string,"p_reviewer": string,"p_submission": string }; Returns: Json
                            },
@@ -464,6 +563,12 @@ isOneToOne: false
                            },
 "can_view_profile":
 { Args: { "target": string }; Returns: boolean
+                           },
+"cancel_registration":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"claim_referral":
+{ Args: { "p_code": string }; Returns: Json
                            },
 "consume_rate_limit":
 { Args: { "p_bucket": string,"p_limit": number,"p_user": string,"p_window_seconds": number }; Returns: boolean
@@ -490,6 +595,9 @@ isOneToOne: false
 "get_discovery_prefs":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"get_event":
+{ Args: { "p_id": string }; Returns: Json
+                           },
 "get_feed":
 { Args: { "p_limit"?: number }; Returns: {
               "affinity_reasons": Json,"affinity_score": number,"age": number,"bio": string,"city": string,"display_name": string,"distance_km": number,"field_verified": boolean,"id": string,"institution": string,"level": number,"photo_paths": (string)[],"preview_answer": string,"preview_prompt_key": string,"quiz_badge": boolean,"study_field": Database["public"]['Enums']["study_field"]
@@ -508,17 +616,32 @@ isOneToOne: false
               "display_name": string,"last_message": string,"last_message_at": string,"match_id": string,"other_id": string,"photo_path": string,"unread_count": number
             }[]
                            },
+"get_my_referral":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "get_my_state":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"get_my_ticket":
+{ Args: { "p_id": string }; Returns: Json
                            },
 "get_profile":
 { Args: { "p_target": string }; Returns: Json
                            },
+"get_referral_preview":
+{ Args: { "p_code": string }; Returns: Json
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"list_events":
+{ Args: Record<PropertyKey, never>; Returns: Json[]
+                           },
 "mark_diploma_purged":
 { Args: { "p_id": string }; Returns: undefined
+                           },
+"register_event":
+{ Args: { "p_accept_charter": boolean,"p_id": string }; Returns: Json
                            },
 "report_user":
 { Args: { "p_content_item"?: string,"p_content_kind"?: Database["public"]['Enums']["content_kind"],"p_details": string,"p_reason": string,"p_target": string }; Returns: string
@@ -546,7 +669,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "access_tier": "unlimited"|"standard"|"waitlist"|"refused","admin_role": "moderator"|"owner","content_flag_status": "open"|"kept"|"removed"|"withdrawn","content_kind": "answer"|"book"|"thesis","discovery_sort": "activity"|"affinity","gender": "woman"|"man"|"nonbinary","photo_moderation": "pending"|"approved"|"rejected","profile_status": "onboarding"|"active"|"paused"|"banned","push_platform": "ios"|"android"|"web","report_status": "open"|"actioned"|"dismissed","study_field": "education"|"arts"|"letters"|"philosophy"|"history"|"social_sciences"|"economics"|"law"|"sciences"|"mathematics"|"computing"|"engineering"|"agronomy"|"health","submission_status": "pending"|"processing"|"needs_review"|"approved"|"rejected"|"needs_more","swipe_direction": "like"|"pass","thesis_visibility": "everyone"|"matches"
+            "access_tier": "unlimited"|"standard"|"waitlist"|"refused","admin_role": "moderator"|"owner","content_flag_status": "open"|"kept"|"removed"|"withdrawn","content_kind": "answer"|"book"|"thesis","discovery_sort": "activity"|"affinity","event_kind": "dinner"|"debate"|"conference"|"other","event_status": "draft"|"published"|"cancelled","gender": "woman"|"man"|"nonbinary","photo_moderation": "pending"|"approved"|"rejected","profile_status": "onboarding"|"active"|"paused"|"banned","push_platform": "ios"|"android"|"web","registration_status": "registered"|"waitlisted"|"cancelled"|"attended"|"no_show","report_status": "open"|"actioned"|"dismissed","study_field": "education"|"arts"|"letters"|"philosophy"|"history"|"social_sciences"|"economics"|"law"|"sciences"|"mathematics"|"computing"|"engineering"|"agronomy"|"health","submission_status": "pending"|"processing"|"needs_review"|"approved"|"rejected"|"needs_more","swipe_direction": "like"|"pass","thesis_visibility": "everyone"|"matches"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -666,7 +789,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "access_tier": ["unlimited", "standard", "waitlist", "refused"],"admin_role": ["moderator", "owner"],"content_flag_status": ["open", "kept", "removed", "withdrawn"],"content_kind": ["answer", "book", "thesis"],"discovery_sort": ["activity", "affinity"],"gender": ["woman", "man", "nonbinary"],"photo_moderation": ["pending", "approved", "rejected"],"profile_status": ["onboarding", "active", "paused", "banned"],"push_platform": ["ios", "android", "web"],"report_status": ["open", "actioned", "dismissed"],"study_field": ["education", "arts", "letters", "philosophy", "history", "social_sciences", "economics", "law", "sciences", "mathematics", "computing", "engineering", "agronomy", "health"],"submission_status": ["pending", "processing", "needs_review", "approved", "rejected", "needs_more"],"swipe_direction": ["like", "pass"],"thesis_visibility": ["everyone", "matches"]
+            "access_tier": ["unlimited", "standard", "waitlist", "refused"],"admin_role": ["moderator", "owner"],"content_flag_status": ["open", "kept", "removed", "withdrawn"],"content_kind": ["answer", "book", "thesis"],"discovery_sort": ["activity", "affinity"],"event_kind": ["dinner", "debate", "conference", "other"],"event_status": ["draft", "published", "cancelled"],"gender": ["woman", "man", "nonbinary"],"photo_moderation": ["pending", "approved", "rejected"],"profile_status": ["onboarding", "active", "paused", "banned"],"push_platform": ["ios", "android", "web"],"registration_status": ["registered", "waitlisted", "cancelled", "attended", "no_show"],"report_status": ["open", "actioned", "dismissed"],"study_field": ["education", "arts", "letters", "philosophy", "history", "social_sciences", "economics", "law", "sciences", "mathematics", "computing", "engineering", "agronomy", "health"],"submission_status": ["pending", "processing", "needs_review", "approved", "rejected", "needs_more"],"swipe_direction": ["like", "pass"],"thesis_visibility": ["everyone", "matches"]
           }
         }
 } as const

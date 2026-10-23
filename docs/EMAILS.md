@@ -6,6 +6,7 @@ Deux familles d'emails, un seul fournisseur : **Resend**.
 |---|---|---|---|
 | Code de connexion, confirmation d'inscription | Supabase Auth | SMTP de Resend | dashboard Supabase (§5 et §6) |
 | Verdict de diplôme, nouveau match | Edge Function `notify` | API HTTP de Resend | secrets des Edge Functions (§4) |
+| Événements (lot 2) : place confirmée, place libérée, annulation, rappel la veille | Edge Function `notify` | API HTTP de Resend | secrets des Edge Functions (§4) |
 
 Pas d'email pour les nouveaux messages : le badge de l'app suffit (suite possible, §10).
 
@@ -199,15 +200,21 @@ Back-office → **Textes** → groupe `email` (créés par la migration `2026102
 | `email.verdict.subject`, `email.verdict.title`, `email.verdict.body`, `email.verdict.cta` | Email de verdict : sujet, titre (en inversion noir/blanc), texte, bouton |
 | `email.match.subject`, `email.match.title`, `email.match.body`, `email.match.cta` | Email de match |
 | `email.footer` | Pied de page commun |
+| `email.event.registered.*`, `email.event.promoted.*`, `email.event.cancelled.*`, `email.event.reminder.*` (`subject`, `title`, `body`), `email.event.cta` | Emails d'événement (migration `20261024090300_lot2_copy.sql`) |
 
 Variables : `{name}` = prénom affiché du **destinataire** (« Bonjour » s'il n'en a pas) ; `{verdict}` = texte
-de son verdict (`verdict.standard`, `verdict.refused`…). Une ligne vide sépare deux paragraphes. Pas de HTML :
+de son verdict (`verdict.standard`, `verdict.refused`…). Événements : `{title}`, `{date}` (« samedi 14 novembre à
+19 h 30 », heure de Paris), `{reason}` (motif d'annulation). Une ligne vide sépare deux paragraphes. Pas de HTML :
 tout est échappé. Un texte vidé retombe sur un texte de repli codé dans `_shared/email.ts`. Effet immédiat.
 
 Le gabarit (`supabase/functions/_shared/email_template.ts`) suit la charte : noir `#0B0B0B` et blanc cassé
 `#F4F3EF` uniquement, titre en Didot, étiquette en capitales monospace, version texte jointe.
 
 ## 9. Données personnelles
+
+- **Événement** : prénom du destinataire, titre, date et, pour une annulation, le motif. Jamais le lieu exact (il
+  reste dans l'application, réservé aux inscrits), jamais les autres inscrits. Une notification périmée (désinscrit
+  entre-temps, événement annulé depuis) ne part pas.
 
 - **Verdict** : prénom du destinataire, texte de **son** verdict, lien vers l'app. Ni niveau, ni diplôme, ni
   motif de refus.

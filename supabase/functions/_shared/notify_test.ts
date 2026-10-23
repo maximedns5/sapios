@@ -16,10 +16,16 @@ const pushStore: PushStore = {
   copy: () => Promise.resolve(new Map()),
   tokens: (ids) => Promise.resolve(ids.map((user_id) => ({ user_id, token: `ExponentPushToken[${user_id}]` }))),
   deleteTokens: () => Promise.resolve(),
+  registration: () => Promise.resolve(null),
+  event: () => Promise.resolve(null),
+  eventAttendees: () => Promise.resolve([]),
 };
 
 const emailStore: EmailStore = {
   matchParticipants: pushStore.matchParticipants,
+  registration: pushStore.registration,
+  event: pushStore.event,
+  eventAttendees: pushStore.eventAttendees,
   copy: () => Promise.resolve(new Map()),
   recipients: (ids) =>
     Promise.resolve(new Map(ids.map((id) => [id, { email: `${id.slice(0, 4)}@exemple.fr`, name: null }]))),

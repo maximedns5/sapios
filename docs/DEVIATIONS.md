@@ -259,3 +259,42 @@ Profil intellectuel, likes ciblés, critères et test d'admission dans `apps/mob
    refuse un texte qui perd un emplacement. Les questions du test d'admission restent dans `packages/shared/src/quiz.ts` :
    la landing les affiche à des visiteurs anonymes, qui ne lisent pas `app_copy`.
 
+
+## Lot 2 : base de données (agent base, 23 oct. 2026)
+
+Lettres de recommandation et événements gratuits (cadrage §5 et §6, décisions D10 à D13 aux valeurs recommandées).
+
+1. **`get_referral_preview` ouverte à `anon`** : seule exception à « anon n'exécute aucune fonction ». L'écran de
+   connexion affiche « Recommandé·e par Camille » avant l'inscription. Elle ne renvoie que le prénom affiché, et rien
+   si le code est inconnu, révoqué ou inutilisable. Pas de quota d'appels : un code a 32^10 ≈ 10^15 valeurs,
+   l'énumération est hors de portée, et la base ne connaît pas l'adresse IP d'un appel anonyme.
+2. **`referrals.referrer_id` en `on delete set null`** : seule clé vers `auth.users` qui ne cascade pas. Si le
+   parrain supprime son compte, la personne recommandée garde sa priorité ; le prénom disparaît.
+3. **Codes en base 32 de Crockford** (sans I, L, O ni U) plutôt qu'un alphabet maison ; la saisie lit O comme 0 et
+   I ou L comme 1, ignore espaces et tirets. Les billets d'événement utilisent le même alphabet (12 caractères).
+4. **Code créé à la première demande** (`get_my_referral`), pas à l'admission. Un admin qui révoque un code peut aussi
+   couper les recommandations du membre (`user_access.referral_disabled`), sinon un nouveau code serait créé.
+5. **Éligibilité du parrain** : palier `standard` ou `unlimited` avec accès à la découverte, profil actif ou en pause,
+   recommandations non coupées. Les lettres utilisées sont celles des 30 derniers jours (réglable) ; une lettre se
+   libère 30 jours après son utilisation. Un filleul qui supprime son compte libère sa lettre.
+6. **« Avant toute décision »** = aucun palier attribué et aucun dossier examiné (`reviewed_at`), y compris une
+   demande de complément.
+7. **Priorité** : seulement l'ordre des listes (`admin_list_submissions`, `admin_list_waitlist`). `admin_admit_waitlist`
+   prend toujours les identifiants choisis par l'admin.
+8. **Verdict d'une personne recommandée en liste d'attente** : l'app choisit `verdict.waitlist.referred` quand
+   `tier = 'waitlist'` et `referred = true` ; `user_access.copy_key` (et donc l'email de verdict) reste `verdict.waitlist`.
+9. **Événements visibles des membres actifs ou en pause** (pas seulement `active`) : une pause cache le profil de la
+   découverte, pas l'agenda.
+10. **Lieu exact** : `venue_name` et `venue_address` ne sont jamais accordés en lecture directe (droits par colonne) ;
+    seules `get_event` (place confirmée) et `get_my_ticket` les renvoient. Les emails et les push ne contiennent ni le
+    lieu ni les autres inscrits.
+11. **File d'attente** : ordre de `status_changed_at` à l'heure réelle (`clock_timestamp()`), pas l'heure de début de
+    transaction. Une personne arrivée quand il reste des places mais qu'une file existe rejoint la file (la file est
+    remplie automatiquement à chaque place libérée, ce cas ne devrait pas se produire).
+12. **Capacité** : verrou sur la ligne de l'événement (`for update`) dans `register_event`, `cancel_registration`,
+    `admin_promote_registration` et `admin_upsert_event` ; les tests pgTAP sont séquentiels.
+13. **Dépublier** un événement qui a des inscrits est refusé (`invalid_input`) : il faut l'annuler, ce qui prévient.
+14. **Rappel la veille** à 16 h 07 UTC (17 h ou 18 h à Paris), une fois par événement (`reminder_sent_at`), renvoyé si
+    l'admin change la date. Les emails d'événement passent par `notify`, sans effet tant que Resend n'est pas configuré.
+15. **Clés des emails d'événement** dans leur propre migration et leur propre liste (`EVENT_EMAIL_COPY_KEYS`) :
+    `EMAIL_COPY_KEYS` reste celle du lot 0, vérifiée contre la migration d'origine.

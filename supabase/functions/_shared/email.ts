@@ -1,9 +1,9 @@
-// Emails transactionnels via l'API HTTP de Resend : verdict et nouveau match (docs/EMAILS.md).
+// Emails transactionnels via l'API HTTP de Resend : verdict, nouveau match et événements (docs/EMAILS.md).
 // Complément du push, absent de l'app web : canal facultatif, jamais bloquant. Toute erreur est
 // journalisée puis absorbée. Pas d'email pour les messages (le badge de l'app suffit).
 import type { SupabaseClient, User } from "./deps.ts";
 import { cleanText, type EmailContent, renderHtml, renderText } from "./email_template.ts";
-import { createPushStore, fill, type PushStore } from "./push.ts";
+import { createPushStore, type EventMoment, eventTargets, eventVars, fill, type PushStore } from "./push.ts";
 import type { NotifyRequest } from "./shared.ts";
 
 export const RESEND_API_URL = "https://api.resend.com/emails";
@@ -23,7 +23,24 @@ export const EMAIL_COPY_KEYS = [
   "email.match.cta",
   "email.footer",
 ] as const;
-export type EmailCopyKey = (typeof EMAIL_COPY_KEYS)[number];
+
+/** Clés `app_copy` des emails d'événement (migration 20261024090300_lot2_copy.sql). */
+export const EVENT_EMAIL_COPY_KEYS = [
+  "email.event.registered.subject",
+  "email.event.registered.title",
+  "email.event.registered.body",
+  "email.event.promoted.subject",
+  "email.event.promoted.title",
+  "email.event.promoted.body",
+  "email.event.cancelled.subject",
+  "email.event.cancelled.title",
+  "email.event.cancelled.body",
+  "email.event.reminder.subject",
+  "email.event.reminder.title",
+  "email.event.reminder.body",
+  "email.event.cta",
+] as const;
+export type EmailCopyKey = (typeof EMAIL_COPY_KEYS)[number] | (typeof EVENT_EMAIL_COPY_KEYS)[number];
 
 /** Repli si une clé manque ou est vide dans `app_copy` : un email n'est jamais vide. */
 const FALLBACK_COPY: Record<EmailCopyKey, string> = {
@@ -36,12 +53,25 @@ const FALLBACK_COPY: Record<EmailCopyKey, string> = {
   "email.match.body": "{name}, quelqu'un vous a liké en retour. La suite se passe dans l'application.",
   "email.match.cta": "Ouvrir la conversation",
   "email.footer": "Vous recevez cet email parce que vous avez un compte Sapios.",
+  "email.event.registered.subject": "Place confirmée : {title}",
+  "email.event.registered.title": "Votre place est réservée.",
+  "email.event.registered.body": "{name}, rendez-vous {date}. L'adresse exacte et votre billet sont dans l'application.",
+  "email.event.promoted.subject": "Une place s'est libérée : {title}",
+  "email.event.promoted.title": "Vous êtes inscrit·e.",
+  "email.event.promoted.body": "{name}, une place s'est libérée pour « {title} », {date}. L'adresse exacte et votre billet sont dans l'application.",
+  "email.event.cancelled.subject": "Annulé : {title}",
+  "email.event.cancelled.title": "Événement annulé.",
+  "email.event.cancelled.body": "{name}, « {title} », prévu {date}, est annulé.\n\n{reason}",
+  "email.event.reminder.subject": "C'est demain : {title}",
+  "email.event.reminder.title": "C'est demain.",
+  "email.event.reminder.body": "{name}, « {title} » a lieu {date}. L'adresse exacte et votre billet sont dans l'application.",
+  "email.event.cta": "Voir l'événement",
 };
 /** `{name}` sans prénom affiché : « Bonjour, … ». */
 const FALLBACK_NAME = "Bonjour";
 const FALLBACK_VERDICT = "Verdict rendu.";
 
-export type EmailKind = "verdict" | "match";
+export type EmailKind = "verdict" | "match" | "event";
 
 export interface EmailConfig {
   apiKey: string;
@@ -57,7 +87,7 @@ export interface EmailRecipient {
   name: string | null;
 }
 
-export interface EmailStore extends Pick<PushStore, "matchParticipants" | "copy"> {
+export interface EmailStore extends Pick<PushStore, "matchParticipants" | "copy" | "registration" | "event" | "eventAttendees"> {
   /** Adresses lues côté serveur ; les comptes bannis, supprimés ou sans adresse confirmée sont absents. */
   recipients(userIds: string[]): Promise<Map<string, EmailRecipient>>;
 }
@@ -110,8 +140,43 @@ function text(copy: Map<string, string>, key: string, fallback: string, vars: Re
   return fill(raw?.trim() ? raw : fallback, vars);
 }
 
+/** Textes d'un email : sujet, titre, corps et bouton. */
+interface EmailKeys {
+  subject: EmailCopyKey;
+  title: EmailCopyKey;
+  body: EmailCopyKey;
+  cta: EmailCopyKey;
+}
+
+const VERDICT_KEYS: EmailKeys = {
+  subject: "email.verdict.subject",
+  title: "email.verdict.title",
+  body: "email.verdict.body",
+  cta: "email.verdict.cta",
+};
+const MATCH_KEYS: EmailKeys = {
+  subject: "email.match.subject",
+  title: "email.match.title",
+  body: "email.match.body",
+  cta: "email.match.cta",
+};
+function eventKeys(moment: EventMoment): EmailKeys {
+  return {
+    subject: `email.event.${moment}.subject`,
+    title: `email.event.${moment}.title`,
+    body: `email.event.${moment}.body`,
+    cta: "email.event.cta",
+  };
+}
+const LABELS: Record<EmailKind, string> = {
+  verdict: "Sapios · Verdict",
+  match: "Sapios · Match",
+  event: "Sapios · Événement",
+};
+
 function compose(
   kind: EmailKind,
+  keys: EmailKeys,
   userId: string,
   recipient: EmailRecipient,
   copy: Map<string, string>,
@@ -121,11 +186,11 @@ function compose(
 ): OutgoingEmail {
   const t = (key: EmailCopyKey) => text(copy, key, FALLBACK_COPY[key], vars);
   const content: EmailContent = {
-    label: kind === "verdict" ? "Sapios · Verdict" : "Sapios · Match",
-    subject: cleanText(t(`email.${kind}.subject`)),
-    title: t(`email.${kind}.title`),
-    body: t(`email.${kind}.body`),
-    cta: url ? { label: t(`email.${kind}.cta`), url } : undefined,
+    label: LABELS[kind],
+    subject: cleanText(t(keys.subject)),
+    title: t(keys.title),
+    body: t(keys.body),
+    cta: url ? { label: t(keys.cta), url } : undefined,
     footer: t("email.footer"),
     inverted: kind === "verdict",
   };
@@ -141,9 +206,10 @@ function compose(
 }
 
 /**
- * Emails d'un événement (sans les envoyer). Données exposées : prénom du destinataire et, pour le
- * verdict, son propre verdict. Jamais le prénom de l'autre personne d'un match : avec le genre du
- * destinataire, il suffirait à deviner une orientation (donnée sensible, brief §9).
+ * Emails d'une notification (sans les envoyer). Données exposées : prénom du destinataire et, pour le
+ * verdict, son propre verdict ; pour un événement, son titre, sa date et le motif d'annulation, jamais
+ * le lieu exact ni les autres inscrits. Jamais le prénom de l'autre personne d'un match : avec le
+ * genre du destinataire, il suffirait à deviner une orientation (donnée sensible, brief §9).
  */
 export async function buildEmails(store: EmailStore, config: EmailConfig, req: NotifyRequest): Promise<OutgoingEmail[]> {
   if (req.type === "verdict") {
@@ -155,7 +221,7 @@ export async function buildEmails(store: EmailStore, config: EmailConfig, req: N
     if (!person) return [];
     const verdict = copy.get(req.copy_key)?.trim() || FALLBACK_VERDICT;
     const vars = { name: person.name ?? FALLBACK_NAME, verdict };
-    return [compose("verdict", req.user_id, person, copy, vars, config.appUrl ? `${config.appUrl}/` : null)];
+    return [compose("verdict", VERDICT_KEYS, req.user_id, person, copy, vars, config.appUrl ? `${config.appUrl}/` : null)];
   }
 
   if (req.type === "match") {
@@ -167,7 +233,26 @@ export async function buildEmails(store: EmailStore, config: EmailConfig, req: N
       const person = people.get(userId);
       if (!person) return [];
       const vars = { name: person.name ?? FALLBACK_NAME };
-      return [compose("match", userId, person, copy, vars, url, `match-${req.match_id}-${userId}`)];
+      return [compose("match", MATCH_KEYS, userId, person, copy, vars, url, `match-${req.match_id}-${userId}`)];
+    });
+  }
+
+  if (req.type === "event" || req.type === "event_reminder") {
+    const found = await eventTargets(store, req);
+    if (!found) return [];
+    const keys = eventKeys(found.moment);
+    const [people, copy] = await Promise.all([
+      store.recipients(found.userIds),
+      store.copy([...Object.values(keys), "email.footer"]),
+    ]);
+    const url = config.appUrl ? `${config.appUrl}/events/${found.event.id}` : null;
+    // Un rappel par événement et par personne ; une inscription ne reçoit qu'un email par étape.
+    const idem = req.type === "event" ? `event-${req.kind}-${req.registration_id}` : `event-reminder-${found.event.id}`;
+    return found.userIds.flatMap((userId) => {
+      const person = people.get(userId);
+      if (!person) return [];
+      const vars = { ...eventVars(found.event), name: person.name ?? FALLBACK_NAME };
+      return [compose("event", keys, userId, person, copy, vars, url, `${idem}-${userId}`)];
     });
   }
 
@@ -265,6 +350,9 @@ export function createEmailStore(db: SupabaseClient): EmailStore {
   return {
     matchParticipants: push.matchParticipants,
     copy: push.copy,
+    registration: push.registration,
+    event: push.event,
+    eventAttendees: push.eventAttendees,
     async recipients(userIds) {
       const out = new Map<string, EmailRecipient>();
       if (userIds.length === 0) return out;

@@ -6,6 +6,7 @@ import {
   deliverableAddress,
   EMAIL_COPY_KEYS,
   type EmailConfig,
+  EVENT_EMAIL_COPY_KEYS,
   emailConfigFromEnv,
   type EmailDeps,
   type EmailStore,
@@ -18,6 +19,8 @@ const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
 const MATCH = "33333333-3333-4333-8333-333333333333";
 const MESSAGE = "44444444-4444-4444-8444-444444444444";
+const EVENT = "55555555-5555-4555-8555-555555555555";
+const REG_A = "66666666-6666-4666-8666-666666666666";
 const CONFIG: EmailConfig = { apiKey: "re_test", from: "Sapios <bonjour@mail.sapios.test>", appUrl: "https://app.sapios.test" };
 
 const COPY = new Map([
@@ -38,19 +41,34 @@ const PEOPLE: [string, { email: string; name: string | null }][] = [
   [B, { email: "bruno@exemple.fr", name: "Bruno" }],
 ];
 
+const DINNER = {
+  id: EVENT,
+  title: "Dîner de thèse",
+  starts_at: "2026-11-14T18:30:00Z",
+  status: "published",
+  cancel_reason: null as string | null,
+};
+
 function store(over: Partial<EmailStore> = {}): EmailStore {
   return {
     matchParticipants: (id) => Promise.resolve(id === MATCH ? [A, B] : null),
     copy: (keys) => Promise.resolve(new Map([...COPY].filter(([k]) => keys.includes(k)))),
     recipients: (ids) => Promise.resolve(new Map(PEOPLE.filter(([id]) => ids.includes(id)))),
+    registration: (id) => Promise.resolve(id === REG_A ? { user_id: A, event_id: EVENT, status: "registered" } : null),
+    event: (id) => Promise.resolve(id === EVENT ? DINNER : null),
+    eventAttendees: () => Promise.resolve([A, B]),
     ...over,
   };
 }
 
+const refuse = () => Promise.reject(new Error("ne doit pas être appelé"));
 const untouchable: EmailStore = {
-  matchParticipants: () => Promise.reject(new Error("ne doit pas être appelé")),
-  copy: () => Promise.reject(new Error("ne doit pas être appelé")),
-  recipients: () => Promise.reject(new Error("ne doit pas être appelé")),
+  matchParticipants: refuse,
+  copy: refuse,
+  recipients: refuse,
+  registration: refuse,
+  event: refuse,
+  eventAttendees: refuse,
 };
 
 type Call = { url: string; headers: Record<string, string>; payload: Record<string, unknown> };
@@ -307,4 +325,49 @@ Deno.test("clés email : toutes créées par une migration idempotente, avec {na
   assertStringIncludes(sql, "on conflict (key, locale) do nothing");
   assertStringIncludes(sql, "{verdict}");
   assertStringIncludes(sql, "{name}");
+});
+
+Deno.test("événement : email de confirmation, sans le lieu exact, lien vers l'événement", async () => {
+  const [email, ...rest] = await buildEmails(store(), CONFIG, { type: "event", kind: "registered", registration_id: REG_A });
+  assertEquals(rest, []);
+  assertEquals(email.to, "alice@exemple.fr");
+  assertEquals(email.subject, "Place confirmée : Dîner de thèse");
+  assertStringIncludes(email.text, "Alice, rendez-vous samedi 14 novembre à 19 h 30.");
+  assertStringIncludes(email.html, "https://app.sapios.test/events/" + EVENT);
+  assertEquals(email.idempotencyKey, `event-registered-${REG_A}-${A}`);
+});
+
+Deno.test("événement annulé : le motif figure dans l'email", async () => {
+  const cancelled = store({
+    registration: () => Promise.resolve({ user_id: B, event_id: EVENT, status: "cancelled" }),
+    event: () => Promise.resolve({ ...DINNER, status: "cancelled", cancel_reason: "Le restaurant ferme ce soir-là." }),
+  });
+  const [email] = await buildEmails(cancelled, CONFIG, { type: "event", kind: "cancelled", registration_id: REG_A });
+  assertEquals(email.to, "bruno@exemple.fr");
+  assertEquals(email.subject, "Annulé : Dîner de thèse");
+  assertStringIncludes(email.text, "Le restaurant ferme ce soir-là.");
+});
+
+Deno.test("rappel de la veille : un email par personne inscrite", async () => {
+  const emails = await buildEmails(store(), CONFIG, { type: "event_reminder", event_id: EVENT });
+  assertEquals(emails.map((e) => e.to), ["alice@exemple.fr", "bruno@exemple.fr"]);
+  assertEquals(emails[1].idempotencyKey, `event-reminder-${EVENT}-${B}`);
+});
+
+Deno.test("événement périmé ou inconnu : aucun email", async () => {
+  const stale = store({ registration: () => Promise.resolve({ user_id: A, event_id: EVENT, status: "cancelled" }) });
+  assertEquals(await buildEmails(stale, CONFIG, { type: "event", kind: "registered", registration_id: REG_A }), []);
+  assertEquals(await buildEmails(store(), CONFIG, { type: "event_reminder", event_id: MATCH }), []);
+});
+
+Deno.test("clés email d'événement : toutes créées par une migration idempotente", async () => {
+  const dir = new URL("../../migrations/", import.meta.url);
+  let sql = "";
+  for await (const entry of Deno.readDir(dir)) {
+    const content = await Deno.readTextFile(new URL(entry.name, dir));
+    if (content.includes("'email.event.cta'")) sql = content;
+  }
+  assert(sql, "aucune migration ne crée les textes des emails d'événement");
+  for (const key of EVENT_EMAIL_COPY_KEYS) assertStringIncludes(sql, `('${key}', 'fr',`);
+  assertStringIncludes(sql, "on conflict (key, locale) do nothing");
 });

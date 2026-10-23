@@ -312,6 +312,35 @@ insert into public.waitlist_signups (email, source, created_at) values
   ('curieuse@example.com', 'landing', now() - interval '3 days'),
   ('sceptique@example.com', 'landing', now() - interval '1 day');
 
+-- Lot 2 : lettres de recommandation et événements de démonstration.
+--  * standard@ a un code ; member05 (Octave) l'a utilisé avant son verdict ;
+--  * un dîner publié dans 10 jours (4 places, 2 prises, 1 en file), un débat en brouillon.
+insert into public.referral_codes (code, owner_id, created_at)
+values ('CAM1SAP0X7', '11111111-1111-4111-8111-000000000003', now() - interval '10 days');
+insert into public.referrals (referee_id, referrer_id, code, claimed_at)
+values ('22222222-2222-4222-8222-000000000005', '11111111-1111-4111-8111-000000000003', 'CAM1SAP0X7', now() - interval '9 days');
+
+insert into public.events (id, title, kind, description, city, neighbourhood, venue_name, venue_address,
+                           starts_at, ends_at, capacity, status, created_by, published_at)
+values
+  ('44444444-4444-4444-8444-000000000001', 'Dîner de thèse : trois sujets, un dessert', 'dinner',
+   'Trois docteur·es présentent leur thèse en dix minutes chacun·e. Le dessert départage.', 'Paris', '6e',
+   'Le Procope', '13 rue de l''Ancienne-Comédie, 75006 Paris',
+   date_trunc('day', now()) + interval '10 days 19 hours', date_trunc('day', now()) + interval '10 days 22 hours', 4,
+   'published', '11111111-1111-4111-8111-000000000001', now() - interval '2 days'),
+  ('44444444-4444-4444-8444-000000000002', 'Débat contradictoire : faut-il lire les préfaces ?', 'debate',
+   'Deux camps, un arbitre, aucune préface lue en public.', 'Paris', '5e', null, null,
+   date_trunc('day', now()) + interval '20 days 19 hours', date_trunc('day', now()) + interval '20 days 21 hours', 30,
+   'draft', '11111111-1111-4111-8111-000000000001', null);
+
+insert into public.event_registrations (event_id, user_id, status, ticket_code, charter_accepted_at, status_changed_at)
+values
+  ('44444444-4444-4444-8444-000000000001', '11111111-1111-4111-8111-000000000004', 'registered', 'TKT0000000A1', now() - interval '2 days', now() - interval '2 days'),
+  ('44444444-4444-4444-8444-000000000001', '22222222-2222-4222-8222-000000000001', 'registered', 'TKT0000000B2', now() - interval '1 day', now() - interval '1 day'),
+  ('44444444-4444-4444-8444-000000000001', '22222222-2222-4222-8222-000000000002', 'registered', 'TKT0000000C3', now() - interval '20 hours', now() - interval '20 hours'),
+  ('44444444-4444-4444-8444-000000000001', '22222222-2222-4222-8222-000000000003', 'registered', 'TKT0000000D4', now() - interval '10 hours', now() - interval '10 hours'),
+  ('44444444-4444-4444-8444-000000000001', '22222222-2222-4222-8222-000000000006', 'waitlisted', 'TKT0000000E5', now() - interval '5 hours', now() - interval '5 hours');
+
 -- Les soumissions seedées ne doivent pas partir à l'extraction.
 select pgmq.purge_queue('diploma_extraction');
 

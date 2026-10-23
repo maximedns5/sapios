@@ -133,21 +133,28 @@ export type ReviewDiplomaErrorCode =
 
 // --- notify (secret interne) ------------------------------------------------------------------
 
+/** Notifications d'une inscription à un événement (lot 2) ; le rappel de la veille est à part. */
+export const EVENT_NOTIFY_KINDS = ["registered", "promoted", "cancelled"] as const;
+export type EventNotifyKind = (typeof EVENT_NOTIFY_KINDS)[number];
+
 export type NotifyRequest =
   | { type: "match"; match_id: string }
   | { type: "message"; message_id: string }
-  | { type: "verdict"; user_id: string; copy_key: string };
+  | { type: "verdict"; user_id: string; copy_key: string }
+  | { type: "event"; kind: EventNotifyKind; registration_id: string }
+  | { type: "event_reminder"; event_id: string };
 export interface NotifyResponse {
   /** Notifications push acceptées par Expo. */
   sent: number;
-  /** Emails acceptés par Resend (verdict, match) ; 0 si le canal email est désactivé. */
+  /** Emails acceptés par Resend (verdict, match, événements) ; 0 si le canal email est désactivé. */
   emailed: number;
 }
 /** Champ `data` des notifications Expo reçues par l'app. */
 export type PushData =
   | { type: "match"; match_id: string }
   | { type: "message"; match_id: string; message_id: string }
-  | { type: "verdict"; copy_key: string };
+  | { type: "verdict"; copy_key: string }
+  | { type: "event"; event_id: string };
 
 // --- delete-account (JWT utilisateur) ---------------------------------------------------------
 
