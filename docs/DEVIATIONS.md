@@ -408,3 +408,12 @@ Nom légal, date de naissance et texte libre des signalements sont chiffrés dan
    noms légaux de la liste d'attente par `admin_list_identities`. L'app lit l'identité du membre par
    `get_my_identity` ; process-diploma par `server_get_identity`.
 
+## Sécurité : CSP et en-têtes HTTP (26 oct. 2026)
+
+1. **Styles en ligne autorisés** (`style-src 'unsafe-inline'`) sur l'app comme sur le site : react-native-web et
+   les attributs `style` des composants en dépendent. Les scripts, eux, n'ont aucune exception.
+2. **Site rendu à chaque requête** : la CSP à nonce l'exige (une page générée au build n'a pas de nonce). La landing,
+   le test et les pages légales ne sont plus prégénérés ; seules les images de partage du test le restent.
+3. **`upgrade-insecure-requests`** : posé par le site seulement en HTTPS (pas en local). Sur l'app, Vercel sert
+   toujours en HTTPS.
+4. **zod en mode `jitless`** (schéma d'extraction partagé) : même résultat d'analyse, sans `new Function`.

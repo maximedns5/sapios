@@ -351,3 +351,31 @@ Détail dans `docs/CONTRACT.md` (§2, §3, §5, §6), types dans `packages/share
   `private.encrypt_text(text)`, `private.store_identity(uuid, text, date)` (seed et tests).
 - **Âge** : calculé sur `profile_private.birth_month` (mois de naissance), donc jusqu'à un mois en avance.
 
+## Sécurité : politique de sécurité du contenu (CSP) et en-têtes HTTP
+
+But : qu'un script injecté (XSS) ne puisse ni s'exécuter ni lire la session, gardée dans le stockage du
+navigateur sur l'app web et dans des cookies sur le back-office.
+
+- **App membre** (Expo web, projet Vercel `sapios-app`) : tout est dans `apps/mobile/vercel.json`, en-têtes de
+  `/(.*)`. Scripts : `'self'` seulement (aucun script en ligne, pas de `'unsafe-eval'`). Styles : `'unsafe-inline'`
+  (react-native-web les injecte). Réseau : `'self'`, `https://*.supabase.co`, `wss://*.supabase.co`, et `blob:` /
+  `data:` (lecture des photos choisies avant l'envoi). Images : `'self'`, `data:`, `blob:`, `https://*.supabase.co`.
+  Aucune iframe, aucun plugin, aucune intégration de l'app dans une autre page.
+- **Site et back-office** (Next.js, projet Vercel `sapios`) : la CSP est construite à chaque requête dans
+  `apps/web/proxy.ts` (fonction `contentSecurityPolicy`), avec un nonce neuf et `'strict-dynamic'` ; Next.js pose
+  le nonce sur ses scripts, le layout sur le script de démarrage. Origine Supabase lue dans
+  `NEXT_PUBLIC_SUPABASE_URL` (réseau, images signées, iframe du diplôme en PDF). Le nonce impose un rendu à la
+  demande : toutes les pages sont désormais rendues à chaque requête (pages légales comprises ; leurs fichiers
+  `content/legal/*.md` suivent le déploiement par `outputFileTracingIncludes`). Les autres en-têtes (HSTS, nosniff,
+  `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`) sont dans
+  `apps/web/next.config.ts`.
+- **Ajouter une origine** (un service tiers, un CDN d'images…) : app membre → la directive concernée dans
+  `apps/mobile/vercel.json` ; site → la liste de la directive dans `contentSecurityPolicy` (`apps/web/proxy.ts`).
+  Puis redéployer, et vérifier la console du navigateur (« Refused to … because it violates … »).
+- **Si quelque chose casse en production** :
+  - site et back-office : variable `CSP_REPORT_ONLY=true` dans Vercel (projet `sapios`), puis redéployer : le
+    navigateur signale les violations dans la console sans rien bloquer. Retirer la variable une fois corrigé ;
+  - app membre : dans `apps/mobile/vercel.json`, renommer la clé `Content-Security-Policy` en
+    `Content-Security-Policy-Report-Only`, pousser, puis la remettre une fois corrigé.
+- **zod sans `new Function`** : `packages/shared/src/extraction.ts` active `z.config({ jitless: true })`. Sans cela,
+  zod teste `new Function` au chargement de ses schémas et la CSP le signale à chaque page de l'app.

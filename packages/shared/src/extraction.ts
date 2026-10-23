@@ -4,6 +4,10 @@
 // directement, via l'import map de chaque fonction.
 import * as z from "zod/v4";
 
+// Sans « jitless », zod teste `new Function` dès la création de ses schémas : sous la CSP de l'app
+// web (pas de 'unsafe-eval'), ce test produit une violation à chaque page. L'analyse reste identique.
+z.config({ jitless: true });
+
 export const DEGREE_TYPES = [
   "bac",
   "bac_plus_2",
