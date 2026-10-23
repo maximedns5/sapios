@@ -374,3 +374,15 @@ Plan d'action de l'AIPD (sections 2, 4 et 7) et des CGU (articles 1.2, 5.5, 13.2
     conversation sur l'appareil (stockage local, pas en base). Le billet remplace la phrase sur la personne de l'équipe
     par le bloc « Avant l'événement » (`safety.event.*`).
 13. **Seed** : les profils seedés ont accepté la version en vigueur, pour ne pas bloquer les comptes de test.
+
+## Conformité : site et back-office (26 oct. 2026)
+
+1. **Double authentification dans `is_admin()`** plutôt que dans chaque RPC : toutes les règles d'accès et RPC d'admin
+   passent déjà par cette fonction ; une seule condition (`auth.jwt() ->> 'aal' = 'aal2'`) ferme tous les chemins.
+   `is_admin_account()` (sans aal) ne sert qu'à aiguiller l'interface. Pas de réglage pour désactiver l'exigence : elle
+   vaut aussi en local, d'où l'activation de TOTP dans `config.toml`.
+2. **Hébergeurs** : les adresses de Vercel et Supabase trouvées en ligne ne concordaient pas (brouillon des mentions
+   légales). La page publiée met `[À compléter]` plutôt qu'une adresse non vérifiée.
+3. **Pages légales** : les notes « [Juriste] », les sections « À lire d'abord » et « Points à valider » des brouillons
+   ne sont pas publiées ; les autres passages entre crochets restent, signalés par le bandeau « Version provisoire ».
+
