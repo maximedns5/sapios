@@ -1,6 +1,6 @@
 // Notifications push via Expo (brief §7.3 « Push »). Utilisé par `notify` et `review-diploma`.
 import type { SupabaseClient } from "./deps.ts";
-import type { NotifyRequest, PushData } from "./shared.ts";
+import type { EventNotifyKind, NotifyRequest, PushData } from "./shared.ts";
 
 export const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const EXPO_BATCH = 100;
@@ -11,6 +11,10 @@ const FALLBACK_COPY: Record<string, string> = {
   "push.match": "Nouveau match.",
   "push.message": "Nouveau message.",
   "push.verdict": "Votre verdict est tombé.",
+  "push.event.registered": "Place confirmée : {title}, {date}.",
+  "push.event.promoted": "Une place s'est libérée : vous êtes inscrit·e à {title}.",
+  "push.event.cancelled": "{title} est annulé.",
+  "push.event.reminder": "C'est demain : {title}, {date}.",
 };
 
 export interface PushMessage {
@@ -21,6 +25,15 @@ export interface PushMessage {
   sound: "default";
 }
 
+/** Événement vu par les notifications (jamais le lieu exact : il reste dans l'application). */
+export interface EventInfo {
+  id: string;
+  title: string;
+  starts_at: string;
+  status: string;
+  cancel_reason: string | null;
+}
+
 export interface PushStore {
   matchParticipants(matchId: string): Promise<[string, string] | null>;
   message(messageId: string): Promise<{ match_id: string; sender_id: string } | null>;
@@ -28,6 +41,63 @@ export interface PushStore {
   copy(keys: string[]): Promise<Map<string, string>>;
   tokens(userIds: string[]): Promise<{ user_id: string; token: string }[]>;
   deleteTokens(tokens: string[]): Promise<void>;
+  /** Inscription à un événement : membre, événement, statut actuel. */
+  registration(registrationId: string): Promise<{ user_id: string; event_id: string; status: string } | null>;
+  event(eventId: string): Promise<EventInfo | null>;
+  /** Places confirmées (statut `registered`) : destinataires du rappel de la veille. */
+  eventAttendees(eventId: string): Promise<string[]>;
+}
+
+export type EventMoment = EventNotifyKind | "reminder";
+
+/**
+ * Événement et destinataires d'une notification d'événement ; null s'il n'y a rien à envoyer.
+ * Une notification périmée ne part pas : désinscrit entre-temps, événement annulé depuis.
+ */
+export async function eventTargets(
+  store: Pick<PushStore, "registration" | "event" | "eventAttendees">,
+  req: NotifyRequest,
+): Promise<{ event: EventInfo; moment: EventMoment; userIds: string[] } | null> {
+  if (req.type === "event") {
+    const reg = await store.registration(req.registration_id);
+    if (!reg || reg.status !== (req.kind === "cancelled" ? "cancelled" : "registered")) return null;
+    const event = await store.event(reg.event_id);
+    if (!event || event.status !== (req.kind === "cancelled" ? "cancelled" : "published")) return null;
+    return { event, moment: req.kind, userIds: [reg.user_id] };
+  }
+  if (req.type === "event_reminder") {
+    const event = await store.event(req.event_id);
+    if (!event || event.status !== "published") return null;
+    const userIds = await store.eventAttendees(event.id);
+    return userIds.length > 0 ? { event, moment: "reminder", userIds } : null;
+  }
+  return null;
+}
+
+/** « samedi 14 novembre à 19 h 30 », heure de Paris. */
+export function formatEventDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
+  const parts = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+  const minute = parts.find((p) => p.type === "minute")?.value ?? "00";
+  return `${day} à ${hour} h ${minute}`;
+}
+
+/** Variables des textes d'événement : {title}, {date}, {reason}. */
+export function eventVars(event: EventInfo): Record<string, string> {
+  return { title: event.title, date: formatEventDate(event.starts_at), reason: event.cancel_reason ?? "" };
 }
 
 export interface PushDeps {
@@ -74,6 +144,13 @@ export async function buildMessages(store: PushStore, req: NotifyRequest): Promi
       body: fill(text, { name: names.get(msg.sender_id) ?? "" }),
       data: { type: "message", match_id: msg.match_id, message_id: req.message_id },
     }));
+  } else if (req.type === "event" || req.type === "event_reminder") {
+    const found = await eventTargets(store, req);
+    if (!found) return [];
+    const key = `push.event.${found.moment}`;
+    const raw = (await store.copy([key])).get(key);
+    const body = fill(raw?.trim() ? raw : FALLBACK_COPY[key], eventVars(found.event));
+    targets = found.userIds.map((userId) => ({ userId, body, data: { type: "event", event_id: found.event.id } }));
   } else {
     const copy = await store.copy(["push.verdict", req.copy_key]);
     const verdict = copy.get(req.copy_key);
@@ -178,6 +255,24 @@ export function createPushStore(db: SupabaseClient): PushStore {
     async deleteTokens(tokens) {
       const { error } = await db.from("push_tokens").delete().in("token", tokens);
       if (error) fail("push_tokens delete", error);
+    },
+    async registration(registrationId) {
+      const { data, error } = await db.from("event_registrations").select("user_id, event_id, status")
+        .eq("id", registrationId).maybeSingle();
+      if (error) fail("event_registrations", error);
+      return data as { user_id: string; event_id: string; status: string } | null;
+    },
+    async event(eventId) {
+      const { data, error } = await db.from("events").select("id, title, starts_at, status, cancel_reason")
+        .eq("id", eventId).maybeSingle();
+      if (error) fail("events", error);
+      return data as EventInfo | null;
+    },
+    async eventAttendees(eventId) {
+      const { data, error } = await db.from("event_registrations").select("user_id")
+        .eq("event_id", eventId).eq("status", "registered");
+      if (error) fail("event_registrations", error);
+      return (data ?? []).map((r) => r.user_id as string);
     },
   };
 }
