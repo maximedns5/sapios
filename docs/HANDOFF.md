@@ -236,3 +236,8 @@ Détail des RPC dans `docs/CONTRACT.md` §3, types dans `packages/shared/src/com
   `admin_list_registrations`, `admin_check_in` (par inscription ou code de billet), `admin_mark_no_shows`,
   `admin_promote_registration`, `admin_cancel_event(id, motif)`, `admin_export_event`. Prix : gratuit seulement.
 - **Vue d'ensemble** : `admin_stats()` ajoute `referrals_total`, `referred_pending_review`, `events_upcoming`.
+- **Fait (PR back-office du lot 2)** : pages `/admin/evenements` (liste, création, modification, annulation motivée),
+  `/admin/evenements/[id]` (pointage par ligne ou par code, promotion, absents, export CSV) et `/admin/parrainages`
+  (statistiques, révocation, rétablissement, lettres par période) ; repère « Prioritaire · Recommandé·e par X » dans
+  la file des diplômes, le détail d'un dossier et la liste d'attente ; tuiles et prochains événements sur la vue
+  d'ensemble. Réglages regroupés sous un onglet « Réglages ».

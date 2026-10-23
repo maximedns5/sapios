@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ACCESS_TIERS, SUBMISSION_STATUSES, type AccessTier, type SubmissionStatus } from "@sapios/shared";
 import { describeError, isMissingFunction } from "@/lib/admin/errors";
-import { numberFr, PROFILE_STATUS_LABELS, STATUS_LABELS, TIER_LABELS } from "@/lib/admin/format";
+import { fmtEventDate, numberFr, PROFILE_STATUS_LABELS, STATUS_LABELS, TIER_LABELS } from "@/lib/admin/format";
 import type { ProfileStatus } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
+import { FillBar } from "./EventsView";
 import { ErrorNotice, Loading, PageHead } from "./ui";
 
 const PROFILE_STATUSES: ProfileStatus[] = ["onboarding", "active", "paused", "banned"];
@@ -22,6 +23,16 @@ interface Stats {
   waitlist_signups: number | null;
   reports_open: number | null;
   content_flags_open?: number | null;
+  referrals_total?: number | null;
+  referred_pending_review?: number | null;
+  events_upcoming?: Array<{
+    id: string;
+    title: string;
+    starts_at: string;
+    capacity: number;
+    registered: number;
+    waitlisted: number;
+  }> | null;
   source: "rpc" | "fallback";
 }
 
@@ -177,7 +188,63 @@ export default function StatsView() {
               <span className="v">{n(stats.content_flags_open)}</span>
               <span className="s">Réponses, livres, thèses →</span>
             </Link>
+            <Link href="/admin/parrainages" className="kpi" style={{ textDecoration: "none" }}>
+              <span className="label">Recommandations</span>
+              <span className="v">{n(stats.referrals_total)}</span>
+              <span className="s">
+                {stats.referred_pending_review
+                  ? `${plural(stats.referred_pending_review, "dossier prioritaire", "dossiers prioritaires")} en revue`
+                  : "Aucun dossier prioritaire en revue"}
+              </span>
+            </Link>
+            <Link href="/admin/evenements" className="kpi" style={{ textDecoration: "none" }}>
+              <span className="label">Événements à venir</span>
+              <span className="v">{n(stats.events_upcoming?.length ?? null)}</span>
+              <span className="s">Agenda →</span>
+            </Link>
           </div>
+
+          {stats.events_upcoming?.length ? (
+            <section className="panel" style={{ marginTop: 28 }} aria-label="Prochains événements">
+              <div className="panel-h">
+                <h2 className="label">Prochains événements</h2>
+                <Link className="adm-link" href="/admin/evenements">
+                  Tout l’agenda
+                </Link>
+              </div>
+              <div className="panel-b">
+                <table className="tbl">
+                  <caption className="sr-only">Prochains événements publiés</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Date</th>
+                      <th scope="col">Événement</th>
+                      <th scope="col">Remplissage</th>
+                      <th scope="col" className="num">
+                        Attente
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.events_upcoming.slice(0, 5).map((e) => (
+                      <tr key={e.id}>
+                        <td className="strong">{fmtEventDate(e.starts_at)}</td>
+                        <td>
+                          <Link className="row-link" href={`/admin/evenements/${e.id}`}>
+                            {e.title}
+                          </Link>
+                        </td>
+                        <td>
+                          <FillBar taken={e.registered} capacity={e.capacity} />
+                        </td>
+                        <td className="num">{e.waitlisted}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ) : null}
 
           <div className="stat-grid">
             <Bars title="Soumissions par statut" keys={SUBMISSION_STATUSES} values={stats.submissions_by_status} labels={STATUS_LABELS} />

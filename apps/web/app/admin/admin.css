@@ -1236,3 +1236,152 @@ kbd {
   display: grid;
   gap: 2px;
 }
+
+/* Lot 2 : événements, inscrits et parrainages */
+.ev-layout {
+  display: grid;
+  gap: 28px;
+}
+@media (min-width: 1100px) {
+  .ev-layout {
+    grid-template-columns: minmax(0, 1fr) 420px;
+    align-items: start;
+  }
+  .ev-side {
+    position: sticky;
+    top: 84px;
+  }
+}
+.ev-side .input,
+.ev-side .select,
+.ev-side .textarea {
+  min-height: 42px;
+  padding: 8px 10px;
+  border-width: 1.5px;
+  font-size: 14px;
+}
+.ev-side .textarea {
+  min-height: 84px;
+}
+.ev-side .select {
+  padding-right: 34px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+.form-grid > .full {
+  grid-column: 1 / -1;
+}
+.form-grid .field {
+  gap: 6px;
+}
+.form-hint {
+  font-size: 12.5px;
+}
+.fill {
+  display: grid;
+  gap: 5px;
+  min-width: 132px;
+}
+.fill-track {
+  position: relative;
+  height: 8px;
+  border: 1.5px solid var(--fg);
+}
+.fill-track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--fg);
+}
+.fill-n {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tbl tr.is-dim td {
+  opacity: 0.55;
+}
+.tbl tr.is-current td {
+  background: var(--k);
+  color: var(--w);
+  --fg: var(--w);
+  --bg: var(--k);
+}
+.tbl tr.is-current .adm-link {
+  color: var(--w);
+}
+.danger-zone {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 2px solid var(--k);
+}
+.checkin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+}
+.checkin .field {
+  gap: 6px;
+}
+.checkin .input {
+  width: 220px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-width: 1.5px;
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.mono-code {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+.prio-mark {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* Barre secondaire des réglages */
+.adm-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  /* Aligné sur le contenu de <main> (1320 px de large au plus, centré). */
+  padding: 0 max(var(--gutter), calc((100% - 1320px) / 2 + var(--gutter)));
+  border-bottom: 2px solid var(--k);
+}
+.adm-subnav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+}
+.adm-subnav a:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.adm-subnav a[aria-current="page"] {
+  background: var(--k);
+  color: var(--w);
+}
+.form-grid > * {
+  min-width: 0;
+}
+.ev-side input[type="datetime-local"] {
+  min-width: 0;
+  width: 100%;
+}
+.ev-date {
+  white-space: nowrap;
+}

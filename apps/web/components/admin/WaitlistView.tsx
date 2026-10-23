@@ -4,16 +4,18 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { levelLabel } from "@sapios/shared";
 import LevelLabel from "@/components/LevelLabel";
 import { describeError, isMissingFunction } from "@/lib/admin/errors";
-import { fmtAgo, fmtDateTime, levelText, numberFr, PROFILE_STATUS_LABELS, TIER_LABELS } from "@/lib/admin/format";
+import { csvCell, fmtAgo, fmtDateTime, levelText, numberFr, PROFILE_STATUS_LABELS, TIER_LABELS } from "@/lib/admin/format";
 import type { ProfileStatus, WaitlistMember, WaitlistSignup } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
-import { Empty, ErrorNotice, Loading, PageHead, SuccessNotice } from "./ui";
+import { Empty, ErrorNotice, Loading, PageHead, ReferredMark, SuccessNotice } from "./ui";
 
 type AdmitTier = "standard" | "unlimited";
 
 async function loadMembers(): Promise<WaitlistMember[]> {
   const supabase = createClient();
-  let rows: Array<Pick<WaitlistMember, "user_id" | "level" | "granted_at" | "email" | "display_name" | "status">>;
+  let rows: Array<
+    Pick<WaitlistMember, "user_id" | "level" | "granted_at" | "email" | "display_name" | "status" | "referred" | "referred_by">
+  >;
 
   const rpc = await supabase.rpc("admin_list_waitlist");
   if (!rpc.error) {
@@ -24,7 +26,9 @@ async function loadMembers(): Promise<WaitlistMember[]> {
       level: number | null;
       granted_at: string;
       profile_status: ProfileStatus | null;
-    }>).map((r) => ({ ...r, status: r.profile_status }));
+      referred?: boolean;
+      referred_by?: string | null;
+    }>).map((r) => ({ ...r, status: r.profile_status, referred: r.referred ?? false, referred_by: r.referred_by ?? null }));
   } else if (isMissingFunction(rpc.error)) {
     // Repli : lecture directe (RLS admin), sans email.
     const { data, error } = await supabase
@@ -39,6 +43,8 @@ async function loadMembers(): Promise<WaitlistMember[]> {
       email: null,
       display_name: null,
       status: null,
+      referred: false,
+      referred_by: null,
     }));
   } else {
     throw rpc.error;
@@ -74,11 +80,6 @@ async function loadSignups(): Promise<{ rows: WaitlistSignup[]; total: number | 
     .limit(500);
   if (error) throw error;
   return { rows: (data ?? []) as WaitlistSignup[], total: count };
-}
-
-function csvCell(v: string | null): string {
-  const s = v ?? "";
-  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 function Members() {
@@ -150,7 +151,10 @@ function Members() {
         <h2 className="serif" id={`${id}-t`} style={{ fontSize: 30, lineHeight: 1.1 }}>
           Membres en attente <span className="label">{rows ? `· ${rows.length}` : ""}</span>
         </h2>
-        <p style={{ maxWidth: "58ch" }}>Diplôme validé au palier « liste d’attente ». Admission par lot, du plus ancien au plus récent.</p>
+        <p style={{ maxWidth: "58ch" }}>
+          Diplôme validé au palier « liste d’attente ». Admission par lot : les personnes recommandées d’abord, puis du
+          plus ancien au plus récent.
+        </p>
       </div>
       <div aria-live="polite" style={{ marginBottom: notice ? 16 : 0 }}>
         {notice ? <SuccessNotice>{notice}</SuccessNotice> : null}
@@ -207,6 +211,12 @@ function Members() {
                         <span className="muted">
                           {[m.legal_name, m.email].filter(Boolean).join(" · ") || "—"}
                         </span>
+                        {m.referred ? (
+                          <>
+                            <br />
+                            <ReferredMark by={m.referred_by} />
+                          </>
+                        ) : null}
                       </td>
                       <td>{levelText(m.level)}</td>
                       <td>{m.city ?? "—"}</td>
@@ -252,6 +262,15 @@ function Members() {
       ) : null}
     </section>
   );
+}
+
+/** Provenance d'une inscription : landing, test, ou lien de recommandation (`ref:CODE`). */
+function sourceLabel(source: string | null): string {
+  if (!source) return "—";
+  if (source.startsWith("ref:")) return `Recommandation · ${source.slice(4)}`;
+  if (source === "landing") return "Page d’accueil";
+  if (source === "test") return "Test d’admission";
+  return source;
 }
 
 function Signups() {
@@ -317,7 +336,7 @@ function Signups() {
                     {r.level != null ? <LevelLabel label={levelLabel(r.level)} /> : <span className="muted">—</span>}
                   </td>
                   <td data-label="Ville">{r.city ?? <span className="muted">—</span>}</td>
-                  <td data-label="Source">{r.source ?? "—"}</td>
+                  <td data-label="Source">{sourceLabel(r.source)}</td>
                   <td data-label="Inscription">{fmtDateTime(r.created_at)}</td>
                 </tr>
               ))}

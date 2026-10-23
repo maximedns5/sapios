@@ -1,6 +1,9 @@
 import type {
   AccessTier,
   ContentFlagStatus,
+  EventKind,
+  EventStatus,
+  RegistrationStatus,
   ContentKind,
   Extraction,
   PhotoModeration,
@@ -37,6 +40,10 @@ export interface SubmissionRow {
   email?: string | null;
   institution_verified?: string | null;
   field_verified?: StudyField | null;
+  /** Lot 2 : la personne a utilisé une lettre de recommandation (file prioritaire). */
+  referred?: boolean;
+  /** Prénom affiché du parrain ; nul s'il a supprimé son compte. */
+  referred_by?: string | null;
 }
 
 export interface ReportRow {
@@ -80,6 +87,8 @@ export interface WaitlistMember {
   status: ProfileStatus | null;
   legal_name: string | null;
   email: string | null;
+  referred: boolean;
+  referred_by: string | null;
 }
 
 export interface WaitlistSignup {
@@ -163,4 +172,73 @@ export interface ReportContext {
     reporter_blocked: boolean;
     target_blocked: boolean;
   };
+}
+
+// --- Lot 2 : événements et lettres de recommandation (contrat §3) ---------------------------------
+
+/** Ligne de `admin_list_events`. */
+export interface AdminEventRow {
+  id: string;
+  title: string;
+  kind: EventKind;
+  description: string;
+  city: string;
+  neighbourhood: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  starts_at: string;
+  ends_at: string;
+  capacity: number;
+  price_cents: number;
+  allowed_tiers: AccessTier[];
+  status: EventStatus;
+  cancel_reason: string | null;
+  registered_count: number;
+  waitlisted_count: number;
+  attended_count: number;
+  no_show_count: number;
+  cancelled_count: number;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Ligne de `admin_list_registrations` : de quoi pointer, rien de plus. */
+export interface AdminRegistrationRow {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  status: RegistrationStatus;
+  ticket_code: string;
+  waitlist_rank: number | null;
+  checked_in_at: string | null;
+  status_changed_at: string;
+  created_at: string;
+}
+
+/** Une ligne par parrain dans `admin_referral_stats().referrers`. */
+export interface ReferrerStatsRow {
+  referrer_id: string;
+  display_name: string | null;
+  email: string | null;
+  tier?: AccessTier | null;
+  level?: number | null;
+  active_code: string | null;
+  referral_disabled: boolean;
+  referees_total: number;
+  letters_used_window: number;
+  referees_admitted: number;
+  referees_waitlisted: number;
+  referees_refused: number;
+  referees_pending: number;
+  referees_banned: number;
+  flagged: boolean;
+}
+
+export interface ReferralStats {
+  codes_active: number;
+  codes_revoked: number;
+  referrals_total: number;
+  referrals_window: number;
+  referrers: ReferrerStatsRow[];
 }

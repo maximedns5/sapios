@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useId, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { normalizeReferralCode, REFERRAL_CODE_PATTERN } from "@sapios/shared";
 import { Alert, ArrowRight, Check } from "@/components/site/Icons";
 import { createClient } from "@/lib/supabase/client";
 
@@ -31,9 +32,15 @@ function emailProblem(email: string): string | null {
   return null;
 }
 
-/** Provenance enregistrée avec l'inscription : la landing, ou le résultat du test. */
+/**
+ * Provenance enregistrée avec l'inscription : un lien de recommandation (`ref:CODE`, contrat §2),
+ * le résultat du test, ou la landing.
+ */
 function signupSource(): string {
-  return new URLSearchParams(window.location.search).get("via") === "test" ? "test" : "landing";
+  const params = new URLSearchParams(window.location.search);
+  const ref = normalizeReferralCode(params.get("ref") ?? "");
+  if (REFERRAL_CODE_PATTERN.test(ref)) return `ref:${ref}`;
+  return params.get("via") === "test" ? "test" : "landing";
 }
 
 const delay = (d: string) => ({ "--d": d }) as CSSProperties;
