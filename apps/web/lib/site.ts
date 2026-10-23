@@ -3,7 +3,13 @@ export const SITE = {
   name: "Sapios",
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "contact@sapios.app",
   privacyEmail: process.env.NEXT_PUBLIC_PRIVACY_EMAIL || "confidentialite@sapios.app",
-  privacyUpdatedAt: "22 octobre 2026",
+  privacyUpdatedAt: "26 octobre 2026",
+  /**
+   * Pages CGU et mentions légales validées par le juriste : `NEXT_PUBLIC_LEGAL_PAGES_READY=true`.
+   * Sinon elles restent consultables par adresse (liens de l'app) avec un bandeau « version
+   * provisoire », non indexées et absentes du pied de page.
+   */
+  legalPagesReady: process.env.NEXT_PUBLIC_LEGAL_PAGES_READY === "true",
 } as const;
 
 // Adresse publique du site : NEXT_PUBLIC_SITE_URL une fois le domaine choisi, sinon le domaine de

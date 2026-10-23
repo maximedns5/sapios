@@ -1582,9 +1582,27 @@ html:has(.site) body {
 .legal-body p + p {
   margin-top: 10px;
 }
-.legal-body ul {
+.legal-body ul,
+.legal-body ol {
   margin: 8px 0 0;
   padding-left: 1.1em;
+}
+.legal-body ol {
+  padding-left: 1.4em;
+}
+.legal-draft {
+  margin: 0 0 8px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  border: 1.5px dashed var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.legal-draft strong {
+  display: block;
+  margin-bottom: 2px;
 }
 .legal-body li + li {
   margin-top: 6px;

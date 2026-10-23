@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE } from "@/lib/site";
 
 export default function SiteFooter({ note }: { note?: React.ReactNode }) {
   return (
@@ -13,6 +14,8 @@ export default function SiteFooter({ note }: { note?: React.ReactNode }) {
         <nav aria-label="Informations">
           <Link href="/test">Test d’admission</Link>
           <Link href="/confidentialite">Confidentialité</Link>
+          {SITE.legalPagesReady ? <Link href="/cgu">CGU</Link> : null}
+          {SITE.legalPagesReady ? <Link href="/mentions-legales">Mentions légales</Link> : null}
           <Link href="/contact">Contact</Link>
         </nav>
         {note ? <p className="s-footer-note">{note}</p> : null}

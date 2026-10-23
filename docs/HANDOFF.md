@@ -301,3 +301,40 @@ Détail dans `docs/CONTRACT.md` (§2, §3, §5, §6), types dans `packages/share
   engagée des deux côtés, bloc « Avant l'événement » sur le billet ;
 - liens CGU et mentions légales sur l'écran de connexion, le compte (avec la date d'acceptation) et l'étape des
   conditions ; avis d'inactivité dans la découverte et « Mon profil ».
+
+## Conformité : site et back-office (double authentification, pages légales)
+
+- **Double authentification obligatoire pour le back-office** (AIPD, mesure n° 1). `public.is_admin()` exige une
+  session `aal2` : sans code TOTP validé, aucune RPC `admin_*`, aucune règle d'accès d'admin (signalements, journal,
+  photos) et aucun appel à `review-diploma` ne passe, même avec un compte présent dans `admins`.
+  - Parcours : connexion (mot de passe ou code email) → `/admin/double-authentification` → première fois :
+    enregistrement d'une application (QR code + clé, puis un code) ; ensuite : code à 6 chiffres à chaque connexion.
+  - Réglages → Sécurité (`/admin/securite`) : liste des applications enregistrées, ajout d'un second appareil,
+    retrait après un code frais (de cette application ou d'une autre).
+  - **Mise en service** :
+    1. Supabase (chaque projet, staging puis prod) : *Authentication → Multi-Factor* (ou *Sign In / Providers →
+       Multi-Factor Authentication*) : vérifier que **TOTP (App Authenticator)** est activé, en enrôlement et en
+       vérification. En local, `supabase/config.toml` l'active (`[auth.mfa.totp]`).
+    2. Au premier passage dans le back-office après le déploiement, chaque admin enregistre une application
+       d'authentification sur son téléphone. Rien n'est accessible avant.
+    3. Conseillé : enregistrer tout de suite un second appareil (Réglages → Sécurité).
+  - **Téléphone perdu** : dans le tableau de bord Supabase, *Authentication → Users* → le compte de l'admin →
+    supprimer son facteur MFA (ou SQL : `delete from auth.mfa_factors where user_id = '<uuid>';`). L'admin
+    enregistre alors une nouvelle application à sa prochaine connexion. Si c'est le seul propriétaire, seul l'accès au
+    tableau de bord Supabase (protégé lui aussi par une double authentification) permet de le faire.
+  - Tests : `pg_temp.login(uid, p_aal default 'aal2')` dans `supabase/tests/_helpers.psql` ; `210_admin_mfa` vérifie
+    qu'un admin en aal1 est refusé partout.
+- **Réglages → Conformité** (`/admin/conformite`) : durées de conservation (`inactive_warning_days`,
+  `inactive_grace_days`, `report_retention_days`, `audit_retention_days`, `banned_identity_retention_days`,
+  `notice_retention_days`) et publication d'une nouvelle version des CGU (`terms_version`, confirmation « PUBLIER »).
+  Les clés, leur validation dans `admin_update_settings` et les purges sont dans la PR « Conformité : base et app » ;
+  avant son déploiement, l'enregistrement répond « la base ne connaît pas encore ce réglage ».
+- **Signalements** : un signalement dont la personne visée a supprimé son compte (`target_id` nul) s'affiche
+  « Compte supprimé · réf. <8 premiers caractères de `target_pseudonym`> », sans contexte ni bannissement.
+- **Pages légales** : `/cgu` et `/mentions-legales` rendent `apps/web/content/legal/*.md` (rendu maison,
+  `lib/legal-markdown.tsx`). Tant que `NEXT_PUBLIC_LEGAL_PAGES_READY` n'est pas `true` : bandeau « Version provisoire »,
+  `noindex`, pas de lien dans le pied de page (l'app peut y renvoyer). Une fois les textes validés : remplacer les
+  fichiers `.md`, puis mettre la variable à `true` dans Vercel (projet du site) et redéployer.
+- **Politique de confidentialité** mise à jour : profil intellectuel, classement par affinités et opposition (tri par
+  activité), filtre des textes, likes avec un mot, lettres de recommandation, événements, Vercel, nouvelles durées.
+

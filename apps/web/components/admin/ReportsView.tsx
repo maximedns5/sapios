@@ -45,8 +45,8 @@ async function loadReports(status: ReportStatus): Promise<Loaded> {
     .limit(200);
   if (error) throw error;
   const reports = (data ?? []) as ReportRow[];
-  const ids = Array.from(new Set(reports.flatMap((r) => [r.reporter_id, r.target_id])));
-  const targets = Array.from(new Set(reports.map((r) => r.target_id)));
+  const ids = Array.from(new Set(reports.flatMap((r) => [r.reporter_id, r.target_id]))).filter((id): id is string => !!id);
+  const targets = Array.from(new Set(reports.map((r) => r.target_id))).filter((id): id is string => !!id);
   const [people, open] = await Promise.all([
     ids.length ? supabase.from("profiles").select("id, display_name, status").in("id", ids) : Promise.resolve({ data: [] }),
     targets.length
@@ -64,7 +64,9 @@ async function loadReports(status: ReportStatus): Promise<Loaded> {
   };
 }
 
-function who(people: Record<string, Person>, id: string): string {
+/** Nom affiché ; pour un compte supprimé, la référence pseudonyme (8 premiers caractères). */
+function who(people: Record<string, Person>, id: string | null, pseudonym?: string | null): string {
+  if (!id) return `Compte supprimé · réf. ${(pseudonym ?? "inconnue").slice(0, 8)}`;
   return people[id]?.display_name ?? `Membre ${id.slice(0, 8)}`;
 }
 
@@ -264,8 +266,9 @@ function ReportCard({
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const target = data.people[report.target_id];
-  const openCount = data.openByTarget[report.target_id] ?? 0;
+  const deleted = !report.target_id;
+  const target = report.target_id ? data.people[report.target_id] : undefined;
+  const openCount = report.target_id ? (data.openByTarget[report.target_id] ?? 0) : 0;
 
   async function act(status: Exclude<ReportStatus, "open">) {
     if (status === "actioned" && ban && !confirming) {
@@ -289,7 +292,7 @@ function ReportCard({
       status === "dismissed"
         ? "Signalement classé sans suite."
         : ban
-          ? `Signalement traité. ${who(data.people, report.target_id)} est banni·e et dé-matché·e.`
+          ? `Signalement traité. ${who(data.people, report.target_id, report.target_pseudonym)} est banni·e et dé-matché·e.`
           : "Signalement traité.",
     );
   }
@@ -309,7 +312,10 @@ function ReportCard({
         <dl className="kv">
           <dt>Signalé·e</dt>
           <dd>
-            {who(data.people, report.target_id)}{" "}
+            {who(data.people, report.target_id, report.target_pseudonym)}{" "}
+            {deleted && report.target_deleted_at ? (
+              <span className="badge">Supprimé le {fmtDate(report.target_deleted_at)}</span>
+            ) : null}
             {target?.status ? (
               <span className={target.status === "banned" ? "badge badge--solid" : "badge"}>
                 {PROFILE_STATUS_LABELS[target.status]}
@@ -318,7 +324,7 @@ function ReportCard({
             {openCount > 1 ? <span className="badge badge--solid">{openCount} signalements ouverts</span> : null}
           </dd>
           <dt>Par</dt>
-          <dd>{who(data.people, report.reporter_id)}</dd>
+          <dd>{who(data.people, report.reporter_id, report.reporter_pseudonym)}</dd>
           <dt>Détails</dt>
           <dd className={report.details ? undefined : "empty"}>{report.details || "aucun"}</dd>
           {report.content_kind ? (
@@ -336,7 +342,16 @@ function ReportCard({
             </>
           ) : null}
         </dl>
-        {report.status === "open" ? <ReportContextPanel report={report} prompts={prompts} /> : null}
+        {report.status === "open" && !deleted ? <ReportContextPanel report={report} prompts={prompts} /> : null}
+        {report.status === "open" && deleted ? (
+          <p className="notice notice--outline">
+            <span className="label">Compte supprimé</span>
+            <span>
+              La personne visée a supprimé son compte : son profil n’existe plus. Le signalement est conservé,
+              pseudonymisé, pour la trace ; classez-le ou sanctionnez-le sans bannissement.
+            </span>
+          </p>
+        ) : null}
         {report.status === "open" ? (
           <>
             <label className="check">
@@ -347,7 +362,7 @@ function ReportCard({
                   setBan(e.target.checked);
                   setConfirming(false);
                 }}
-                disabled={target?.status === "banned"}
+                disabled={deleted || target?.status === "banned"}
               />
               <span>
                 Bannir le compte signalé (profil masqué, matches rompus)

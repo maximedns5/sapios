@@ -146,7 +146,8 @@ Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `an
 | `block_user(p_target uuid)` | `void` (dé-matche aussi) | — |
 | `report_user(p_target uuid, p_reason text, p_details text, p_content_kind content_kind default null, p_content_item uuid default null)` | `uuid` | `invalid_input`, `forbidden` |
 | `export_my_data()` | `jsonb` (+ `terms_acceptances`) | — |
-| `is_admin()` | `bool` | — |
+| `is_admin()` | `bool` : vrai seulement pour un compte de `admins` dont la session est **aal2** (double authentification). Toutes les règles d'accès et RPC d'admin en dépendent | — |
+| `is_admin_account()` | `bool` : le compte figure dans `admins`, quel que soit le niveau de session. Sert seulement à aiguiller le back-office vers l'enrôlement ou la vérification du code ; ne donne aucun droit | — |
 | `admin_admit_waitlist(p_user_ids uuid[], p_tier access_tier default 'standard')` | `int` (nombre admis) | `forbidden` |
 | `admin_set_report_status(p_report_id uuid, p_status report_status, p_ban bool default false)` | `void` | `forbidden` |
 | `admin_list_submissions(p_status submission_status default 'needs_review')` | `setof` (soumission + `legal_name`, `birthdate`, `display_name`, `email`, `institution_verified`, `field_verified`, `referred`, `referred_by`), personnes recommandées d'abord puis les plus anciennes | `forbidden` |
@@ -240,7 +241,7 @@ Mot de passe commun : `sapios-test-password`. Tous à Paris (localisation proche
 
 | Email | Niveau | Palier |
 |---|---|---|
-| `admin@sapios.test` | 8 | unlimited, + `admins(owner)` |
+| `admin@sapios.test` | 8 | unlimited, + `admins(owner)` ; double authentification à enregistrer au premier passage dans le back-office |
 | `unlimited@sapios.test` | 8 | unlimited |
 | `standard@sapios.test` | 7 | standard |
 | `standard2@sapios.test` | 7 | standard |

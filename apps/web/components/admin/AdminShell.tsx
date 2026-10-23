@@ -16,7 +16,11 @@ const NAV: Array<{ href: string; label: string; count?: keyof Counts; group?: re
   { href: "/admin/liste-attente", label: "Liste d’attente", count: "waitlist" },
   { href: "/admin/evenements", label: "Événements" },
   { href: "/admin/parrainages", label: "Parrainages" },
-  { href: "/admin/paliers", label: "Réglages", group: ["/admin/paliers", "/admin/decouverte", "/admin/questions", "/admin/textes"] },
+  {
+    href: "/admin/paliers",
+    label: "Réglages",
+    group: ["/admin/paliers", "/admin/decouverte", "/admin/questions", "/admin/textes", "/admin/conformite", "/admin/securite"],
+  },
 ];
 
 // Les réglages tiennent sous un seul onglet ; leurs pages ont une barre secondaire.
@@ -25,6 +29,8 @@ const SETTINGS: Array<{ href: string; label: string }> = [
   { href: "/admin/decouverte", label: "Découverte" },
   { href: "/admin/questions", label: "Questions" },
   { href: "/admin/textes", label: "Textes" },
+  { href: "/admin/conformite", label: "Conformité" },
+  { href: "/admin/securite", label: "Sécurité" },
 ];
 
 export default function AdminShell({ email, children }: { email: string; children: React.ReactNode }) {
