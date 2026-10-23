@@ -2,7 +2,7 @@
 -- purges du journal d'audit et des avis, réglages de conservation.
 begin;
 \ir _helpers.psql
-select plan(48);
+select plan(50);
 
 -- Admin connecté avec la double authentification (aal2) : ces tests restent valables si
 -- require_admin exige un jour aal2.
@@ -28,6 +28,8 @@ begin
   perform pg_temp.new_member(6, 'standard');   -- banni, puis supprimé
   perform pg_temp.new_member(9, 'standard');   -- inactif, mais revient
   perform pg_temp.new_member(10, 'standard');  -- banni supprimé sans poivre
+  perform pg_temp.new_member(11, 'standard');  -- banni et inactif
+  update public.profiles set status = 'banned' where id = pg_temp.uid(11);
   insert into public.terms_acceptances (user_id, version) values (pg_temp.uid(4), '2026-10-brouillon');
 end;
 $$;
@@ -84,9 +86,9 @@ update public.app_settings set value = '730' where key = 'inactive_warning_days'
 
 -- 3. Comptes inactifs ----------------------------------------------------------------------------
 update public.profiles set last_active_at = now() - interval '3 years'
- where id in (pg_temp.uid(2), pg_temp.uid(3), pg_temp.uid(9));
+ where id in (pg_temp.uid(2), pg_temp.uid(3), pg_temp.uid(9), pg_temp.uid(11));
 update auth.users set last_sign_in_at = now() - interval '3 years', created_at = now() - interval '4 years'
- where id in (pg_temp.uid(2), pg_temp.uid(3), pg_temp.uid(9));
+ where id in (pg_temp.uid(2), pg_temp.uid(3), pg_temp.uid(9), pg_temp.uid(11));
 select lives_ok($$select private.warn_inactive_accounts()$$, 'avertissement des comptes inactifs');
 select is((select count(*)::int from private.inactivity_warnings where user_id in (pg_temp.uid(3), pg_temp.uid(9))), 2,
   'deux comptes inactifs avertis');
@@ -94,6 +96,10 @@ select ok(not exists (select 1 from private.inactivity_warnings where user_id = 
   'un admin n''est jamais averti');
 select is((select kind from public.member_notices where user_id = pg_temp.uid(3) order by created_at desc limit 1),
   'inactivity_warning', 'avis d''inactivité dans l''app');
+select ok(exists (select 1 from private.inactivity_warnings where user_id = pg_temp.uid(11)),
+  'compte banni inactif : supprimé au même terme');
+select ok(not exists (select 1 from public.member_notices where user_id = pg_temp.uid(11) and kind = 'inactivity_warning'),
+  'compte banni : ni avis ni email d''inactivité');
 
 select pg_temp.login(pg_temp.uid(9));
 select lives_ok($$select public.get_my_state()$$, 'le membre averti revient');

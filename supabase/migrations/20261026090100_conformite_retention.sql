@@ -74,7 +74,7 @@ declare
   v_count int := 0;
 begin
   for v_row in
-    select p.id as user_id
+    select p.id as user_id, p.status
     from public.profiles p
     join auth.users u on u.id = p.id
     where greatest(p.last_active_at, coalesce(u.last_sign_in_at, p.last_active_at), u.created_at)
@@ -86,12 +86,15 @@ begin
   loop
     insert into private.inactivity_warnings (user_id, delete_after)
     values (v_row.user_id, now() + make_interval(days => v_grace));
-    insert into public.member_notices (user_id, kind, payload)
-    values (v_row.user_id, 'inactivity_warning',
-            jsonb_build_object('delete_after', (now() + make_interval(days => v_grace))::date));
-    perform private.invoke_edge_function('notify',
-      jsonb_build_object('type', 'inactivity', 'user_id', v_row.user_id,
-                         'delete_after', (now() + make_interval(days => v_grace))::date));
+    -- Compte banni : supprimé au même terme, mais sans avis ni email (« Vous nous manquez »).
+    if v_row.status <> 'banned' then
+      insert into public.member_notices (user_id, kind, payload)
+      values (v_row.user_id, 'inactivity_warning',
+              jsonb_build_object('delete_after', (now() + make_interval(days => v_grace))::date));
+      perform private.invoke_edge_function('notify',
+        jsonb_build_object('type', 'inactivity', 'user_id', v_row.user_id,
+                           'delete_after', (now() + make_interval(days => v_grace))::date));
+    end if;
     v_count := v_count + 1;
   end loop;
   if v_count > 0 then
