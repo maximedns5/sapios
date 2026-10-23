@@ -7,9 +7,9 @@ select plan(16);
 
 do $$
 begin
-  perform pg_temp.new_member(1, 'unlimited');                    -- admin
+  perform pg_temp.new_user(1);                                   -- admin, sans profil de membre
   insert into public.admins (user_id, role) values (pg_temp.uid(1), 'owner');
-  perform pg_temp.new_member(2, 'standard', 'man', '{man}');     -- membre, incompatible avec l'admin
+  perform pg_temp.new_member(2, 'standard', 'man', '{woman}');   -- membre
   perform pg_temp.new_member(3, 'standard', 'woman', '{man}');
   insert into public.reports (id, reporter_id, target_id, reason)
   values (pg_temp.uid(600), pg_temp.uid(3), pg_temp.uid(2), 'harassment');
@@ -27,10 +27,10 @@ select throws_ok($$select public.admin_stats()$$, 'P0001', 'forbidden', 'admin a
 select throws_ok($$select * from public.admin_list_submissions()$$, 'P0001', 'forbidden', 'admin aal1 : file des diplômes refusée');
 select throws_ok($$select public.admin_update_settings('{"feed_radius_km": 60}'::jsonb)$$, 'P0001', 'forbidden',
   'admin aal1 : réglages refusés');
-select is((select count(*)::int from public.reports), 0, 'admin aal1 : la RLS cache les signalements');
+select is((select count(*)::int from public.reports where id = pg_temp.uid(600)), 0, 'admin aal1 : la RLS cache les signalements');
 select is((select count(*)::int from public.audit_log), 0, 'admin aal1 : la RLS cache le journal d''audit');
 select is((select count(*)::int from storage.objects where bucket_id = 'photos' and name like pg_temp.uid(2)::text || '/%'), 0,
-  'admin aal1 : photos d''un membre non compatible illisibles');
+  'admin aal1 : photos d''un membre illisibles');
 
 -- Absence de claim aal (ancien JWT) : traité comme aal1.
 select set_config('request.jwt.claims',
@@ -41,7 +41,7 @@ select is(public.is_admin(), false, 'admin sans claim aal : is_admin() = false')
 select pg_temp.login(pg_temp.uid(1), 'aal2');
 select is(public.is_admin(), true, 'admin aal2 : is_admin() = true');
 select lives_ok($$select public.admin_stats()$$, 'admin aal2 : admin_stats autorisé');
-select is((select count(*)::int from public.reports), 1, 'admin aal2 : signalements lisibles');
+select is((select count(*)::int from public.reports where id = pg_temp.uid(600)), 1, 'admin aal2 : signalements lisibles');
 select is((select count(*)::int from storage.objects where bucket_id = 'photos' and name like pg_temp.uid(2)::text || '/%'), 1,
   'admin aal2 : photos lisibles par la règle d''admin');
 

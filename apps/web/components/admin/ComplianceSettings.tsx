@@ -48,7 +48,7 @@ const RETENTION = [
     label: "Empreintes des comptes bannis",
     help: "Empêchent le retour d’une personne exclue. Jamais lisibles en clair.",
     def: 1095,
-    min: 180,
+    min: 90,
     max: 3650,
   },
   {
