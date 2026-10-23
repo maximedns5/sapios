@@ -43,7 +43,7 @@ select results_eq($$select user_id from public.profile_private$$, $$values (pg_t
 select is_empty($$select 1 from public.profile_private where user_id = pg_temp.uid(2)$$,
   'membre : profile_private d''un autre illisible');
 select results_eq(
-  $$with u as (update public.profile_private set legal_name = 'Usurpation' where user_id = pg_temp.uid(2) returning 1)
+  $$with u as (update public.profile_private set consent_version = 'usurpation' where user_id = pg_temp.uid(2) returning 1)
     select count(*)::int from u$$,
   $$values (0)$$, 'membre : aucune écriture sur le profile_private d''un autre');
 select results_eq(

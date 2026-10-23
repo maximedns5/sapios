@@ -158,7 +158,7 @@ delete from auth.users where id = pg_temp.uid(10);
 select is((select count(*)::int from private.banned_identities), 0, 'sans poivre dans Vault : aucune empreinte');
 
 do $$ begin perform vault.create_secret('poivre-de-test-pgtap', 'identity_pepper'); end $$;
-select birthdate as b6 from public.profile_private where user_id = pg_temp.uid(6) \gset
+select private.decrypt_text(birthdate_enc) as b6 from public.profile_private where user_id = pg_temp.uid(6) \gset
 update public.profiles set status = 'banned' where id = pg_temp.uid(6);
 delete from auth.users where id = pg_temp.uid(6);
 select is((select count(*)::int from private.banned_identities), 2,
@@ -179,7 +179,7 @@ select lives_ok(format($$select public.set_identity('MEMBRE  test 6', %L::date)$
   'identité saisie par une personne exclue');
 select pg_temp.logout();
 select results_eq(
-  $$select p.status::text, pp.legal_name from public.profiles p join public.profile_private pp on pp.user_id = p.id
+  $$select p.status::text, private.decrypt_text(pp.legal_name_enc) from public.profiles p join public.profile_private pp on pp.user_id = p.id
      where p.id = pg_temp.uid(8)$$,
   $$values ('banned'::text, null::text)$$, 'même identité : compte banni, identité non enregistrée');
 

@@ -73,9 +73,10 @@ begin
          location = extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography,
          status = p_status, last_active_at = now() - p_active_ago
    where id = p_id;
+  -- Identité chiffrée comme par set_identity (nom légal et date de naissance jamais en clair en base).
+  perform private.store_identity(p_id, p_legal, p_birthdate);
   update public.profile_private
-     set legal_name = p_legal, birthdate = p_birthdate,
-         consent_sensitive_at = now() - interval '30 days', consent_version = '2026-10'
+     set consent_sensitive_at = now() - interval '30 days', consent_version = '2026-10'
    where user_id = p_id;
   -- CGU de la version en vigueur acceptées à l'inscription (sinon l'app bloque sur « Nos conditions évoluent »).
   insert into public.terms_acceptances (user_id, version, accepted_at)
@@ -308,9 +309,9 @@ insert into public.messages (match_id, sender_id, body, created_at, read_at) val
   ('33333333-3333-4333-8333-000000000001', '11111111-1111-4111-8111-000000000004',
    'Jeudi, 19 h, à la bibliothèque Sainte-Geneviève ? C''est là que je brille.', now() - interval '2 hours', null);
 
-insert into public.reports (reporter_id, target_id, reason, details, created_at)
+insert into public.reports (reporter_id, target_id, reason, details_enc, created_at)
 values ('22222222-2222-4222-8222-000000000002', '22222222-2222-4222-8222-000000000013', 'fake_profile',
-        'Prétend finir sa thèse depuis 2014.', now() - interval '1 day');
+        private.encrypt_text('Prétend finir sa thèse depuis 2014.'), now() - interval '1 day');
 
 insert into public.waitlist_signups (email, source, created_at) values
   ('curieuse@example.com', 'landing', now() - interval '3 days'),

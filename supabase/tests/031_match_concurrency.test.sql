@@ -26,8 +26,8 @@ select dblink_exec('sapios_setup', $setup$
          gender = case when id = 'aaaaaaaa-0000-4000-8000-000000009001' then 'woman' else 'man' end::public.gender,
          seeking_genders = case when id = 'aaaaaaaa-0000-4000-8000-000000009001' then '{man}' else '{woman}' end::public.gender[]
    where id in ('aaaaaaaa-0000-4000-8000-000000009001', 'aaaaaaaa-0000-4000-8000-000000009002');
-  update public.profile_private set legal_name = 'Race Test', birthdate = '1990-01-01'
-   where user_id in ('aaaaaaaa-0000-4000-8000-000000009001', 'aaaaaaaa-0000-4000-8000-000000009002');
+  select private.store_identity(u, 'Race Test', '1990-01-01')
+    from unnest(array['aaaaaaaa-0000-4000-8000-000000009001', 'aaaaaaaa-0000-4000-8000-000000009002']::uuid[]) as u;
   insert into public.user_access (user_id, level, tier, copy_key)
   values ('aaaaaaaa-0000-4000-8000-000000009001', 7, 'standard', 'verdict.standard'),
          ('aaaaaaaa-0000-4000-8000-000000009002', 7, 'standard', 'verdict.standard');
