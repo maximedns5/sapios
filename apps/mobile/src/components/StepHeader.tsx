@@ -7,12 +7,12 @@ import { ProgressBar } from './Controls';
 import { ChevronLeftIcon } from './Icons';
 import { useOverlay } from './Overlay';
 
-/** Les cinq étapes de l'inscription, de l'identité au diplôme (un seul fil, un seul compteur). */
-export const SIGNUP_STEPS = 5;
+/** Les six étapes de l'inscription, des conditions d'utilisation au diplôme (un seul fil, un seul compteur). */
+export const SIGNUP_STEPS = 6;
 
 /**
- * En-tête d'inscription : retour (sous-étape précédente), barre de progression continue sur les cinq
- * étapes, déconnexion. `step` va de 1 à 5 ; `fraction` avance à l'intérieur d'une étape.
+ * En-tête d'inscription : retour (sous-étape précédente), barre de progression continue sur les six
+ * étapes, déconnexion. `step` va de 1 à 6 ; `fraction` avance à l'intérieur d'une étape.
  */
 export function StepHeader({ step, fraction = 0, onBack }: { step: number; fraction?: number; onBack?: () => void }) {
   const { signOut } = useApp();

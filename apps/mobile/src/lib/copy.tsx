@@ -55,6 +55,35 @@ export const FALLBACK_COPY: Record<string, string> = {
   'events.address_hidden': 'L’adresse exacte est donnée aux inscrits.',
   'events.charter':
     'En m’inscrivant, je m’engage à respecter chaque participant, à accepter un refus, à ne prendre ni publier aucune photo sans accord, à consommer de l’alcool avec modération et à libérer ma place si je ne peux plus venir. L’équipe présente sur place peut exclure toute personne qui manque à ces règles.',
+  // Conformité : acceptation des CGU, conseils de sécurité, avis d'inactivité
+  'terms.title': 'Les règles du jeu.',
+  'terms.lead': 'Avant d’aller plus loin, nos conditions d’utilisation. Le ton de Sapios est volontairement excessif ; ces conditions, elles, ne le sont pas.',
+  'terms.point.access': 'Sapios est réservé aux majeurs dont le diplôme a été vérifié par une personne de l’équipe.',
+  'terms.point.data': 'Vos données restent en Europe. Vous pouvez les exporter ou tout supprimer, à tout moment, depuis l’app.',
+  'terms.point.conduct': 'Respect, aucune coordonnée sur le profil, un signalement au moindre doute.',
+  'terms.checkbox': 'J’ai lu et j’accepte les conditions générales d’utilisation et la politique de confidentialité.',
+  'terms.cta': 'Accepter et continuer',
+  'terms.update.title': 'Nos conditions évoluent.',
+  'terms.update.lead':
+    'Nous avons mis à jour nos conditions d’utilisation. Pour continuer, il faut accepter la nouvelle version. Vous pouvez aussi supprimer votre compte, sans frais.',
+  'terms.update.cta': 'Accepter les nouvelles conditions',
+  'terms.update.delete': 'Supprimer mon compte',
+  'safety.title': 'Conseils de sécurité',
+  'safety.lead': 'Un dîner avec quelqu’un qui a lu Spinoza reste un premier rendez-vous. Quelques réflexes.',
+  'safety.tip.public': 'Premier rendez-vous dans un lieu public et animé, que vous connaissez.',
+  'safety.tip.friend': 'Prévenez un proche : où, quand, avec qui. Donnez des nouvelles après.',
+  'safety.tip.transport': 'Venez et repartez par vos propres moyens.',
+  'safety.tip.money': 'N’envoyez jamais d’argent, quelle que soit l’histoire. Aucun diplôme ne la rend vraie.',
+  'safety.tip.instinct': 'Fiez-vous à votre instinct : partir est toujours une option.',
+  'safety.tip.report': 'Au moindre doute, signalez. Chaque signalement est lu par une personne.',
+  'safety.card.title': 'Avant de vous voir',
+  'safety.card.body': 'Un lieu public, un proche prévenu, vos propres moyens de transport. Et un signalement au moindre doute.',
+  'safety.card.more': 'Tous nos conseils',
+  'safety.event.title': 'Avant l’événement',
+  'safety.event.body':
+    'Une personne de l’équipe Sapios est sur place. Si quelque chose vous gêne, allez la voir, ou signalez-le depuis l’app, même après.',
+  'notice.inactivity.title': 'Votre compte dort depuis longtemps.',
+  'notice.inactivity.body': 'Sans connexion d’ici le {date}, il sera supprimé, avec toutes vos données. Vous venez de vous connecter : il est conservé.',
 };
 
 // Questions du profil : le texte du back-office (`prompt.<key>`) prime, le catalogue livré sert de repli.

@@ -45,6 +45,8 @@ const MESSAGES: Record<string, string> = {
   profile_incomplete: 'Votre profil est incomplet.',
   photos_missing: 'Ajoutez au moins deux photos.',
   consent_missing: 'Le consentement sur la donnée sensible est requis.',
+  terms_required: 'Acceptez d’abord les conditions d’utilisation.',
+  terms_version_mismatch: 'Les conditions viennent de changer. Relisez la nouvelle version.',
   invalid_status: 'Action impossible dans l’état actuel du compte.',
   invalid_input: 'Informations incomplètes ou invalides.',
   invalid_location: 'Position invalide.',

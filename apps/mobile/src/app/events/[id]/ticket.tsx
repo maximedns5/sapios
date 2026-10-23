@@ -6,7 +6,7 @@ import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Ticket, TicketFact } from '@/components/Community';
 import { QrCode } from '@/components/QrCode';
-import { CalendarIcon, CheckIcon, LockIcon, PinIcon } from '@/components/Icons';
+import { CalendarIcon, CheckIcon, LockIcon, PinIcon, ShieldIcon } from '@/components/Icons';
 import { MaskUp, Rise, Spinner } from '@/components/motion';
 import { Notice } from '@/components/Notice';
 import { useOverlay } from '@/components/Overlay';
@@ -14,6 +14,7 @@ import { Header, Screen } from '@/components/Screen';
 import { Body, Small } from '@/components/Text';
 import { api } from '@/lib/api';
 import { useApp } from '@/lib/app-state';
+import { useCopy } from '@/lib/copy';
 import { addToCalendar, eventErrorMessage, hasStarted, hour, kindLabel, openDirections, shortDate, ticketDisplay } from '@/lib/events';
 import { alpha, colors, radius } from '@/lib/theme';
 
@@ -26,6 +27,7 @@ const back = () => (router.canGoBack() ? router.back() : router.replace('/events
 export default function TicketScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { refresh } = useApp();
+  const { t } = useCopy();
   const overlay = useOverlay();
   const [ticket, setTicket] = useState<EventTicket | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -144,10 +146,22 @@ export default function TicketScreen() {
               </View>
             </Rise>
 
-            <Rise delay={350} style={{ flexDirection: 'row', gap: 12, alignItems: 'center', padding: 16, borderRadius: radius.card, backgroundColor: alpha(colors.accent, 0.06) }}>
-              <Body size={14.5} style={{ flex: 1, lineHeight: 21 }}>
-                Une personne de l’équipe Sapios vous accueille à l’entrée. Un problème pendant la soirée ? C’est à elle qu’il faut le dire.
-              </Body>
+            {/* Avant l'événement : référent sur place, signalement possible même après (CGU art. 13.2). */}
+            <Rise delay={350} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start', padding: 16, borderRadius: radius.card, backgroundColor: alpha(colors.accent, 0.06) }}>
+              <View style={{ paddingTop: 2 }}>
+                <ShieldIcon size={20} color={colors.accent} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }} testID="ticket-safety">
+                <Body weight="bold" size={15}>
+                  {t('safety.event.title')}
+                </Body>
+                <Body size={14.5} style={{ lineHeight: 21 }}>
+                  {t('safety.event.body')}
+                </Body>
+                <Body weight="bold" size={14} color={colors.accent} accessibilityRole="link" onPress={() => router.push('/settings/safety')} style={{ paddingTop: 4 }}>
+                  {t('safety.card.more')}
+                </Body>
+              </View>
             </Rise>
 
             {!started ? <Button testID="ticket-cancel" label="Annuler mon inscription" variant="danger" onPress={cancel} /> : null}

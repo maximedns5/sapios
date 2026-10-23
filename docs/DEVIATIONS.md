@@ -334,3 +334,43 @@ Pages « Événements », « Inscrits » (par événement) et « Parrainages » 
 5. **Programme** : la description de l'événement est affichée telle quelle, paragraphe par paragraphe (pas de champ
    « programme » ni d'heures structurées en base).
 
+
+## Conformité : base et app (agent conformité, 23 oct. 2026)
+
+Plan d'action de l'AIPD (sections 2, 4 et 7) et des CGU (articles 1.2, 5.5, 13.2 et 14.1), côté base et app.
+
+1. **CGU par version** : `app_settings.terms_version` (texte libre, seed `2026-10-brouillon`). Changer la valeur
+   redemande l'acceptation à tout le monde. `accept_terms` n'accepte que la version en vigueur
+   (`terms_version_mismatch` sinon) : une app ouverte sur une version périmée relit l'état.
+2. **Ordre des erreurs de `activate_profile`** : `terms_required` vient après `consent_missing`. Dans l'app, l'étape
+   des conditions passe avant tout le reste ; la base ne fait que garantir qu'aucun profil ne s'active sans elles.
+3. **Étape 1 sur 6** : l'inscription compte une étape de plus (`SIGNUP_STEPS` = 6) ; « Conditions d'utilisation » est
+   la première. Un membre qui a déjà accepté une version antérieure voit l'écran bloquant « Nos conditions évoluent »
+   (accepter, supprimer son compte ou se déconnecter), même pendant l'inscription.
+4. **Écran de connexion** : il n'y a pas d'acceptation implicite (« En continuant, vous acceptez… » a disparu). Le
+   pied de page renvoie aux CGU, mentions légales, confidentialité et contact, et annonce l'étape des conditions.
+5. **Inactivité** mesurée par la plus récente de `profiles.last_active_at` (`touch_activity`, appelée par
+   `get_my_state`), `auth.users.last_sign_in_at` et la création du compte. Avertissement à `inactive_warning_days`
+   (avis dans l'app et email), suppression `inactive_grace_days` plus tard, revérifiée compte par compte juste avant.
+   L'avis n'est lu qu'au retour du membre, donc une fois le compte sauvé : son texte le dit. Les admins ne sont jamais
+   avertis ni supprimés. Un compte banni inactif est supprimé au même terme, sans avis ni email.
+6. **Avertissement privé** : `private.inactivity_warnings`, jamais exposé ; toute activité l'efface.
+7. **Signalements conservés après la suppression de la personne visée** : clés étrangères en `set null` (plus en
+   `cascade`), pseudonymes stables par personne, `target_deleted_at`. Purge `report_retention_days` après la
+   suppression de la personne visée ; les signalements sur des comptes existants restent. Le compte de l'auteur
+   supprimé : le signalement reste, sous pseudonyme.
+8. **Identités bannies** : empreintes prises à la suppression d'un compte banni (pas au bannissement : tant que le
+   compte existe, l'identité est en clair dans `profile_private`). HMAC-SHA-256 avec le poivre Vault `identity_pepper` ;
+   email normalisé (minuscules, sans espaces) et identité normalisée (nom sans accents ni casse ni espaces multiples
+   + date de naissance). Une inscription avec le même email est bannie dès sa création ; une identité légale identique
+   bannit le profil sans enregistrer l'identité. Sans poivre, rien n'est gardé ni comparé (le journal le note).
+9. **Journal** : `audit_log` reste en ajout seul ; le trigger laisse passer une suppression seulement dans la purge
+   serveur (réglage de transaction `sapios.audit_purge`) et seulement pour des lignes plus vieilles que
+   `audit_retention_days`.
+10. **Avis** : seuls les avis lus (`read_at`) sont purgés, `notice_retention_days` après leur lecture.
+11. **Suppression partagée** : `delete-account` et `purge-inactive` utilisent `_shared/account.ts` (photos, diplômes,
+    journal, compte). La purge traite 100 comptes par passage.
+12. **Rappel de sécurité dans une conversation** : affiché quand les deux personnes ont écrit, masqué pour de bon par
+    conversation sur l'appareil (stockage local, pas en base). Le billet remplace la phrase sur la personne de l'équipe
+    par le bloc « Avant l'événement » (`safety.event.*`).
+13. **Seed** : les profils seedés ont accepté la version en vigueur, pour ne pas bloquer les comptes de test.

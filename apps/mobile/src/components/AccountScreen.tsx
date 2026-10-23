@@ -1,4 +1,4 @@
-import { levelLabel } from '@sapios/shared';
+import { LEGAL_PATHS, levelLabel } from '@sapios/shared';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -13,9 +13,10 @@ import { exportMyData } from '@/lib/exportData';
 import { pushPermission, PUSH_SUPPORTED, registerForPush } from '@/lib/push';
 import { IN_REVIEW } from '@/lib/routing';
 import { alpha, colors, radius } from '@/lib/theme';
+import { useAccountDeletion } from './AccountDeletion';
 import { TIER_LABEL } from './AdmissionGrid';
 import { Switch } from './Controls';
-import { BellIcon, BookIcon, CapIcon, CheckIcon, DownloadIcon, EditIcon, EyeIcon, ImageIcon, LockIcon, LogoutIcon, MailIcon, ShieldIcon, SlidersIcon, SparkIcon } from './Icons';
+import { BellIcon, BookIcon, CapIcon, CheckIcon, DownloadIcon, EditIcon, EyeIcon, FileIcon, ImageIcon, LockIcon, LogoutIcon, MailIcon, ShieldIcon, SlidersIcon, SparkIcon } from './Icons';
 import { MaskUp, Ripple, Rise } from './motion';
 import { useOverlay } from './Overlay';
 import { Header, Screen } from './Screen';
@@ -95,6 +96,7 @@ function DiplomaCard() {
 export function AccountScreen() {
   const { state, userId, refresh, signOut } = useApp();
   const { confirm, toast } = useOverlay();
+  const deleteAccount = useAccountDeletion();
   const [push, setPush] = useState<string>('unavailable');
 
   useEffect(() => {
@@ -136,32 +138,6 @@ export function AccountScreen() {
     try {
       const file = await exportMyData();
       toast(`Export prêt : ${file}`);
-    } catch (e) {
-      toast(errorMessage(e));
-    }
-  };
-
-  const deleteAccount = async () => {
-    const first = await confirm({
-      label: 'Suppression définitive',
-      title: 'Supprimer votre compte ?',
-      message: 'Profil, photos, diplômes, conversations et jetons de notification seront effacés. C’est irréversible.',
-      confirm: 'Continuer',
-      destructive: true,
-    });
-    if (!first) return;
-    const second = await confirm({
-      label: 'Dernière confirmation',
-      title: 'Vraiment ?',
-      message: 'Même un Bac+8 ne pourra pas le restaurer.',
-      confirm: 'Supprimer définitivement',
-      destructive: true,
-      typeToConfirm: 'SUPPRIMER',
-    });
-    if (!second) return;
-    try {
-      await api.deleteAccount();
-      await signOut({ local: true });
     } catch (e) {
       toast(errorMessage(e));
     }
@@ -231,7 +207,15 @@ export function AccountScreen() {
               />
             ) : null}
             <SettingsRow testID="export-data" icon={<DownloadIcon size={18} color={colors.accent} />} title="Exporter mes données" sub="Fichier JSON complet" onPress={exportData} />
-            <SettingsRow icon={<ShieldIcon size={18} color={colors.accent} />} title="Politique de confidentialité" onPress={() => Linking.openURL(`${SITE_URL}/confidentialite`)} />
+            <SettingsRow icon={<ShieldIcon size={18} color={colors.accent} />} title="Politique de confidentialité" onPress={() => Linking.openURL(`${SITE_URL}${LEGAL_PATHS.privacy}`)} />
+            <SettingsRow
+              testID="open-terms"
+              icon={<FileIcon size={18} color={colors.accent} />}
+              title="Conditions d’utilisation"
+              sub={state.terms?.accepted_at ? `Acceptées le ${formatDay(state.terms.accepted_at)} · version ${state.terms.current_version}` : undefined}
+              onPress={() => Linking.openURL(`${SITE_URL}${LEGAL_PATHS.terms}`)}
+            />
+            <SettingsRow testID="open-legal-notice" icon={<FileIcon size={18} color={colors.accent} />} title="Mentions légales" onPress={() => Linking.openURL(`${SITE_URL}${LEGAL_PATHS.legalNotice}`)} />
             <SettingsRow icon={<MailIcon size={18} color={colors.accent} />} title="Contacter l’éditeur" sub={CONTACT_EMAIL} onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}`)} />
           </SettingsGroup>
         </Rise>

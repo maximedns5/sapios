@@ -260,3 +260,44 @@ Détail des RPC dans `docs/CONTRACT.md` §3, types dans `packages/shared/src/com
 - **Variable** : `EXPO_PUBLIC_APP_URL` (adresse de l'app pour les liens partagés depuis un téléphone ; sur le web,
   l'origine de la page suffit).
 
+
+## Conformité : base et app (agent conformité) : pour le back-office, le site et la mise en production
+
+Détail dans `docs/CONTRACT.md` (§2, §3, §5, §6), types dans `packages/shared/src/compliance.ts`.
+
+### À configurer sur staging puis sur la production
+
+- **Poivre des identités bannies** (une fois par projet, valeur longue et aléatoire, jamais dans le dépôt ni dans un
+  message) : dans l'éditeur SQL du projet,
+  `select vault.create_secret('<valeur aléatoire de 64 caractères ou plus>', 'identity_pepper');`
+  Générer la valeur localement (`openssl rand -base64 48`). Ne jamais la changer ensuite : les empreintes déjà
+  gardées ne correspondraient plus. Sans elle, aucune identité bannie n'est gardée (le reste fonctionne).
+- **Edge Function `purge-inactive`** : `supabase functions deploy purge-inactive` (`verify_jwt = false`, protégée par
+  `x-sapios-secret` comme `purge-diplomas` ; aucune nouvelle variable d'environnement). Les tâches `pg_cron`
+  `retention-daily` (3 h 41 UTC) et `purge-inactive` (3 h 53 UTC) sont créées par la migration ; elles utilisent les
+  secrets Vault existants `project_url` et `internal_secret`.
+- **Version des CGU** : `terms_version` vaut `2026-10-brouillon`. À la publication des CGU définitives, la changer
+  (back-office « Réglages », ou `admin_update_settings('{"terms_version": "2026-11-v1"}')`) : tous les membres
+  devront accepter la nouvelle version à leur prochaine ouverture de l'app.
+- **Pages du site** liées par l'app : `/cgu`, `/mentions-legales`, `/confidentialite`, `/contact` (`LEGAL_PATHS`).
+
+### Back-office
+
+- **Signalements** : `reports.target_id` (et `reporter_id`) peuvent être `null` quand le compte a été supprimé ;
+  `reports.target_pseudonym`, `reporter_pseudonym` et `target_deleted_at` sont nouveaux. `ReportsView.tsx` et
+  `lib/admin/types.ts` supposent `target_id` non nul (`.in("target_id", targets)`) : filtrer les nuls et afficher
+  « Compte supprimé le … » avec le pseudonyme. `admin_get_report_context` renvoie alors `target: null`.
+- **Réglages** : `admin_update_settings` accepte `terms_version` et les six durées de conservation
+  (`RETENTION_SETTINGS`, bornes comprises). Journal : nouvelles actions `terms.accepted`,
+  `retention.inactivity_warned`, `retention.purged`, `retention.banned_identity_kept`,
+  `retention.banned_identity_match`, `account.purge_inactive`.
+- **Textes** : nouvelles clés `terms.*`, `safety.*`, `notice.inactivity.*`, `email.inactivity.*` (« Textes »).
+
+### Fait dans l'app
+
+- étape « Conditions d'utilisation » (`/onboarding/terms`, étape 1 sur 6) et écran bloquant « Nos conditions
+  évoluent » (`/terms`, accepter ou supprimer son compte), aiguillage dans `lib/routing.ts` (`termsRoute`) ;
+- « Conseils de sécurité » (`/settings/safety`, depuis « Mon profil » → « Sécurité »), rappel dans une conversation
+  engagée des deux côtés, bloc « Avant l'événement » sur le billet ;
+- liens CGU et mentions légales sur l'écran de connexion, le compte (avec la date d'acceptation) et l'étape des
+  conditions ; avis d'inactivité dans la découverte et « Mon profil ».

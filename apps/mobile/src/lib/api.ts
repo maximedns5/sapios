@@ -17,6 +17,7 @@ import {
   type SearchBooksResponse,
   type StudyField,
   type SubmitDiplomaResponse,
+  type TermsState,
 } from '@sapios/shared';
 
 import { supabase } from './supabase';
@@ -89,6 +90,7 @@ export const api = {
     rpc<'set_discovery_prefs', DiscoveryPrefs>('set_discovery_prefs', { ...criteriaArgs(c), ...(c.sort ? { p_sort: c.sort } : {}) } as Fns['set_discovery_prefs']['Args']),
   countDiscovery: (c: DiscoveryCriteria = {}) => rpc<'count_discovery', DiscoveryCounts>('count_discovery', criteriaArgs(c) as Fns['count_discovery']['Args']),
   ackNotice: (id: string) => rpc('ack_notice', { p_id: id }),
+  acceptTerms: (version: string) => rpc<'accept_terms', TermsState>('accept_terms', { p_version: version }),
   matches: () => rpc<'get_matches', MatchRow[]>('get_matches'),
   unmatch: (matchId: string) => rpc('unmatch', { p_match_id: matchId }),
   block: (target: string) => rpc('block_user', { p_target: target }),

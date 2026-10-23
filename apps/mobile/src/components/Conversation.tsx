@@ -21,6 +21,7 @@ import { PopIn, Rise } from './motion';
 import { Notice } from './Notice';
 import { useOverlay } from './Overlay';
 import { Avatar, useSignedUrls } from './Photo';
+import { SafetyCard } from './SafetyCard';
 import { Body, Small } from './Text';
 import { ToneProvider } from './Tone';
 
@@ -168,6 +169,9 @@ export function Conversation({ matchId, onLeave }: { matchId: string; onLeave?: 
     return out;
   }, [messages, userId]);
 
+  // Rappel de sécurité dès que la conversation est engagée des deux côtés (CGU art. 13.2).
+  const bothWrote = useMemo(() => messages.some((m) => m.sender_id === userId && !m.pending) && messages.some((m) => m.sender_id !== userId), [messages, userId]);
+
   const name = match?.display_name ?? 'Conversation';
   const otherId = match?.other_id;
   const openProfile = () => otherId && router.push({ pathname: '/profile/[userId]', params: { userId: otherId, matchId } });
@@ -212,6 +216,8 @@ export function Conversation({ matchId, onLeave }: { matchId: string; onLeave?: 
             <DotsIcon size={20} />
           </IconButton>
         </View>
+
+        {userId && matchId ? <SafetyCard userId={userId} matchId={matchId} show={bothWrote && !closed} /> : null}
 
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <FlatList

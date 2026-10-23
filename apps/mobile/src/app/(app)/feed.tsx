@@ -1,4 +1,4 @@
-import type { DiscoveryCounts, EventNotice, EventSummary, ProfileView } from '@sapios/shared';
+import type { DiscoveryCounts, EventNotice, EventSummary, InactivityNotice, ProfileView } from '@sapios/shared';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -8,6 +8,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { Button, IconButton } from '@/components/Button';
 import { EventBanner, EventNoticeCard } from '@/components/Events';
+import { InactivityNoticeCard } from '@/components/InactivityNoticeCard';
 import { EndOfSelection, FeedSkeleton, LoadError } from '@/components/FeedStates';
 import { CrossIcon, DotsIcon, SlidersIcon, VerifiedBadge } from '@/components/Icons';
 import { haptic, MaskUp, Rise } from '@/components/motion';
@@ -56,6 +57,13 @@ function EventSlot() {
       };
     }, [state?.can_browse, userId]),
   );
+  const inactivity = (state?.notices ?? []).find((n): n is InactivityNotice => n.kind === 'inactivity_warning');
+  if (inactivity)
+    return (
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <InactivityNoticeCard notice={inactivity} onAck={() => api.ackNotice(inactivity.id).then(() => refresh()).catch(() => {})} />
+      </View>
+    );
   const notice = (state?.notices ?? []).find((n): n is EventNotice => n.kind === 'event_promoted' || n.kind === 'event_cancelled');
   if (notice)
     return (

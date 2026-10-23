@@ -100,6 +100,24 @@ Lot 2 (migrations `20261024090000` à `20261024090300`) :
 - `member_notices.kind` : + `event_promoted`, `event_cancelled` (payload `{ event_id, title, starts_at, reason? }`).
 - `app_settings` : + `referral_letters_standard` (3), `referral_letters_unlimited` (5), `referral_window_days` (30).
 
+Conformité (CGU, durées de conservation ; AIPD sections 2, 4 et 7) :
+- `terms_acceptances` : `user_id` (cascade), `version`, `accepted_at`, clé `(user_id, version)`. Chacun lit ses lignes ;
+  écriture par `accept_terms` seulement. Version en vigueur : `app_settings.terms_version` (texte, seed `2026-10-brouillon`).
+- `app_settings` (en jours) : `inactive_warning_days` (730), `inactive_grace_days` (30), `report_retention_days` (365),
+  `audit_retention_days` (1825), `banned_identity_retention_days` (1095), `notice_retention_days` (365). Bornes dans
+  `RETENTION_SETTINGS` (`packages/shared/src/compliance.ts`).
+- `reports.reporter_id` et `reports.target_id` : `on delete set null` (plus `cascade`). Colonnes `reporter_pseudonym`,
+  `target_pseudonym` (stables par personne, `private.user_pseudonyms`, remplies par trigger) et `target_deleted_at`
+  (posée quand le compte visé disparaît). Un signalement survit à la suppression de la personne visée, sans son
+  identité, puis part `report_retention_days` jours après. **`target_id` peut donc être `null`.**
+- `member_notices.kind` : + `inactivity_warning` (payload `{ delete_after: "AAAA-MM-JJ" }`).
+- Schéma `private` (jamais exposé) : `inactivity_warnings (user_id, warned_at, delete_after)`, effacé à la première
+  activité (`touch_activity`) ; `banned_identities (kind email|identity, hash, created_at)` : empreintes HMAC-SHA-256
+  poivrées (Vault `identity_pepper`) de l'email et de l'identité légale (nom normalisé + date de naissance) d'un compte
+  banni au moment de sa suppression. Une inscription qui correspond est bannie d'emblée ; sans poivre, rien n'est gardé.
+- `audit_log` reste en ajout seul ; seule la purge serveur (`private.run_retention`) efface les lignes plus vieilles que
+  `audit_retention_days`.
+
 ## 3. RPC (appelées par `supabase.rpc`)
 
 Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `anon` et `public`, accordé à `authenticated`
@@ -107,10 +125,11 @@ Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `an
 
 | Fonction | Retour | Erreurs |
 |---|---|---|
-| `get_my_state()` | `jsonb` : `{ profile_status, onboarding: { identity_set, profile_complete, photos_count, consent_sensitive }, tier, level, copy_key, can_browse, daily_like_quota, likes_left_today, sees_likers, latest_submission: { id, status, created_at, rejection_reason } \| null, submissions_left, likes_received, notices: [{ id, kind, payload, created_at }], intellect: { answers, books, thesis, study_field }, referred, referred_by, can_refer }`. Personne recommandée en liste d'attente (`tier = 'waitlist'` et `referred`) : l'app affiche `verdict.waitlist.referred` | — |
+| `get_my_state()` | `jsonb` : `{ profile_status, onboarding: { identity_set, profile_complete, photos_count, consent_sensitive }, tier, level, copy_key, can_browse, daily_like_quota, likes_left_today, sees_likers, latest_submission: { id, status, created_at, rejection_reason } \| null, submissions_left, likes_received, notices: [{ id, kind, payload, created_at }], intellect: { answers, books, thesis, study_field }, referred, referred_by, can_refer, terms: { current_version, accepted, accepted_at, last_accepted_version } }`. Personne recommandée en liste d'attente (`tier = 'waitlist'` et `referred`) : l'app affiche `verdict.waitlist.referred` | — |
 | `set_identity(p_legal_name text, p_birthdate date)` | `void` | `identity_already_set`, `underage` |
 | `set_sensitive_consent(p_granted bool, p_version text)` | `void` | — |
-| `activate_profile()` | `void` (passe `onboarding` → `active`) | `identity_missing`, `profile_incomplete`, `photos_missing`, `consent_missing` |
+| `activate_profile()` | `void` (passe `onboarding` → `active`) | `identity_missing`, `profile_incomplete`, `photos_missing`, `consent_missing`, `terms_required` (CGU de la version en vigueur non acceptées) |
+| `accept_terms(p_version text)` | `jsonb` `TermsState` (comme `get_my_state().terms`) ; idempotent, journalisé (`terms.accepted`) | `terms_version_mismatch` (la version n'est plus celle en vigueur : relire l'état) |
 | `set_paused(p_paused bool)` | `void` (`active` ⇄ `paused`) | `invalid_status` |
 | `set_location(p_lat double precision, p_lng double precision)` | `void` | — |
 | `get_feed(p_limit int default 20)` | `setof` (`id uuid, display_name text, age int, bio text, city text, distance_km int, photo_paths text[], level int, study_field, field_verified bool, institution text` (si affiché), `preview_prompt_key text, preview_answer text, quiz_badge bool, affinity_score int, affinity_reasons jsonb`) | vide si palier non autorisé |
@@ -126,7 +145,7 @@ Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `an
 | `unmatch(p_match_id uuid)` | `void` | `not_found` |
 | `block_user(p_target uuid)` | `void` (dé-matche aussi) | — |
 | `report_user(p_target uuid, p_reason text, p_details text, p_content_kind content_kind default null, p_content_item uuid default null)` | `uuid` | `invalid_input`, `forbidden` |
-| `export_my_data()` | `jsonb` | — |
+| `export_my_data()` | `jsonb` (+ `terms_acceptances`) | — |
 | `is_admin()` | `bool` | — |
 | `admin_admit_waitlist(p_user_ids uuid[], p_tier access_tier default 'standard')` | `int` (nombre admis) | `forbidden` |
 | `admin_set_report_status(p_report_id uuid, p_status report_status, p_ban bool default false)` | `void` | `forbidden` |
@@ -135,8 +154,8 @@ Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `an
 | `admin_list_flagged_content(p_status content_flag_status default 'open')` | `setof` (entrée de la file + texte courant, question, signalement lié) | `forbidden` |
 | `admin_moderate_content(p_flag_id uuid, p_decision text /* keep\|remove */, p_reason text default null)` | `void` (motif obligatoire pour `remove`, envoyé au membre) | `forbidden`, `invalid_decision`, `reason_required`, `not_found`, `already_handled` |
 | `admin_set_member_institution(p_user uuid, p_institution text, p_field study_field)` | `void` (rattrapage d'un membre validé) | `forbidden`, `not_found`, `invalid_institution` |
-| `admin_update_settings(p_values jsonb)` | `jsonb` (valeurs enregistrées). Clés admises : `feed_radius_km` (5 à 200), `affinity_weight_field` / `_book` / `_prompt` / `_institution` (entiers 0 à 20), `moderation_blocklist` (tableau de mots, nettoyés en minuscules, 300 au plus, 40 caractères chacun), `referral_letters_standard` / `referral_letters_unlimited` (entiers 0 à 20) et `referral_window_days` (7 à 90) depuis le lot 2. Avant / après dans `audit_log` (`settings.update`) | `forbidden`, `invalid_input`, `invalid_value`, `unknown_setting` |
-| `admin_get_report_context(p_report_id uuid)` | `jsonb { target, reporter, photos, answers, books, thesis, content, reports_against, relationship }` : la personne signalée, le texte visé, son historique, match et blocages entre les deux. Jamais les messages | `forbidden`, `not_found` |
+| `admin_update_settings(p_values jsonb)` | `jsonb` (valeurs enregistrées). Clés admises : `feed_radius_km` (5 à 200), `affinity_weight_field` / `_book` / `_prompt` / `_institution` (entiers 0 à 20), `moderation_blocklist` (tableau de mots, nettoyés en minuscules, 300 au plus, 40 caractères chacun), `referral_letters_standard` / `referral_letters_unlimited` (entiers 0 à 20) et `referral_window_days` (7 à 90) depuis le lot 2 ; conformité : `terms_version` (texte, 3 à 40 caractères `[0-9A-Za-z._-]`), `inactive_warning_days` (180 à 3650), `inactive_grace_days` (7 à 180), `report_retention_days` (30 à 1825), `audit_retention_days` (365 à 3650), `banned_identity_retention_days` (90 à 3650), `notice_retention_days` (30 à 1825). Avant / après dans `audit_log` (`settings.update`) | `forbidden`, `invalid_input`, `invalid_value`, `unknown_setting` |
+| `admin_get_report_context(p_report_id uuid)` | `jsonb { target, reporter, photos, answers, books, thesis, content, reports_against, relationship, target_deleted_at, target_pseudonym, reporter_pseudonym }` : la personne signalée, le texte visé, son historique, match et blocages entre les deux. Jamais les messages. Compte visé supprimé : `target` null, listes vides, `target_deleted_at` daté ; l'historique (`reports_against`) suit le pseudonyme | `forbidden`, `not_found` |
 | `get_my_referral()` | `jsonb` `MyReferral` `{ eligible, code, quota, used, left, next_letter_at }` : le code est créé à la première demande ; jamais d'identité ni de verdict des filleuls | — |
 | `get_referral_preview(p_code text)` (**anon**) | `jsonb { referrer_first_name } \| null` (null si le code est inconnu, révoqué, si le parrain n'est plus éligible ou n'a plus de lettre). Saisie tolérante (minuscules, tirets, O/I/L) | — |
 | `claim_referral(p_code text)` | `jsonb { referrer_first_name }` ; une seule fois, avant toute décision sur le diplôme ; journalisé (`referral.claim`) | `already_referred`, `invalid_code`, `self_referral`, `too_late`, `quota_exceeded` |
@@ -161,10 +180,14 @@ Réservées à `service_role` (jamais `authenticated`) :
 - `apply_diploma_review(p_submission uuid, p_reviewer uuid, p_decision text /* approve|reject|needs_more */, p_level int, p_reason text, p_institution text default null, p_field study_field default null)` → `jsonb { user_id, tier, level, copy_key }`. Une seule transaction : soumission, `user_access` (établissement et domaine compris), `audit_log`.
 - `diploma_queue_read(p_qty int, p_vt int)` / `diploma_queue_delete(p_msg_id bigint)` : enveloppes sur `pgmq`.
 - `diplomas_to_purge(p_days int)` → `setof (id, storage_path)` ; `mark_diploma_purged(p_id uuid)`.
+- `inactive_accounts_to_purge(p_limit int default 100)` → `setof (user_id)` : comptes prévenus dont le délai de grâce est écoulé, sans activité depuis, jamais admins ; `inactive_purge_eligible(p_user uuid)` → `bool`, revérifié juste avant chaque suppression. Erreur `forbidden` hors serveur.
 - `consume_rate_limit(p_user uuid, p_bucket text, p_limit int, p_window_seconds int)` → `bool` (vrai si l'appel passe) : fenêtre fixe par membre et par usage (`private.rate_limits`), pour les appels sortants des Edge Functions (`book_search`). Erreur `invalid_input`.
 
 Tâches `pg_cron` : `process-diploma` (chaque minute), `purge-diplomas` (3 h 17 UTC), `event-reminders` (16 h 07 UTC :
-`private.send_event_reminders()` appelle `notify` une fois par événement publié du lendemain, heure de Paris).
+`private.send_event_reminders()` appelle `notify` une fois par événement publié du lendemain, heure de Paris),
+`retention-daily` (3 h 41 UTC : `private.run_retention()` prévient les comptes inactifs depuis `inactive_warning_days`
+— avis dans l'app et email `notify` `inactivity`, 500 par passage — puis purge signalements, empreintes de bannis,
+journal et avis lus échus) et `purge-inactive` (3 h 53 UTC : appelle l'Edge Function `purge-inactive`).
 
 ## 4. Storage
 
@@ -181,9 +204,10 @@ Réponses JSON. Erreurs : `{ "error": "<code>" }` avec un statut HTTP adapté.
 | `submit-diploma` | JWT utilisateur | `{ storage_path, mime }` | `201 { submission_id, status: "pending" }` ; erreurs `invalid_path`, `invalid_type`, `too_large`, `not_found`, `rate_limited`, `duplicate_document`, `already_verified_higher` |
 | `process-diploma` | en-tête `x-sapios-secret` | `{}` | `{ processed: n }` |
 | `review-diploma` | JWT admin | `{ action: "signed_url", submission_id }` → `{ url }` (5 min) ; `{ action: "decide", submission_id, decision: "approve"\|"reject"\|"needs_more", level?, reason?, institution?, field? }` → `{ tier, level, copy_key }` | `forbidden` si non admin |
-| `notify` | en-tête `x-sapios-secret` | `{ type: "match", match_id }` \| `{ type: "message", message_id }` \| `{ type: "verdict", user_id, copy_key }` \| `{ type: "event", kind: "registered"\|"promoted"\|"cancelled", registration_id }` \| `{ type: "event_reminder", event_id }` | `{ sent: n, emailed: n }` ; push `data` d'un événement : `{ type: "event", event_id }` ; lien des emails : `<SAPIOS_APP_URL>/events/<id>` |
+| `notify` | en-tête `x-sapios-secret` | `{ type: "match", match_id }` \| `{ type: "message", message_id }` \| `{ type: "verdict", user_id, copy_key }` \| `{ type: "event", kind: "registered"\|"promoted"\|"cancelled", registration_id }` \| `{ type: "event_reminder", event_id }` \| `{ type: "inactivity", user_id, delete_after }` (email seulement, jamais de push) | `{ sent: n, emailed: n }` ; push `data` d'un événement : `{ type: "event", event_id }` ; lien des emails : `<SAPIOS_APP_URL>/events/<id>` |
 | `delete-account` | JWT utilisateur | `{}` | `{ deleted: true }` |
 | `purge-diplomas` | en-tête `x-sapios-secret` | `{}` | `{ purged: n }` |
+| `purge-inactive` | en-tête `x-sapios-secret` | `{}` | `{ purged: n, skipped: n }` : supprime les comptes inactifs échus (photos, diplômes, compte ; même logique que `delete-account`, `_shared/account.ts`), 100 par passage, journalisé `account.purge_inactive` |
 | `search-books` | JWT utilisateur | `{ q }` (2 à 100 caractères) | `{ results: [{ title, author, ol_work_id }] }` (8 au plus) ; erreurs `invalid_query` (400), `rate_limited` (429, 30 recherches par minute et par membre), `upstream_unavailable` (502). Relais vers Open Library : le service ne voit jamais l'adresse du membre ; ni la recherche ni la réponse ne sont journalisées |
 
 Secret partagé : variable d'env `SAPIOS_INTERNAL_SECRET` côté Edge Functions, même valeur dans Vault (`internal_secret`) côté base. URL de base pour `pg_net` : Vault `project_url`.
@@ -204,6 +228,11 @@ Lot 2 : `verdict.waitlist.referred`, `verdict.waitlist.referred.detail`, `referr
 `events.empty`, `events.privacy`, `events.address_hidden`, `events.charter` (charte de conduite acceptée à
 l'inscription) ; notifications `push.event.registered|promoted|cancelled|reminder` et `email.event.<moment>.subject|title|body`,
 `email.event.cta` (variables `{name}`, `{title}`, `{date}`, `{reason}`, remplies par `notify`).
+Conformité (`20261026090300_conformite_copy.sql`, repli dans l'app) : `terms.title`, `terms.lead`,
+`terms.point.access|data|conduct`, `terms.checkbox`, `terms.cta`, `terms.update.title|lead|cta|delete` ;
+`safety.title`, `safety.lead`, `safety.tip.public|friend|transport|money|instinct|report`, `safety.card.title|body|more`,
+`safety.event.title|body` ; `notice.inactivity.title|body` (`{date}`) ; `email.inactivity.subject|title|body|cta`
+(`{date}`, `{name}`).
 
 ## 7. Comptes de test (seed local uniquement)
 
