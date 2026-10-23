@@ -31,8 +31,9 @@ import type { OwnProfile, Photo as PhotoRow } from '@/lib/types';
 import { BookSearch } from './BookSearch';
 import { Button, IconButton } from './Button';
 import { Segmented, Switch } from './Controls';
+import { SettingsGroup, SettingsRow } from './SettingsRow';
 import { Field } from './Field';
-import { AlertIcon, BookIcon, BuildingIcon, CapIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, EditIcon, EyeIcon, GearIcon, PlusIcon, SparkIcon, VerifiedBadge } from './Icons';
+import { AlertIcon, BookIcon, BuildingIcon, CalendarIcon, CapIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, EditIcon, EyeIcon, GearIcon, MailIcon, PlusIcon, SparkIcon, VerifiedBadge } from './Icons';
 import { MaskUp, Rise, useCountUp } from './motion';
 import { useOverlay } from './Overlay';
 import { Photo } from './Photo';
@@ -155,6 +156,9 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
   const [thesis, setThesis] = useState('');
   const [visibility, setVisibility] = useState<ThesisVisibility>('matches');
   const [busy, setBusy] = useState(false);
+  // Communauté (lot 2) : lettres restantes, événements à venir.
+  const [lettersLeft, setLettersLeft] = useState<number | null>(null);
+  const [upcoming, setUpcoming] = useState<number | null>(null);
 
   const reload = useCallback(async () => {
     if (!userId) return;
@@ -178,7 +182,13 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
         .catch(() => {});
       loadOwnInstitution(userId).then(setInstitution).catch(() => {});
       reload();
-    }, [reload, userId]),
+      if (state?.can_refer) api.myReferral().then((r) => setLettersLeft(r.eligible ? r.left : null)).catch(() => {});
+      if (state?.can_browse)
+        api
+          .events()
+          .then((list) => setUpcoming(list.filter((e) => (e.my_status === 'registered' || e.my_status === 'waitlisted') && Date.parse(e.ends_at) > Date.now()).length))
+          .catch(() => {});
+    }, [reload, userId, state?.can_refer, state?.can_browse]),
   );
 
   const run = async (action: () => Promise<unknown>, done?: string) => {
@@ -206,7 +216,7 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
   const meta = [state.level ? `${levelLabel(state.level)} validé` : null, profile?.city || null].filter(Boolean).join(' · ');
   const free = freeAnswerPosition(answers);
   const thesisDirty = (mine?.thesis?.line ?? '') !== thesis.trim();
-  const notices = (state.notices ?? []).filter((n) => n.kind === 'content_removed');
+  const notices = (state.notices ?? []).filter((n): n is MemberNotice => n.kind === 'content_removed');
 
   const header =
     mode === 'stack' ? (
@@ -264,6 +274,34 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
             </Body>
           </View>
         </Rise>
+
+        {state.can_refer || state.can_browse ? (
+          <Rise delay={60} style={{ gap: 12 }}>
+            <SectionTitle title="Communauté" />
+            <SettingsGroup label="Communauté">
+              {state.can_refer ? (
+                <SettingsRow
+                  first
+                  testID="open-letters"
+                  icon={<MailIcon size={18} color={colors.accent} />}
+                  title="Recommander quelqu’un"
+                  sub={lettersLeft != null ? `${lettersLeft} lettre${lettersLeft > 1 ? 's' : ''} disponible${lettersLeft > 1 ? 's' : ''}` : 'Vos lettres de recommandation'}
+                  onPress={() => router.push('/settings/letters')}
+                />
+              ) : null}
+              {state.can_browse ? (
+                <SettingsRow
+                  first={!state.can_refer}
+                  testID="open-events"
+                  icon={<CalendarIcon size={18} color={colors.accent} />}
+                  title="Mes événements"
+                  sub={upcoming ? `${upcoming} inscription${upcoming > 1 ? 's' : ''} à venir` : 'Agenda, billets et inscriptions'}
+                  onPress={() => router.push('/events')}
+                />
+              ) : null}
+            </SettingsGroup>
+          </Rise>
+        ) : null}
 
         {section(
           80,

@@ -3,13 +3,14 @@ import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { ScrollView, View } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { AdmissionBars, firstOpenLevel, TIER_LABEL, usePolicy } from '@/components/AdmissionGrid';
 import { Button, IconButton } from '@/components/Button';
 import { CheckIcon, FileIcon, GearIcon, HourglassIcon, ReplayIcon } from '@/components/Icons';
+import { WaxSeal } from '@/components/Community';
 import { Confetti, haptic, MaskUp, PopIn, Ripple, Rise, useJolt, useReplay } from '@/components/motion';
 import { useOverlay } from '@/components/Overlay';
 import { Body, Small, Title } from '@/components/Text';
@@ -95,6 +96,50 @@ function Hourglass() {
   );
 }
 
+const QUEUE = 6;
+const ROW = 30;
+
+/** Dossier anonyme : il descend d'une place quand le vôtre passe devant lui. */
+function QueueSlot({ slot, y, from, to }: { slot: number; y: SharedValue<number>; from: number; to: number }) {
+  const style = useAnimatedStyle(() => {
+    const passed = slot >= to && slot < from && y.value <= slot + 0.5;
+    return { transform: [{ translateY: withTiming((passed ? slot + 1 : slot) * ROW, { duration: 260 }) }] };
+  });
+  return <Animated.View style={[{ position: 'absolute', left: 0, right: 0, height: ROW - 8, borderRadius: 11, backgroundColor: colors.line }, style]} />;
+}
+
+/**
+ * Liste d'attente d'une personne recommandée : des dossiers anonymes empilés, le vôtre (accent) remonte
+ * de quelques places. Une illustration, pas un rang : la base ne publie aucune position.
+ */
+function QueueClimb({ k }: { k: number }) {
+  const reduced = useReducedMotion();
+  const from = QUEUE - 1;
+  const to = 1;
+  const y = useSharedValue(reduced ? to : from);
+  useEffect(() => {
+    if (reduced) return;
+    y.value = from;
+    y.value = withDelay(700 * k, withTiming(to, { duration: 1100 * Math.max(k, 0.5), easing: ease.spring }));
+    const t = setTimeout(() => haptic.light(), 700 * k + 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [k]);
+  const mine = useAnimatedStyle(() => ({ transform: [{ translateY: y.value * ROW }] }));
+  return (
+    <View accessible accessibilityLabel="Votre dossier passe devant d’autres dans la liste d’attente" style={{ width: 220, height: QUEUE * ROW - 8, alignSelf: 'center' }}>
+      {Array.from({ length: QUEUE - 1 }, (_, i) => (
+        <QueueSlot key={i} slot={i} y={y} from={from} to={to} />
+      ))}
+      <Animated.View style={[{ position: 'absolute', left: -6, right: -6, height: ROW - 6, marginTop: -1, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', boxShadow: '0px 8px 20px rgba(67,56,224,0.3)' }, mine]}>
+        <Body weight="bold" size={13} color="#FFFFFF">
+          Votre dossier
+        </Body>
+      </Animated.View>
+    </View>
+  );
+}
+
 /**
  * Verdict : admis (carte et tampon), liste d'attente (sablier), refusé (grille vraie), document refusé ou
  * à compléter (motif mis en avant). Le titre vient d'app_copy ; la suite est factuelle.
@@ -123,7 +168,8 @@ export default function Verdict() {
   const sub = state?.latest_submission;
   const left = state?.submissions_left ?? 0;
   const canBrowse = !!state?.can_browse;
-  const [title, rest] = splitHeadline(t(`verdict.${variant}`));
+  const referred = variant === 'waitlist' && !!state?.referred;
+  const [title, rest] = splitHeadline(t(referred ? 'verdict.waitlist.referred' : `verdict.${variant}`));
 
   useEffect(() => {
     // Les paliers sans accès au feed n'ont rien à valider : le verdict est considéré comme vu.
@@ -168,6 +214,7 @@ export default function Verdict() {
   const firstOpen = firstOpenLevel(policy);
   let body: string;
   if (admitted) body = `${rest ? `${rest} ` : ''}Votre diplôme est validé. ${quota == null ? 'Likes illimités, et vous voyez qui vous a liké.' : `${quota} likes par jour pour commencer.`}`;
+  else if (referred) body = `${rest ? `${rest} ` : ''}${t('verdict.waitlist.referred.detail')}`;
   else if (variant === 'waitlist') body = 'Votre profil est prêt, et invisible pour l’instant. Les admissions depuis la liste d’attente se font par vagues : vous le verrez ici.';
   else if (refused) body = `Votre diplôme a bien été validé${level ? ` : ${levelLabel(level)}` : ''}. Notre grille n’ouvre l’accès qu’à partir du ${firstOpen ? levelLabel(firstOpen) : 'niveau requis'} : c’est elle qui est sévère.`;
   else if (variant === 'rejected') body = 'Ce document n’a pas pu être retenu. Envoyez-en un autre : lisible, en entier, à votre nom légal.';
@@ -197,7 +244,25 @@ export default function Verdict() {
           </Animated.View>
         ) : null}
 
-        {variant === 'waitlist' ? (
+        {referred ? (
+          <Rise delay={150 * k} style={{ backgroundColor: alpha(colors.accent, 0.08), borderRadius: radius.sheet, paddingVertical: 22, paddingHorizontal: 22, alignItems: 'center', gap: 14 }}>
+            <View testID="verdict-referred" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingLeft: 6, paddingRight: 14, paddingVertical: 5 }}>
+              <WaxSeal size={26} playKey={0} />
+              <Body weight="bold" size={13.5}>
+                {state?.referred_by ? `Recommandé·e par ${state.referred_by}` : 'Recommandé·e'}
+              </Body>
+            </View>
+            <QueueClimb key={key} k={k} />
+            {level ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
+                <CheckIcon size={14} stroke={2.8} color={colors.accent} />
+                <Body weight="bold" size={13.5}>
+                  {levelLabel(level)} validé
+                </Body>
+              </View>
+            ) : null}
+          </Rise>
+        ) : variant === 'waitlist' ? (
           <Rise delay={150 * k} style={{ backgroundColor: alpha(colors.accent, 0.08), borderRadius: radius.sheet, paddingVertical: 26, paddingHorizontal: 22, alignItems: 'center', gap: 10 }}>
             <PopIn delay={300 * k}>
               <Hourglass />

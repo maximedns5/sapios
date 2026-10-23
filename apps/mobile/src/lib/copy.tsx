@@ -38,6 +38,23 @@ export const FALLBACK_COPY: Record<string, string> = {
   'push.match': 'Nouveau match. Quelqu’un vous trouve à la hauteur.',
   'push.message': 'Nouveau message. Probablement sans faute d’orthographe.',
   'push.verdict': 'Votre verdict est tombé. Asseyez-vous.',
+  // Lot 2 : lettres de recommandation
+  'verdict.waitlist.referred': 'Liste d’attente. Mais on vous a recommandé·e : vous passez devant. Un peu.',
+  'verdict.waitlist.referred.detail':
+    'Les admissions se font par vagues, décidées par notre équipe. Les personnes recommandées y sont examinées en premier ; votre diplôme reste le seul critère d’accès.',
+  'referral.title': 'Mes lettres de recommandation',
+  'referral.lead': 'Vous vous portez garant·e de quelqu’un. Ça ne vaut pas un diplôme, mais ça aide.',
+  'referral.counter': '{used} lettre(s) utilisée(s) sur {quota} ce mois-ci.',
+  'referral.privacy': 'Vous ne saurez ni qui a utilisé votre lien, ni son verdict. La discrétion fait partie de la lettre.',
+  'referral.banner': 'Recommandé·e par {name}.',
+  // Lot 2 : événements
+  'events.title': 'Agenda',
+  'events.lead': 'Dîners de thèse, débats contradictoires, conférences suivies d’un verre. Tenue correcte et arguments sourcés exigés.',
+  'events.empty': 'Rien à l’agenda pour l’instant. Nous préparons la suite ; vous serez prévenu·e.',
+  'events.privacy': 'La liste des inscrits n’est jamais publiée : seul le nombre de places restantes est affiché.',
+  'events.address_hidden': 'L’adresse exacte est donnée aux inscrits.',
+  'events.charter':
+    'En m’inscrivant, je m’engage à respecter chaque participant, à accepter un refus, à ne prendre ni publier aucune photo sans accord, à consommer de l’alcool avec modération et à libérer ma place si je ne peux plus venir. L’équipe présente sur place peut exclure toute personne qui manque à ces règles.',
 };
 
 // Questions du profil : le texte du back-office (`prompt.<key>`) prime, le catalogue livré sert de repli.
