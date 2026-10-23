@@ -59,7 +59,7 @@ export const FALLBACK_COPY: Record<string, string> = {
   'terms.title': 'Les règles du jeu.',
   'terms.lead': 'Avant d’aller plus loin, nos conditions d’utilisation. Le ton de Sapios est volontairement excessif ; ces conditions, elles, ne le sont pas.',
   'terms.point.access': 'Sapios est réservé aux majeurs dont le diplôme a été vérifié par une personne de l’équipe.',
-  'terms.point.data': 'Vos données restent en Europe. Vous pouvez les exporter ou tout supprimer, à tout moment, depuis l’app.',
+  'terms.point.data': 'Votre profil, vos photos et vos messages sont hébergés en Europe. Vous pouvez les exporter ou tout supprimer, à tout moment, depuis l’app.',
   'terms.point.conduct': 'Respect, aucune coordonnée sur le profil, un signalement au moindre doute.',
   'terms.checkbox': 'J’ai lu et j’accepte les conditions générales d’utilisation et la politique de confidentialité.',
   'terms.cta': 'Accepter et continuer',

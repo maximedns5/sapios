@@ -8,7 +8,7 @@ values
   ('terms.title', 'fr', 'Les règles du jeu.'),
   ('terms.lead', 'fr', 'Avant d’aller plus loin, nos conditions d’utilisation. Le ton de Sapios est volontairement excessif ; ces conditions, elles, ne le sont pas.'),
   ('terms.point.access', 'fr', 'Sapios est réservé aux majeurs dont le diplôme a été vérifié par une personne de l’équipe.'),
-  ('terms.point.data', 'fr', 'Vos données restent en Europe. Vous pouvez les exporter ou tout supprimer, à tout moment, depuis l’app.'),
+  ('terms.point.data', 'fr', 'Votre profil, vos photos et vos messages sont hébergés en Europe. Vous pouvez les exporter ou tout supprimer, à tout moment, depuis l’app.'),
   ('terms.point.conduct', 'fr', 'Respect, aucune coordonnée sur le profil, un signalement au moindre doute.'),
   ('terms.checkbox', 'fr', 'J’ai lu et j’accepte les conditions générales d’utilisation et la politique de confidentialité.'),
   ('terms.cta', 'fr', 'Accepter et continuer'),
