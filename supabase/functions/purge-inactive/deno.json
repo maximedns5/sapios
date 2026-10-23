@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "zod/v4": "npm:zod@3.25.76/v4",
+    "@std/assert": "jsr:@std/assert@1.0.13"
+  },
+  "lock": false
+}

@@ -1,4 +1,5 @@
-// Emails transactionnels via l'API HTTP de Resend : verdict, nouveau match et événements (docs/EMAILS.md).
+// Emails transactionnels via l'API HTTP de Resend : verdict, nouveau match, événements et avertissement
+// d'inactivité (docs/EMAILS.md).
 // Complément du push, absent de l'app web : canal facultatif, jamais bloquant. Toute erreur est
 // journalisée puis absorbée. Pas d'email pour les messages (le badge de l'app suffit).
 import type { SupabaseClient, User } from "./deps.ts";
@@ -40,7 +41,17 @@ export const EVENT_EMAIL_COPY_KEYS = [
   "email.event.reminder.body",
   "email.event.cta",
 ] as const;
-export type EmailCopyKey = (typeof EMAIL_COPY_KEYS)[number] | (typeof EVENT_EMAIL_COPY_KEYS)[number];
+/** Clés `app_copy` de l'email d'inactivité (migration 20261026090300_conformite_copy.sql). */
+export const INACTIVITY_EMAIL_COPY_KEYS = [
+  "email.inactivity.subject",
+  "email.inactivity.title",
+  "email.inactivity.body",
+  "email.inactivity.cta",
+] as const;
+export type EmailCopyKey =
+  | (typeof EMAIL_COPY_KEYS)[number]
+  | (typeof EVENT_EMAIL_COPY_KEYS)[number]
+  | (typeof INACTIVITY_EMAIL_COPY_KEYS)[number];
 
 /** Repli si une clé manque ou est vide dans `app_copy` : un email n'est jamais vide. */
 const FALLBACK_COPY: Record<EmailCopyKey, string> = {
@@ -66,12 +77,17 @@ const FALLBACK_COPY: Record<EmailCopyKey, string> = {
   "email.event.reminder.title": "C'est demain.",
   "email.event.reminder.body": "{name}, « {title} » a lieu {date}. L'adresse exacte et votre billet sont dans l'application.",
   "email.event.cta": "Voir l'événement",
+  "email.inactivity.subject": "Votre compte Sapios sera supprimé le {date}",
+  "email.inactivity.title": "Vous nous manquez. Un peu.",
+  "email.inactivity.body":
+    "{name}, vous ne vous êtes pas connecté·e depuis longtemps. Sans connexion d'ici le {date}, votre compte et toutes vos données seront supprimés. Pour le garder, il suffit d'ouvrir l'application.",
+  "email.inactivity.cta": "Garder mon compte",
 };
 /** `{name}` sans prénom affiché : « Bonjour, … ». */
 const FALLBACK_NAME = "Bonjour";
 const FALLBACK_VERDICT = "Verdict rendu.";
 
-export type EmailKind = "verdict" | "match" | "event";
+export type EmailKind = "verdict" | "match" | "event" | "inactivity";
 
 export interface EmailConfig {
   apiKey: string;
@@ -160,6 +176,12 @@ const MATCH_KEYS: EmailKeys = {
   body: "email.match.body",
   cta: "email.match.cta",
 };
+const INACTIVITY_KEYS: EmailKeys = {
+  subject: "email.inactivity.subject",
+  title: "email.inactivity.title",
+  body: "email.inactivity.body",
+  cta: "email.inactivity.cta",
+};
 function eventKeys(moment: EventMoment): EmailKeys {
   return {
     subject: `email.event.${moment}.subject`,
@@ -172,7 +194,16 @@ const LABELS: Record<EmailKind, string> = {
   verdict: "Sapios · Verdict",
   match: "Sapios · Match",
   event: "Sapios · Événement",
+  inactivity: "Sapios · Compte",
 };
+
+/** « 14 décembre 2028 » pour une date AAAA-MM-JJ ; chaîne vide si illisible. */
+export function formatDay(day: string): string {
+  const date = new Date(`${day}T12:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "long", year: "numeric" })
+    .format(date);
+}
 
 function compose(
   kind: EmailKind,
@@ -235,6 +266,19 @@ export async function buildEmails(store: EmailStore, config: EmailConfig, req: N
       const vars = { name: person.name ?? FALLBACK_NAME };
       return [compose("match", MATCH_KEYS, userId, person, copy, vars, url, `match-${req.match_id}-${userId}`)];
     });
+  }
+
+  if (req.type === "inactivity") {
+    const [people, copy] = await Promise.all([
+      store.recipients([req.user_id]),
+      store.copy([...INACTIVITY_EMAIL_COPY_KEYS, "email.footer"]),
+    ]);
+    const person = people.get(req.user_id);
+    if (!person) return [];
+    const vars = { name: person.name ?? FALLBACK_NAME, date: formatDay(req.delete_after) };
+    const url = config.appUrl ? `${config.appUrl}/` : null;
+    return [compose("inactivity", INACTIVITY_KEYS, req.user_id, person, copy, vars, url,
+      `inactivity-${req.user_id}-${req.delete_after}`)];
   }
 
   if (req.type === "event" || req.type === "event_reminder") {

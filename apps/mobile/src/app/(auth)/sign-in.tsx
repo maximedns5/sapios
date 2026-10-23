@@ -1,5 +1,4 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { normalizeReferralCode, REFERRAL_CODE_PATTERN } from '@sapios/shared';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -7,6 +6,7 @@ import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 import { Button, TextLink } from '@/components/Button';
+import { LegalLinks } from '@/components/LegalLinks';
 import { WaxSeal } from '@/components/Community';
 import { Field } from '@/components/Field';
 import { CameraIcon, CapIcon, UserIcon } from '@/components/Icons';
@@ -18,7 +18,7 @@ import { api } from '@/lib/api';
 import { Wordmark } from '@/components/Wordmark';
 import { appleAvailable, fetchProviders, sendEmailCode, signInWithApple, signInWithGoogle, signInWithPassword, type Providers } from '@/lib/auth';
 import { useCopy } from '@/lib/copy';
-import { PASSWORD_LOGIN, SITE_URL } from '@/lib/env';
+import { PASSWORD_LOGIN } from '@/lib/env';
 import { AppError, errorMessage } from '@/lib/errors';
 import { forgetReferral, initialWebRef, pendingReferral, rememberReferral } from '@/lib/referral';
 import { colors, ease, radius } from '@/lib/theme';
@@ -274,11 +274,8 @@ export default function SignIn() {
 
         <View style={{ flex: 1 }} />
         <View style={{ gap: 2 }}>
-          <Small size={13}>Réservé aux personnes majeures. En continuant, vous acceptez notre politique de confidentialité.</Small>
-          <View style={{ flexDirection: 'row', gap: 18 }}>
-            <TextLink label="Confidentialité" accessibilityRole="link" size={13.5} onPress={() => Linking.openURL(`${SITE_URL}/confidentialite`)} />
-            <TextLink label="Contact" accessibilityRole="link" size={13.5} onPress={() => Linking.openURL(`${SITE_URL}/contact`)} />
-          </View>
+          <Small size={13}>Réservé aux personnes majeures. Nos conditions d’utilisation vous seront présentées juste après la connexion, avant votre inscription.</Small>
+          <LegalLinks />
         </View>
       </View>
     </Screen>

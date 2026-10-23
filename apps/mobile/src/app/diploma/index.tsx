@@ -94,7 +94,7 @@ export default function DiplomaUpload() {
       }
     />
   ) : (
-    <StepHeader step={5} fraction={pick ? 0.5 : 0} />
+    <StepHeader step={6} fraction={pick ? 0.5 : 0} />
   );
 
   const eyebrow = redo ? 'Nouvel envoi' : hasTier ? 'Nouvelle tentative' : 'Dernière étape';

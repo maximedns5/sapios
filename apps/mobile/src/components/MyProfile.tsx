@@ -5,6 +5,7 @@ import {
   studyFieldLabel,
   THESIS_MAX_LENGTH,
   thesisLabel,
+  type InactivityNotice,
   type MemberNotice,
   type StudyField,
   type ThesisVisibility,
@@ -33,7 +34,8 @@ import { Button, IconButton } from './Button';
 import { Segmented, Switch } from './Controls';
 import { SettingsGroup, SettingsRow } from './SettingsRow';
 import { Field } from './Field';
-import { AlertIcon, BookIcon, BuildingIcon, CalendarIcon, CapIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, EditIcon, EyeIcon, GearIcon, MailIcon, PlusIcon, SparkIcon, VerifiedBadge } from './Icons';
+import { InactivityNoticeCard } from './InactivityNoticeCard';
+import { AlertIcon, BookIcon, BuildingIcon, CalendarIcon, CapIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, EditIcon, EyeIcon, GearIcon, MailIcon, PlusIcon, ShieldIcon, SparkIcon, VerifiedBadge } from './Icons';
 import { MaskUp, Rise, useCountUp } from './motion';
 import { useOverlay } from './Overlay';
 import { Photo } from './Photo';
@@ -217,6 +219,7 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
   const free = freeAnswerPosition(answers);
   const thesisDirty = (mine?.thesis?.line ?? '') !== thesis.trim();
   const notices = (state.notices ?? []).filter((n): n is MemberNotice => n.kind === 'content_removed');
+  const inactivity = (state.notices ?? []).filter((n): n is InactivityNotice => n.kind === 'inactivity_warning');
 
   const header =
     mode === 'stack' ? (
@@ -255,6 +258,9 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
           </MaskUp>
         ) : null}
 
+        {inactivity.map((n) => (
+          <InactivityNoticeCard key={n.id} notice={n} onAck={() => run(() => api.ackNotice(n.id))} />
+        ))}
         {notices.map((n) => (
           <RemovalNotice key={n.id} notice={n} onAck={() => run(() => api.ackNotice(n.id))} />
         ))}
@@ -302,6 +308,13 @@ export function MyProfile({ mode = 'tab' }: { mode?: 'tab' | 'stack' }) {
             </SettingsGroup>
           </Rise>
         ) : null}
+
+        <Rise delay={70} style={{ gap: 12 }}>
+          <SectionTitle title="Sécurité" />
+          <SettingsGroup label="Sécurité">
+            <SettingsRow first testID="open-safety" icon={<ShieldIcon size={18} color={colors.accent} />} title="Conseils de sécurité" sub="Avant un premier rendez-vous" onPress={() => router.push('/settings/safety')} />
+          </SettingsGroup>
+        </Rise>
 
         {section(
           80,

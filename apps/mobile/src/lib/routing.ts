@@ -47,8 +47,23 @@ export function currentVerdict(state: MyState, seen: Set<string>): VerdictVarian
   return tierVariant;
 }
 
+/**
+ * CGU de la version en vigueur non acceptées : étape « Conditions d'utilisation » avant l'inscription
+ * (jamais acceptées), sinon écran bloquant « Nos conditions évoluent ». null : rien à demander.
+ */
+export function termsRoute(state: MyState): Route | null {
+  const terms = state.terms;
+  if (!terms || terms.accepted) return null;
+  if (state.profile_status === 'onboarding' && !terms.last_accepted_version) {
+    return { target: '/onboarding/terms', allowed: ['/onboarding/terms', '/settings'] };
+  }
+  return { target: '/terms', allowed: ['/terms', '/settings'] };
+}
+
 export function decide(state: MyState, seen: Set<string>): Route {
   if (state.profile_status === 'banned') return { target: '/banned', allowed: ['/banned', '/settings'] };
+  const terms = termsRoute(state);
+  if (terms) return terms;
   if (state.profile_status === 'onboarding') {
     const step = onboardingStep(state);
     return { target: step, allowed: [step, '/settings'] };

@@ -1,4 +1,4 @@
-import type { AccessTier, AffinityReason, EventNotice, Gender, IntellectProgress, MemberNotice, ProfileStatus, StudyField, SubmissionStatus } from '@sapios/shared';
+import type { AccessTier, AffinityReason, EventNotice, Gender, InactivityNotice, IntellectProgress, MemberNotice, ProfileStatus, StudyField, SubmissionStatus, TermsState } from '@sapios/shared';
 
 export type { AccessTier, Gender, ProfileStatus, StudyField, SubmissionStatus };
 
@@ -27,14 +27,19 @@ export type MyState = {
   submissions_left: number;
   /** Likes reçus en attente, sans identité (tous paliers). */
   likes_received?: number;
-  /** Avis non lus : retrait d'un contenu (lot 1), place obtenue ou événement annulé (lot 2). Filtrer sur `kind`. */
-  notices?: (MemberNotice | EventNotice)[];
+  /**
+   * Avis non lus : retrait d'un contenu (lot 1), place obtenue ou événement annulé (lot 2), avertissement
+   * d'inactivité (conformité). Filtrer sur `kind`.
+   */
+  notices?: (MemberNotice | EventNotice | InactivityNotice)[];
   intellect?: IntellectProgress;
   /** La personne a utilisé une lettre de recommandation ; prénom du parrain (null s'il a supprimé son compte). */
   referred?: boolean;
   referred_by?: string | null;
   /** Peut recommander quelqu'un (Bac+5 ou Bac+8 actif). */
   can_refer?: boolean;
+  /** CGU : version en vigueur et acceptation (absent sur un serveur antérieur : aucun blocage). */
+  terms?: TermsState;
 };
 
 /** Ligne de get_feed() (les colonnes du lot 1 manquent dans get_likers et dans le cache des fiches). */

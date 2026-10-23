@@ -77,6 +77,10 @@ begin
      set legal_name = p_legal, birthdate = p_birthdate,
          consent_sensitive_at = now() - interval '30 days', consent_version = '2026-10'
    where user_id = p_id;
+  -- CGU de la version en vigueur acceptées à l'inscription (sinon l'app bloque sur « Nos conditions évoluent »).
+  insert into public.terms_acceptances (user_id, version, accepted_at)
+  values (p_id, private.terms_version(), now() - interval '30 days')
+  on conflict (user_id, version) do nothing;
   insert into public.profile_photos (user_id, storage_path, position, moderation_status)
   values (p_id, p_id::text || '/seed-1.jpg', 0, 'approved'),
          (p_id, p_id::text || '/seed-2.jpg', 1, 'approved');

@@ -40,7 +40,7 @@ export default function Consent() {
   }
 
   return (
-    <Screen scroll header={<StepHeader step={2} />}>
+    <Screen scroll header={<StepHeader step={3} />}>
       <View style={{ paddingTop: 20 }}>
         <ConsentForm onDone={refresh} onRefuse={() => setRefused(true)} />
       </View>

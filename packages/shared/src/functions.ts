@@ -142,7 +142,9 @@ export type NotifyRequest =
   | { type: "message"; message_id: string }
   | { type: "verdict"; user_id: string; copy_key: string }
   | { type: "event"; kind: EventNotifyKind; registration_id: string }
-  | { type: "event_reminder"; event_id: string };
+  | { type: "event_reminder"; event_id: string }
+  /** Compte inactif averti (conformité) : email seulement, `delete_after` au format AAAA-MM-JJ. */
+  | { type: "inactivity"; user_id: string; delete_after: string };
 export interface NotifyResponse {
   /** Notifications push acceptées par Expo. */
   sent: number;
@@ -168,6 +170,17 @@ export interface DeleteAccountResponse {
 export type PurgeDiplomasRequest = Record<string, never>;
 export interface PurgeDiplomasResponse {
   purged: number;
+}
+
+// --- purge-inactive (secret interne) ----------------------------------------------------------
+// Suppression des comptes inactifs avertis depuis plus de `inactive_grace_days` (conformité).
+
+export type PurgeInactiveRequest = Record<string, never>;
+export interface PurgeInactiveResponse {
+  /** Comptes supprimés. */
+  purged: number;
+  /** Comptes revenus entre la liste et la suppression, ou en échec (journalisé). */
+  skipped: number;
 }
 
 // --- search-books (JWT utilisateur) : relais vers Open Library ---------------------------------

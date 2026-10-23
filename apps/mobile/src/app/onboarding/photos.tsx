@@ -36,7 +36,7 @@ export default function OnboardingPhotos() {
     <Screen
       scroll
       testID="onboarding-photos"
-      header={<StepHeader step={4} fraction={Math.min(count, MIN_PHOTOS) / MIN_PHOTOS} />}
+      header={<StepHeader step={5} fraction={Math.min(count, MIN_PHOTOS) / MIN_PHOTOS} />}
       footer={
         <Button
           testID="activate"

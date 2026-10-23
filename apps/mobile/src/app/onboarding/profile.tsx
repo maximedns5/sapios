@@ -134,7 +134,7 @@ export default function OnboardingProfile() {
       scroll
       testID="onboarding-profile"
       backdrop={<Blob index={done ? steps.length : index} />}
-      header={<StepHeader step={3} fraction={fraction} onBack={!done && index > 0 ? () => setIndex(index - 1) : undefined} />}
+      header={<StepHeader step={4} fraction={fraction} onBack={!done && index > 0 ? () => setIndex(index - 1) : undefined} />}
       footer={
         done ? (
           <Rise delay={750}>

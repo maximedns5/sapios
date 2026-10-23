@@ -91,7 +91,7 @@ export default function Identity() {
   const digits = (v: string, n: number) => v.replace(/\D/g, '').slice(0, n);
 
   return (
-    <Screen scroll header={<StepHeader step={1} />} footer={<Button testID="identity-submit" label="Continuer" onPress={submit} />}>
+    <Screen scroll header={<StepHeader step={2} />} footer={<Button testID="identity-submit" label="Continuer" onPress={submit} />}>
       <View style={{ gap: 22, paddingTop: 20 }}>
         <View style={{ gap: 10 }}>
           <Rise>
