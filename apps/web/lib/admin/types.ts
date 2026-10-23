@@ -48,8 +48,14 @@ export interface SubmissionRow {
 
 export interface ReportRow {
   id: string;
-  reporter_id: string;
-  target_id: string;
+  /** Nul quand l'auteur a supprimé son compte (signalement conservé, pseudonymisé). */
+  reporter_id: string | null;
+  /** Nul quand la personne visée a supprimé son compte (signalement conservé, pseudonymisé). */
+  target_id: string | null;
+  /** Empreinte stable qui remplace l'identifiant après suppression du compte. */
+  target_pseudonym?: string | null;
+  reporter_pseudonym?: string | null;
+  target_deleted_at?: string | null;
   reason: string;
   details: string | null;
   status: ReportStatus;

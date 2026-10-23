@@ -60,12 +60,26 @@ export default function ConfidentialitePage() {
         </ul>
         <h3>Compte et profil (application)</h3>
         <ul>
-          <li>Email ou identifiant Apple / Google utilisé pour se connecter.</li>
+          <li>Adresse email utilisée pour se connecter (code ou lien envoyé par email).</li>
           <li>Nom légal et date de naissance, saisis une fois, non visibles des autres membres.</li>
+          <li>Version et date des conditions générales d’utilisation que vous avez acceptées.</li>
           <li>
             Prénom affiché, photos, biographie, ville, genre, genres recherchés, tranche d’âge recherchée.
           </li>
           <li>Position approximative, arrondie à environ 1 km ; les autres membres ne voient qu’une distance.</li>
+          <li>Vos critères de découverte : distance, âges, niveaux et domaines, ordre de tri.</li>
+        </ul>
+        <h3>Profil intellectuel (application)</h3>
+        <ul>
+          <li>Vos réponses à trois questions choisies dans un catalogue, et jusqu’à cinq livres (titre et auteur).</li>
+          <li>Votre domaine d’études.</li>
+          <li>
+            Votre phrase de thèse ou de mémoire, visible après un match seulement, sauf si vous choisissez de la
+            montrer à tous les membres admis.
+          </li>
+          <li>
+            Vos choix d’affichage : établissement (masqué par défaut) et badge du test d’admission.
+          </li>
         </ul>
         <h3>Vérification du diplôme</h3>
         <ul>
@@ -75,11 +89,45 @@ export default function ConfidentialitePage() {
             estimé, ainsi qu’une empreinte du fichier servant à détecter les doublons.
           </li>
           <li>Le niveau validé (de 1 à 8) et le palier d’accès qui en découle.</li>
+          <li>
+            Le niveau et le domaine sont affichés aux autres membres admis (par exemple « Bac+8 · Philosophie ») ;
+            l’établissement seulement si vous l’activez.
+          </li>
         </ul>
         <h3>Utilisation du service</h3>
         <ul>
-          <li>Likes, matchs, messages, blocages, signalements et décisions de modération.</li>
+          <li>
+            Likes, sur un profil, une photo ou une réponse, et le mot facultatif qui les accompagne (140 caractères
+            au plus) : il n’est lu que par la personne likée et devient le premier message en cas de match.
+          </li>
+          <li>Matchs, messages, blocages.</li>
+          <li>
+            Signalements (d’une personne ou d’un texte précis), décisions de modération et avis qui vous en
+            informent, avec leur motif.
+          </li>
           <li>Jetons de notification de votre appareil.</li>
+        </ul>
+        <h3>Lettres de recommandation</h3>
+        <ul>
+          <li>
+            Votre lien personnel et le nombre de lettres utilisées. Vous ne voyez jamais qui a utilisé votre lettre,
+            ni son verdict : seulement un compteur.
+          </li>
+          <li>
+            Si vous avez été recommandé·e : le compte qui vous a recommandé·e. Vous voyez son prénom ; l’équipe
+            s’en sert pour examiner votre diplôme en priorité, jamais pour l’accepter sans examen.
+          </li>
+        </ul>
+        <h3>Événements</h3>
+        <ul>
+          <li>
+            Vos inscriptions (confirmée, liste d’attente, annulée), l’acceptation de la charte de conduite, votre
+            code de billet et votre pointage à l’entrée.
+          </li>
+          <li>
+            L’adresse exacte d’un événement n’est communiquée qu’aux inscrits. La liste des inscrits n’est jamais
+            montrée aux membres, seulement le nombre de places restantes.
+          </li>
         </ul>
       </section>
 
@@ -98,9 +146,30 @@ export default function ConfidentialitePage() {
         </p>
       </section>
 
+      <section aria-labelledby="classement">
+        <h2 id="classement">
+          <span className="label">04</span>Classement des profils et filtre des textes
+        </h2>
+        <p>
+          La découverte vous montre d’abord les profils actifs le plus récemment, puis ceux qui correspondent à vos
+          préférences, puis ceux avec qui vous partagez le plus d’affinités : même domaine, livres en commun, mêmes
+          questions, même établissement si vous l’affichez tous les deux. Le calcul suit ces règles simples, sans
+          intelligence artificielle, et la raison est affichée sur chaque profil.
+        </p>
+        <p>
+          C’est un profilage au sens du RGPD. Vous pouvez vous y opposer à tout moment en choisissant le tri « par
+          activité » dans vos critères de découverte. Aucune rémunération n’influence l’ordre des profils.
+        </p>
+        <p>
+          Vos réponses, livres et phrase de thèse passent par un filtre qui repère numéros de téléphone, adresses
+          email, pseudos et liens. Un texte repéré reste publié jusqu’à l’examen d’une personne de l’équipe ; s’il
+          est retiré, vous en recevez le motif dans l’application et pouvez le contester.
+        </p>
+      </section>
+
       <section aria-labelledby="finalites">
         <h2 id="finalites">
-          <span className="label">04</span>Finalités et bases légales
+          <span className="label">05</span>Finalités et bases légales
         </h2>
         <table className="legal-table">
           <thead>
@@ -123,11 +192,30 @@ export default function ConfidentialitePage() {
               <td>Exécution du contrat</td>
             </tr>
             <tr>
+              <td>Classer les profils par activité, préférences et affinités</td>
+              <td>Exécution du contrat ; opposition possible par le tri « par activité »</td>
+            </tr>
+            <tr>
+              <td>Lettres de recommandation et priorité d’examen</td>
+              <td>Exécution du contrat</td>
+            </tr>
+            <tr>
+              <td>Événements : inscriptions, billets, rappels, pointage</td>
+              <td>Exécution du contrat</td>
+            </tr>
+            <tr>
+              <td>Conserver la preuve de votre acceptation des CGU</td>
+              <td>Intérêt légitime</td>
+            </tr>
+            <tr>
               <td>Traiter les genres recherchés</td>
               <td>Consentement explicite (art. 9.2.a RGPD)</td>
             </tr>
             <tr>
-              <td>Modération, sécurité, lutte contre la fraude et les abus</td>
+              <td>
+                Modération, sécurité, lutte contre la fraude et les abus, y compris empêcher le retour d’une personne
+                exclue
+              </td>
               <td>Intérêt légitime et obligations légales</td>
             </tr>
             <tr>
@@ -135,7 +223,10 @@ export default function ConfidentialitePage() {
               <td>Consentement, géré par les réglages de votre appareil</td>
             </tr>
             <tr>
-              <td>Emails de service : code de connexion, verdict du diplôme, nouveau match</td>
+              <td>
+                Emails de service : code de connexion, verdict du diplôme, nouveau match, événements, avertissement
+                avant suppression d’un compte inactif
+              </td>
               <td>Exécution du contrat</td>
             </tr>
           </tbody>
@@ -144,7 +235,7 @@ export default function ConfidentialitePage() {
 
       <section aria-labelledby="ia">
         <h2 id="ia">
-          <span className="label">05</span>Vérification du diplôme et intelligence artificielle
+          <span className="label">06</span>Vérification du diplôme et intelligence artificielle
         </h2>
         <p>
           Le document est déposé dans un espace de stockage privé, inaccessible aux autres membres. Lorsque
@@ -162,7 +253,7 @@ export default function ConfidentialitePage() {
 
       <section aria-labelledby="sous-traitants">
         <h2 id="sous-traitants">
-          <span className="label">06</span>Sous-traitants
+          <span className="label">07</span>Sous-traitants
         </h2>
         <table className="legal-table">
           <thead>
@@ -173,6 +264,11 @@ export default function ConfidentialitePage() {
             </tr>
           </thead>
           <tbody>
+            <tr>
+              <td>Vercel</td>
+              <td>Hébergement du site, de l’application web et de l’espace de modération</td>
+              <td>Adresse IP et journaux techniques des requêtes</td>
+            </tr>
             <tr>
               <td>Supabase</td>
               <td>Hébergement de la base de données, authentification, stockage des fichiers (région Union européenne)</td>
@@ -210,7 +306,7 @@ export default function ConfidentialitePage() {
 
       <section aria-labelledby="conservation">
         <h2 id="conservation">
-          <span className="label">07</span>Durées de conservation
+          <span className="label">08</span>Durées de conservation
         </h2>
         <table className="legal-table">
           <thead>
@@ -229,12 +325,47 @@ export default function ConfidentialitePage() {
               <td>Jusqu’à la suppression du compte</td>
             </tr>
             <tr>
-              <td>Compte, profil, photos, messages, jetons de notification</td>
+              <td>
+                Compte, profil, profil intellectuel, likes et mots, messages, critères, inscriptions aux événements,
+                jetons de notification, acceptation des CGU
+              </td>
               <td>Jusqu’à la suppression du compte, effective et en cascade sur les fichiers</td>
             </tr>
             <tr>
+              <td>Compte inactif</td>
+              <td>
+                Un email d’avertissement après 2 ans sans connexion ; le compte est supprimé 30 jours plus tard si
+                vous ne vous reconnectez pas
+              </td>
+            </tr>
+            <tr>
+              <td>Signalements</td>
+              <td>
+                Supprimés avec le compte de leur auteur ; après la suppression du compte visé, conservés 1 an,
+                pseudonymisés, puis effacés
+              </td>
+            </tr>
+            <tr>
               <td>Journal des décisions de modération</td>
-              <td>Conservé après la suppression du compte, sans le document, pour la traçabilité des décisions</td>
+              <td>5 ans, sans le document, pour la traçabilité des décisions</td>
+            </tr>
+            <tr>
+              <td>Empreinte d’une personne exclue</td>
+              <td>
+                3 ans : une empreinte non réversible de l’email et de l’identité, qui empêche seulement la
+                réinscription
+              </td>
+            </tr>
+            <tr>
+              <td>Avis reçus dans l’application (retraits, événements)</td>
+              <td>1 an</td>
+            </tr>
+            <tr>
+              <td>Lettres de recommandation</td>
+              <td>
+                Jusqu’à la suppression du compte recommandé ; si le compte qui recommande est supprimé, la
+                recommandation reste, sans auteur
+              </td>
             </tr>
             <tr>
               <td>Liste d’attente</td>
@@ -246,7 +377,7 @@ export default function ConfidentialitePage() {
 
       <section aria-labelledby="droits">
         <h2 id="droits">
-          <span className="label">08</span>Vos droits
+          <span className="label">09</span>Vos droits
         </h2>
         <p>Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de portabilité, ainsi que du droit de retirer votre consentement et de définir des directives sur le sort de vos données après votre décès.</p>
         <ul>
@@ -261,6 +392,10 @@ export default function ConfidentialitePage() {
             <strong>Nom légal et date de naissance</strong> : ils ne sont modifiables que sur demande, après
             vérification.
           </li>
+          <li>
+            <strong>Opposition au classement par affinités</strong> : choisissez le tri « par activité » dans vos
+            critères de découverte.
+          </li>
         </ul>
         <div className="legal-callout">
           <p>
@@ -272,11 +407,12 @@ export default function ConfidentialitePage() {
 
       <section aria-labelledby="cookies">
         <h2 id="cookies">
-          <span className="label">09</span>Cookies
+          <span className="label">10</span>Cookies
         </h2>
         <p>
           Ce site ne dépose ni cookie publicitaire ni traceur de mesure d’audience. Seul l’espace de modération
-          utilise des cookies de session strictement nécessaires à la connexion.
+          utilise des cookies de session strictement nécessaires à la connexion. L’application web garde votre
+          session dans le stockage local du navigateur, pour la même raison.
         </p>
       </section>
     </LegalShell>
