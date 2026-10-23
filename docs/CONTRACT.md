@@ -43,7 +43,14 @@ Décisions ouvertes du brief (§11) : on applique les valeurs par défaut du bri
 ## 2. Tables
 
 Celles du brief §5, avec ces précisions :
-- `profiles.seeking_genders gender[]`, `profiles.birth_year` n'existe pas : l'âge vient de `profile_private.birthdate`, exposé seulement par `get_feed`.
+- `profiles.seeking_genders gender[]`, `profiles.birth_year` n'existe pas : l'âge vient de `profile_private.birth_month`, exposé seulement par `get_feed` et `get_profile`.
+- **Champs chiffrés** (migration `20261027090000_chiffrement_champs`) : `profile_private.legal_name_enc`, `birthdate_enc` et
+  `reports.details_enc` (`bytea`, pgcrypto `pgp_sym_encrypt` en AES-256, clé `field_key` dans Vault). Plus de colonne
+  `legal_name`, `birthdate` ni `details` en clair. `profile_private.birth_month` (1er jour du mois de naissance) reste en
+  clair pour calculer l'âge. Aucun client ne lit une colonne `_enc` (droits par colonne) : le clair passe par
+  `get_my_identity`, `admin_list_identities`, `admin_list_reports`, `admin_list_submissions` / `admin_get_submission`,
+  `admin_get_report_context`, `export_my_data` et `server_get_identity`. Toute nouvelle colonne de `reports` ou de
+  `profile_private` doit être ajoutée aux droits `select` par colonne de cette migration.
 - `profiles.location geography(Point, 4326)` arrondie à ~1 km (3 décimales) par un trigger.
 - `access_policy` : `id`, `min_level int unique` (1–8), `tier access_tier`, `daily_like_quota int null` (null = illimité), `can_browse bool`, `sees_likers bool`, `copy_key text`. Le palier d'un niveau N est la ligne avec le plus grand `min_level <= N`. Seed par défaut :
 
@@ -126,7 +133,8 @@ Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `an
 | Fonction | Retour | Erreurs |
 |---|---|---|
 | `get_my_state()` | `jsonb` : `{ profile_status, onboarding: { identity_set, profile_complete, photos_count, consent_sensitive }, tier, level, copy_key, can_browse, daily_like_quota, likes_left_today, sees_likers, latest_submission: { id, status, created_at, rejection_reason } \| null, submissions_left, likes_received, notices: [{ id, kind, payload, created_at }], intellect: { answers, books, thesis, study_field }, referred, referred_by, can_refer, terms: { current_version, accepted, accepted_at, last_accepted_version } }`. Personne recommandée en liste d'attente (`tier = 'waitlist'` et `referred`) : l'app affiche `verdict.waitlist.referred` | — |
-| `set_identity(p_legal_name text, p_birthdate date)` | `void` | `identity_already_set`, `underage` |
+| `set_identity(p_legal_name text, p_birthdate date)` | `void` ; nom (2 à 200 caractères) et date vérifiés en clair, puis chiffrés | `identity_already_set`, `underage`, `invalid_input` |
+| `get_my_identity()` | `jsonb { legal_name, birthdate }` du membre connecté, déchiffrés | — |
 | `set_sensitive_consent(p_granted bool, p_version text)` | `void` | — |
 | `activate_profile()` | `void` (passe `onboarding` → `active`) | `identity_missing`, `profile_incomplete`, `photos_missing`, `consent_missing`, `terms_required` (CGU de la version en vigueur non acceptées) |
 | `accept_terms(p_version text)` | `jsonb` `TermsState` (comme `get_my_state().terms`) ; idempotent, journalisé (`terms.accepted`) | `terms_version_mismatch` (la version n'est plus celle en vigueur : relire l'état) |
@@ -156,6 +164,9 @@ Toutes en `security definer`, `set search_path = ''`, `execute` révoqué à `an
 | `admin_moderate_content(p_flag_id uuid, p_decision text /* keep\|remove */, p_reason text default null)` | `void` (motif obligatoire pour `remove`, envoyé au membre) | `forbidden`, `invalid_decision`, `reason_required`, `not_found`, `already_handled` |
 | `admin_set_member_institution(p_user uuid, p_institution text, p_field study_field)` | `void` (rattrapage d'un membre validé) | `forbidden`, `not_found`, `invalid_institution` |
 | `admin_update_settings(p_values jsonb)` | `jsonb` (valeurs enregistrées). Clés admises : `feed_radius_km` (5 à 200), `affinity_weight_field` / `_book` / `_prompt` / `_institution` (entiers 0 à 20), `moderation_blocklist` (tableau de mots, nettoyés en minuscules, 300 au plus, 40 caractères chacun), `referral_letters_standard` / `referral_letters_unlimited` (entiers 0 à 20) et `referral_window_days` (7 à 90) depuis le lot 2 ; conformité : `terms_version` (texte, 3 à 40 caractères `[0-9A-Za-z._-]`), `inactive_warning_days` (180 à 3650), `inactive_grace_days` (7 à 180), `report_retention_days` (30 à 1825), `audit_retention_days` (365 à 3650), `banned_identity_retention_days` (90 à 3650), `notice_retention_days` (30 à 1825). Avant / après dans `audit_log` (`settings.update`) | `forbidden`, `invalid_input`, `invalid_value`, `unknown_setting` |
+| `admin_list_identities(p_user_ids uuid[])` | `setof (user_id uuid, legal_name text)` déchiffré, 500 membres au plus (admin, aal2) | `forbidden`, `invalid_input` |
+| `admin_list_reports(p_status report_status default null, p_limit int default 200)` | `setof` (colonnes de `reports` avec `details text` déchiffré) ; ouverts du plus ancien au plus récent, sinon du plus récent | `forbidden` |
+| `server_get_identity(p_user uuid)` | `setof (legal_name text, birthdate date)` déchiffrés ; clé de service seulement (process-diploma) | `forbidden` |
 | `admin_get_report_context(p_report_id uuid)` | `jsonb { target, reporter, photos, answers, books, thesis, content, reports_against, relationship, target_deleted_at, target_pseudonym, reporter_pseudonym }` : la personne signalée, le texte visé, son historique, match et blocages entre les deux. Jamais les messages. Compte visé supprimé : `target` null, listes vides, `target_deleted_at` daté ; l'historique (`reports_against`) suit le pseudonyme | `forbidden`, `not_found` |
 | `get_my_referral()` | `jsonb` `MyReferral` `{ eligible, code, quota, used, left, next_letter_at }` : le code est créé à la première demande ; jamais d'identité ni de verdict des filleuls | — |
 | `get_referral_preview(p_code text)` (**anon**) | `jsonb { referrer_first_name } \| null` (null si le code est inconnu, révoqué, si le parrain n'est plus éligible ou n'a plus de lettre). Saisie tolérante (minuscules, tirets, O/I/L) | — |

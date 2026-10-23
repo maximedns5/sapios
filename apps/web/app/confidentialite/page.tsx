@@ -61,7 +61,7 @@ export default function ConfidentialitePage() {
         <h3>Compte et profil (application)</h3>
         <ul>
           <li>Adresse email utilisée pour se connecter (code ou lien envoyé par email).</li>
-          <li>Nom légal et date de naissance, saisis une fois, non visibles des autres membres.</li>
+          <li>Nom légal et date de naissance, saisis une fois, non visibles des autres membres et chiffrés dans la base.</li>
           <li>Version et date des conditions générales d’utilisation que vous avez acceptées.</li>
           <li>
             Prénom affiché, photos, biographie, ville, genre, genres recherchés, tranche d’âge recherchée.
@@ -102,8 +102,8 @@ export default function ConfidentialitePage() {
           </li>
           <li>Matchs, messages, blocages.</li>
           <li>
-            Signalements (d’une personne ou d’un texte précis), décisions de modération et avis qui vous en
-            informent, avec leur motif.
+            Signalements (d’une personne ou d’un texte précis ; le texte libre est chiffré dans la base), décisions
+            de modération et avis qui vous en informent, avec leur motif.
           </li>
           <li>Jetons de notification de votre appareil.</li>
         </ul>

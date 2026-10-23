@@ -22,6 +22,9 @@ type Queue = { msg_id: number; read_ct: number; message: unknown }[];
 function setup(opts: { attempts?: number; readCt?: number } = {}) {
   const queue: Queue = [{ msg_id: 7, read_ct: opts.readCt ?? 1, message: { submission_id: SUBMISSION } }];
   const db = new FakeSupabase({
+    // Identité chiffrée en base : lue par la RPC serveur, déchiffrée.
+    server_get_identity: (args) =>
+      args.p_user === USER ? [{ legal_name: "Camille Durand", birthdate: "1995-04-02" }] : [],
     diploma_queue_read: () => queue.map((m) => ({ ...m, enqueued_at: "2026-10-21T00:00:00Z", vt: "2026-10-21T00:05:00Z" })),
     diploma_queue_delete: (args) => {
       const i = queue.findIndex((m) => m.msg_id === args.p_msg_id);
@@ -42,7 +45,6 @@ function setup(opts: { attempts?: number; readCt?: number } = {}) {
     level_verified: null,
     reviewer_id: null,
   }];
-  db.tables.profile_private = [{ user_id: USER, legal_name: "Camille Durand", birthdate: "1995-04-02" }];
   db.tables.user_access = [];
   db.files[`diplomas/${PATH}`] = PNG;
   return { db, queue, store: createProcessStore(db.asClient()) };
@@ -105,7 +107,7 @@ function assertNoAccessWrite(db: FakeSupabase) {
     assertFalse("reviewer_id" in (w.values ?? {}));
   }
   assertEquals(
-    db.rpcCalls.filter((c) => !["diploma_queue_read", "diploma_queue_delete"].includes(c.name)),
+    db.rpcCalls.filter((c) => !["diploma_queue_read", "diploma_queue_delete", "server_get_identity"].includes(c.name)),
     [],
   );
 }

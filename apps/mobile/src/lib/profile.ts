@@ -34,15 +34,22 @@ export async function saveOwnProfile(userId: string, patch: ProfilePatch) {
   if (error) throw fromPostgrest(error);
 }
 
-export async function loadLegalName(userId: string): Promise<string | null> {
-  const { data } = await supabase.from('profile_private').select('legal_name').eq('user_id', userId).maybeSingle();
-  return (data as { legal_name: string | null } | null)?.legal_name ?? null;
+type OwnIdentity = { legal_name: string | null; birthdate: string | null };
+
+/** Identité du membre connecté, chiffrée en base et déchiffrée par le serveur pour lui seul. */
+async function loadOwnIdentity(): Promise<OwnIdentity | null> {
+  const { data, error } = await supabase.rpc('get_my_identity');
+  if (error) return null;
+  return (data as OwnIdentity | null) ?? null;
+}
+
+export async function loadLegalName(_userId: string): Promise<string | null> {
+  return (await loadOwnIdentity())?.legal_name ?? null;
 }
 
 /** Âge du membre connecté (date de naissance lisible par lui seul), ou null. */
-export async function loadOwnAge(userId: string): Promise<number | null> {
-  const { data } = await supabase.from('profile_private').select('birthdate').eq('user_id', userId).maybeSingle();
-  const birthdate = (data as { birthdate: string | null } | null)?.birthdate;
+export async function loadOwnAge(_userId: string): Promise<number | null> {
+  const birthdate = (await loadOwnIdentity())?.birthdate;
   if (!birthdate) return null;
   const [y, m, d] = birthdate.split('-').map(Number);
   return ageFrom(new Date(y, m - 1, d));

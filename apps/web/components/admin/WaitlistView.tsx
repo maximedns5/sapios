@@ -52,10 +52,14 @@ async function loadMembers(): Promise<WaitlistMember[]> {
 
   const ids = rows.map((r) => r.user_id);
   if (!ids.length) return [];
-  const [profiles, privates] = await Promise.all([
+  // Noms légaux chiffrés en base : déchiffrés par une RPC d'admin, 500 membres par appel.
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += 500) chunks.push(ids.slice(i, i + 500));
+  const [profiles, ...identityChunks] = await Promise.all([
     supabase.from("profiles").select("id, display_name, city, status").in("id", ids),
-    supabase.from("profile_private").select("user_id, legal_name").in("user_id", ids),
+    ...chunks.map((chunk) => supabase.rpc("admin_list_identities", { p_user_ids: chunk })),
   ]);
+  const privates = { data: identityChunks.flatMap((c) => (c.data ?? []) as Array<{ user_id: string; legal_name: string | null }>) };
   const p = new Map(
     ((profiles.data ?? []) as Array<{ id: string; display_name: string | null; city: string | null; status: ProfileStatus }>).map(
       (x) => [x.id, x],

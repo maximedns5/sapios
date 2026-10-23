@@ -386,3 +386,25 @@ Plan d'action de l'AIPD (sections 2, 4 et 7) et des CGU (articles 1.2, 5.5, 13.2
 3. **Pages légales** : les notes « [Juriste] », les sections « À lire d'abord » et « Points à valider » des brouillons
    ne sont pas publiées ; les autres passages entre crochets restent, signalés par le bandeau « Version provisoire ».
 
+## Sécurité : chiffrement en base des champs sensibles (27 oct. 2026)
+
+Nom légal, date de naissance et texte libre des signalements sont chiffrés dans la base (migration
+`20261027090000_chiffrement_champs`).
+
+1. **Clé dans Vault** (`field_key`, 32 octets aléatoires), créée par la migration si elle manque : rien à configurer sur
+   staging ni en production. Ne jamais la recréer ni la changer : les données déjà chiffrées deviendraient illisibles.
+2. **pgcrypto** (`pgp_sym_encrypt`, AES-256 avec contrôle d'intégrité, `s2k-mode=1` car la clé est déjà aléatoire)
+   plutôt que la transparent column encryption de pgsodium, que Supabase retire.
+3. **Ce que cela protège** : une copie ou un export de la base, une sauvegarde, l'affichage d'une table dans le tableau
+   de bord, un journal. **Ce que cela ne protège pas** : une personne qui a un accès SQL complet au projet (tableau de
+   bord Supabase, mot de passe de la base) peut lire Vault, donc la clé. D'où la double authentification sur les
+   comptes Supabase, Vercel et GitHub.
+4. **Âge** : `birth_month` garde en clair le 1er jour du mois de naissance, pour la découverte et les profils sans
+   déchiffrer. L'âge affiché change donc jusqu'à un mois avant l'anniversaire réel. Le contrôle des 18 ans se fait sur
+   la date complète, dans `set_identity`, avant chiffrement.
+5. **`degree_submissions.extracted` reste en clair** : vide en mode manuel, et la détection des doublons de
+   process-diploma l'interroge par année (`extracted->>year_awarded`). À chiffrer si l'extraction automatique revient.
+6. **Le back-office ne lit plus `reports` ni `profile_private` directement** : signalements par `admin_list_reports`,
+   noms légaux de la liste d'attente par `admin_list_identities`. L'app lit l'identité du membre par
+   `get_my_identity` ; process-diploma par `server_get_identity`.
+

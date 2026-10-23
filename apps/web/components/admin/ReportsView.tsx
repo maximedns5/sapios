@@ -37,12 +37,8 @@ interface Loaded {
 
 async function loadReports(status: ReportStatus): Promise<Loaded> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("reports")
-    .select("*")
-    .eq("status", status)
-    .order("created_at", { ascending: status === "open" })
-    .limit(200);
+  // Le texte libre est chiffré en base : la RPC d'admin le renvoie déchiffré (ouverts du plus ancien au plus récent).
+  const { data, error } = await supabase.rpc("admin_list_reports", { p_status: status, p_limit: 200 });
   if (error) throw error;
   const reports = (data ?? []) as ReportRow[];
   const ids = Array.from(new Set(reports.flatMap((r) => [r.reporter_id, r.target_id]))).filter((id): id is string => !!id);

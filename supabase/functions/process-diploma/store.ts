@@ -58,12 +58,11 @@ export function createProcessStore(db: SupabaseClient): ProcessStore {
     },
 
     async loadIdentity(userId) {
-      const { data, error } = await db.from("profile_private")
-        .select("legal_name, birthdate")
-        .eq("user_id", userId)
-        .maybeSingle();
+      // Identité chiffrée en base : la RPC serveur la renvoie déchiffrée (clé de service seulement).
+      const { data, error } = await db.rpc("server_get_identity", { p_user: userId });
       if (error) fail("loadIdentity", error);
-      return { legal_name: data?.legal_name ?? null, birthdate: data?.birthdate ?? null };
+      const row = (data as Array<{ legal_name: string | null; birthdate: string | null }> | null)?.[0];
+      return { legal_name: row?.legal_name ?? null, birthdate: row?.birthdate ?? null };
     },
 
     async otherExtractions(userId, year) {

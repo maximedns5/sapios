@@ -338,3 +338,16 @@ Détail dans `docs/CONTRACT.md` (§2, §3, §5, §6), types dans `packages/share
 - **Politique de confidentialité** mise à jour : profil intellectuel, classement par affinités et opposition (tri par
   activité), filtre des textes, likes avec un mot, lettres de recommandation, événements, Vercel, nouvelles durées.
 
+## Sécurité : chiffrement en base (nom légal, date de naissance, signalements)
+
+- **Rien à configurer** : la migration `20261027090000_chiffrement_champs` crée la clé `field_key` dans Vault si elle
+  manque, chiffre les lignes existantes puis supprime les colonnes en clair. Vérifié sur une base remplie par le seed
+  de `main` (21 identités et 1 signalement, aucune différence après déchiffrement).
+- **Ne jamais recréer `field_key`** (ni sur staging ni en production) : sans l'ancienne clé, les données chiffrées sont
+  perdues. Elle est sauvegardée avec la base (Vault fait partie des sauvegardes Supabase).
+- **Lire le clair** : `get_my_identity()` (membre), `admin_list_identities(uuid[])`, `admin_list_reports(status, limit)`,
+  `admin_list_submissions` / `admin_get_submission` / `admin_get_report_context` (admin en aal2),
+  `server_get_identity(uuid)` (clé de service). Côté SQL serveur : `private.decrypt_text(bytea)`,
+  `private.encrypt_text(text)`, `private.store_identity(uuid, text, date)` (seed et tests).
+- **Âge** : calculé sur `profile_private.birth_month` (mois de naissance), donc jusqu'à un mois en avance.
+
