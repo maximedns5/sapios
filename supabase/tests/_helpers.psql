@@ -57,10 +57,10 @@ begin
          location = extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography,
          status = p_status
    where id = v;
+  perform private.store_identity(v, 'Membre Test ' || p_n,
+    ((now() at time zone 'Europe/Paris')::date - make_interval(years => p_age) - interval '10 days')::date);
   update public.profile_private
-     set legal_name = 'Membre Test ' || p_n,
-         birthdate = ((now() at time zone 'Europe/Paris')::date - make_interval(years => p_age) - interval '10 days')::date,
-         consent_sensitive_at = now(), consent_version = 'test'
+     set consent_sensitive_at = now(), consent_version = 'test'
    where user_id = v;
   insert into public.profile_photos (user_id, storage_path, position, moderation_status)
   values (v, v::text || '/a.jpg', 0, 'approved'), (v, v::text || '/b.jpg', 1, 'approved');

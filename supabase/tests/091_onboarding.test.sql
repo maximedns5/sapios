@@ -25,11 +25,10 @@ select throws_ok($$select public.set_identity('Jeanne Mineure', (current_date - 
 select lives_ok($$select public.set_identity('Jeanne Majeure', '1995-06-15')$$, 'identité enregistrée');
 select throws_ok($$select public.set_identity('Autre Nom', '1990-01-01')$$, 'P0001', 'identity_already_set',
   'identité non réécrivable');
-select results_eq(
-  $$with u as (update public.profile_private set legal_name = 'Autre Nom' where user_id = pg_temp.uid(1) returning 1)
-    select count(*)::int from u$$,
-  $$values (0)$$, 'écriture directe du nom légal sans effet');
-select results_eq($$select legal_name, birthdate from public.profile_private$$,
+select throws_ok(
+  $$update public.profile_private set legal_name_enc = 'x'::bytea where user_id = pg_temp.uid(1)$$,
+  '42501', null, 'écriture directe du nom légal chiffré refusée');
+select results_eq($$select (i ->> 'legal_name'), (i ->> 'birthdate')::date from public.get_my_identity() i$$,
   $$values ('Jeanne Majeure'::text, '1995-06-15'::date)$$, 'nom légal et date de naissance inchangés');
 
 select throws_ok($$select public.activate_profile()$$, 'P0001', 'profile_incomplete', 'activation : profil incomplet');

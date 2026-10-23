@@ -287,14 +287,14 @@ isOneToOne: false
                   ]
                 },"profile_private": {
                   Row: {
-                    "birthdate": string | null,"consent_sensitive_at": string | null,"consent_version": string | null,"created_at": string,"legal_name": string | null,"user_id": string
+                    "birth_month": string | null,"birthdate_enc": string | null,"consent_sensitive_at": string | null,"consent_version": string | null,"created_at": string,"legal_name_enc": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "birthdate"?: string | null,"consent_sensitive_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"legal_name"?: string | null,"user_id": string
+                    "birth_month"?: string | null,"birthdate_enc"?: string | null,"consent_sensitive_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"legal_name_enc"?: string | null,"user_id": string
                   }
                   Update: {
-                    "birthdate"?: string | null,"consent_sensitive_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"legal_name"?: string | null,"user_id"?: string
+                    "birth_month"?: string | null,"birthdate_enc"?: string | null,"consent_sensitive_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"legal_name_enc"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -385,14 +385,14 @@ isOneToOne: false
                   ]
                 },"reports": {
                   Row: {
-                    "content_item_id": string | null,"content_kind": Database["public"]['Enums']["content_kind"] | null,"created_at": string,"details": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"reason": string,"reporter_id": string | null,"reporter_pseudonym": string | null,"status": Database["public"]['Enums']["report_status"],"target_deleted_at": string | null,"target_id": string | null,"target_pseudonym": string | null
+                    "content_item_id": string | null,"content_kind": Database["public"]['Enums']["content_kind"] | null,"created_at": string,"details_enc": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"reason": string,"reporter_id": string | null,"reporter_pseudonym": string | null,"status": Database["public"]['Enums']["report_status"],"target_deleted_at": string | null,"target_id": string | null,"target_pseudonym": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "content_item_id"?: string | null,"content_kind"?: Database["public"]['Enums']["content_kind"] | null,"created_at"?: string,"details"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"reason": string,"reporter_id"?: string | null,"reporter_pseudonym"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_deleted_at"?: string | null,"target_id"?: string | null,"target_pseudonym"?: string | null
+                    "content_item_id"?: string | null,"content_kind"?: Database["public"]['Enums']["content_kind"] | null,"created_at"?: string,"details_enc"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"reason": string,"reporter_id"?: string | null,"reporter_pseudonym"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_deleted_at"?: string | null,"target_id"?: string | null,"target_pseudonym"?: string | null
                   }
                   Update: {
-                    "content_item_id"?: string | null,"content_kind"?: Database["public"]['Enums']["content_kind"] | null,"created_at"?: string,"details"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"reason"?: string,"reporter_id"?: string | null,"reporter_pseudonym"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_deleted_at"?: string | null,"target_id"?: string | null,"target_pseudonym"?: string | null
+                    "content_item_id"?: string | null,"content_kind"?: Database["public"]['Enums']["content_kind"] | null,"created_at"?: string,"details_enc"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"reason"?: string,"reporter_id"?: string | null,"reporter_pseudonym"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_deleted_at"?: string | null,"target_id"?: string | null,"target_pseudonym"?: string | null
                   }
                   Relationships: [
                     
@@ -527,9 +527,19 @@ isOneToOne: false
               "created_at": string,"current_text": string,"decision_reason": string,"display_name": string,"email": string,"excerpt": string,"handled_at": string,"handled_by": string,"id": string,"item_id": string,"item_status": Database["public"]['Enums']["photo_moderation"],"kind": Database["public"]['Enums']["content_kind"],"prompt_key": string,"reasons": (string)[],"report_details": string,"report_id": string,"report_reason": string,"source": string,"status": Database["public"]['Enums']["content_flag_status"],"user_id": string
             }[]
                            },
+"admin_list_identities":
+{ Args: { "p_user_ids": (string)[] }; Returns: {
+              "legal_name": string,"user_id": string
+            }[]
+                           },
 "admin_list_registrations":
 { Args: { "p_event_id": string }; Returns: {
               "checked_in_at": string,"created_at": string,"display_name": string,"id": string,"status": Database["public"]['Enums']["registration_status"],"status_changed_at": string,"ticket_code": string,"user_id": string,"waitlist_rank": number
+            }[]
+                           },
+"admin_list_reports":
+{ Args: { "p_limit"?: number,"p_status"?: Database["public"]['Enums']["report_status"] }; Returns: {
+              "content_item_id": string,"content_kind": Database["public"]['Enums']["content_kind"],"created_at": string,"details": string,"handled_at": string,"handled_by": string,"id": string,"reason": string,"reporter_id": string,"reporter_pseudonym": string,"status": Database["public"]['Enums']["report_status"],"target_deleted_at": string,"target_id": string,"target_pseudonym": string
             }[]
                            },
 "admin_list_submissions":
@@ -633,6 +643,9 @@ isOneToOne: false
               "display_name": string,"last_message": string,"last_message_at": string,"match_id": string,"other_id": string,"photo_path": string,"unread_count": number
             }[]
                            },
+"get_my_identity":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "get_my_referral":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -659,6 +672,9 @@ isOneToOne: false
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"is_admin_account":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "list_events":
 { Args: Record<PropertyKey, never>; Returns: Json[]
                            },
@@ -670,6 +686,11 @@ isOneToOne: false
                            },
 "report_user":
 { Args: { "p_content_item"?: string,"p_content_kind"?: Database["public"]['Enums']["content_kind"],"p_details": string,"p_reason": string,"p_target": string }; Returns: string
+                           },
+"server_get_identity":
+{ Args: { "p_user": string }; Returns: {
+              "birthdate": string,"legal_name": string
+            }[]
                            },
 "set_discovery_prefs":
 { Args: { "p_age_max"?: number,"p_age_min"?: number,"p_fields"?: (Database["public"]['Enums']["study_field"])[],"p_levels"?: (number)[],"p_max_distance_km"?: number,"p_sort"?: Database["public"]['Enums']["discovery_sort"],"p_strict_fields"?: boolean,"p_strict_levels"?: boolean }; Returns: Json
