@@ -24,7 +24,7 @@ if (PUSH_SUPPORTED) {
 }
 
 /** Champ data des notifications (contrat partagé), lu de façon tolérante. */
-export type PushData = Partial<SharedPushData & { match_id: string; message_id: string; copy_key: string }>;
+export type PushData = Partial<SharedPushData & { match_id: string; message_id: string; copy_key: string; event_id: string }>;
 
 let activeChatId: string | null = null;
 export function setActiveChat(matchId: string | null) {
@@ -70,5 +70,7 @@ export function routeForPush(data: PushData | undefined): string | null {
   if (!data?.type) return null;
   if ((data.type === 'message' || data.type === 'match') && data.match_id) return `/chat/${data.match_id}`;
   if (data.type === 'verdict') return '/';
+  // Événement : confirmation, place libérée, annulation, rappel la veille (lot 2).
+  if (data.type === 'event' && data.event_id) return `/events/${data.event_id}`;
   return null;
 }

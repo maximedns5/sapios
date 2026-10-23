@@ -1,4 +1,4 @@
-import type { DiscoveryCounts, ProfileView } from '@sapios/shared';
+import type { DiscoveryCounts, EventNotice, EventSummary, ProfileView } from '@sapios/shared';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { Button, IconButton } from '@/components/Button';
+import { EventBanner, EventNoticeCard } from '@/components/Events';
 import { EndOfSelection, FeedSkeleton, LoadError } from '@/components/FeedStates';
 import { CrossIcon, DotsIcon, SlidersIcon, VerifiedBadge } from '@/components/Icons';
 import { haptic, MaskUp, Rise } from '@/components/motion';
@@ -20,6 +21,7 @@ import { useApp } from '@/lib/app-state';
 import { describe, onCandidateDropped, onFeedReset, rememberCandidates } from '@/lib/candidates';
 import { useCopy } from '@/lib/copy';
 import { AppError, errorCode, errorMessage } from '@/lib/errors';
+import { dismissedEvents, dismissEvent, nextOpenEvent } from '@/lib/events';
 import { noteOwnMatch } from '@/lib/inbox';
 import { blockUser, openReport } from '@/lib/safety';
 import { colors, ease, radius, space } from '@/lib/theme';
@@ -35,6 +37,46 @@ type Like = { target: LikeTarget | null; comment?: string };
  * réponse aime cet élément, « Répondre » y joint un mot ; la croix passe. La carte s'en va du côté
  * choisi, la suivante monte. La fiche complète (get_profile) enrichit la carte dès qu'elle arrive.
  */
+/**
+ * Bandeau d'événement en tête de la découverte (lot 2) : d'abord un avis (place libérée, annulation),
+ * sinon le prochain événement ouvert, masquable. Rien si aucun des deux.
+ */
+function EventSlot() {
+  const { state, userId, refresh } = useApp();
+  const [next, setNext] = useState<EventSummary | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId || !state?.can_browse) return;
+      let active = true;
+      Promise.all([api.events(), dismissedEvents(userId)])
+        .then(([list, dismissed]) => active && setNext(nextOpenEvent(list, dismissed)))
+        .catch(() => {});
+      return () => {
+        active = false;
+      };
+    }, [state?.can_browse, userId]),
+  );
+  const notice = (state?.notices ?? []).find((n): n is EventNotice => n.kind === 'event_promoted' || n.kind === 'event_cancelled');
+  if (notice)
+    return (
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <EventNoticeCard notice={notice} onAck={() => api.ackNotice(notice.id).then(() => refresh()).catch(() => {})} />
+      </View>
+    );
+  if (!next) return null;
+  return (
+    <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+      <EventBanner
+        e={next}
+        onDismiss={() => {
+          if (userId) dismissEvent(userId, next.id);
+          setNext(null);
+        }}
+      />
+    </View>
+  );
+}
+
 export default function Feed() {
   const { state, refresh } = useApp();
   const { t } = useCopy();
@@ -243,6 +285,8 @@ export default function Feed() {
           </IconButton>
         </View>
       </View>
+
+      {!paused ? <EventSlot /> : null}
 
       {loading ? (
         <View style={{ paddingHorizontal: 16, paddingTop: 6 }}>

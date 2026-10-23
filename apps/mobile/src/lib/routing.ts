@@ -3,7 +3,7 @@ import type { MyState, VerdictVariant } from './types';
 /** Écran cible et chemins autorisés pour un état donné (routage piloté par get_my_state). */
 export type Route = { target: string; allowed: string[] };
 
-const APP_PATHS = ['/feed', '/likes', '/messages', '/account', '/criteria', '/chat', '/match', '/profile', '/report', '/settings'];
+const APP_PATHS = ['/feed', '/likes', '/messages', '/account', '/criteria', '/chat', '/match', '/profile', '/report', '/settings', '/events'];
 const DIPLOMA_FLOW = ['/diploma', '/diploma/analysis', '/diploma/review'];
 
 export const IN_REVIEW = ['pending', 'processing', 'needs_review'] as const;
@@ -70,6 +70,6 @@ export const SIGNED_OUT: Route = { target: '/sign-in', allowed: ['/sign-in', '/v
 
 /** Correspondance exacte, ou préfixe pour les zones à sous-routes dynamiques. */
 export function isAllowed(pathname: string, allowed: string[]): boolean {
-  const prefixed = ['/chat', '/match', '/profile', '/report', '/settings', '/onboarding'];
+  const prefixed = ['/chat', '/match', '/profile', '/report', '/settings', '/onboarding', '/events'];
   return allowed.some((p) => pathname === p || (prefixed.includes(p) && pathname.startsWith(`${p}/`)));
 }

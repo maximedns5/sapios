@@ -73,7 +73,7 @@ export function Gate() {
     });
     const received = Notifications.addNotificationReceivedListener((notification) => {
       const data = notification.request.content.data as PushData;
-      if (data?.type === 'verdict' || data?.type === 'match') refresh();
+      if (data?.type === 'verdict' || data?.type === 'match' || data?.type === 'event') refresh();
     });
     return () => {
       sub.remove();
