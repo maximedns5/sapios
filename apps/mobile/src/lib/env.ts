@@ -17,3 +17,13 @@ export const CONSENT_VERSION = '2026-10-v1';
 
 /** Site public (landing) : pages légales et contact. À régler sur l'hébergeur (EXPO_PUBLIC_SITE_URL). */
 export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://sapios.app').replace(/\/$/, '');
+
+/**
+ * Adresse de l'app membre, pour les liens partagés (lettres de recommandation). Sur le web, l'origine de
+ * la page ; sur téléphone, EXPO_PUBLIC_APP_URL (repli : le site public).
+ */
+export const APP_URL = (
+  process.env.EXPO_PUBLIC_APP_URL ||
+  (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '') ||
+  SITE_URL
+).replace(/\/$/, '');

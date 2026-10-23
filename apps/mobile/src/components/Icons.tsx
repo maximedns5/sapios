@@ -97,6 +97,24 @@ export const ClockIcon = (p: Props) => (
     <Circle cx={12} cy={12} r={9} />
   </Line>
 );
+export const CopyIcon = (p: Props) => (
+  <Line {...p} d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2">
+    <Rect x={8} y={8} width={12} height={12} rx={2.5} />
+  </Line>
+);
+export const ShareIcon = (p: Props) => <Line {...p} d={['M12 15V3M7 8l5-5 5 5', 'M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6']} />;
+export const LinkIcon = (p: Props) => <Line {...p} d={['M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1', 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1']} />;
+export const CalendarIcon = (p: Props) => (
+  <Line {...p} d="M3 10h18M8 3v4M16 3v4">
+    <Rect x={3} y={5} width={18} height={16} rx={3} />
+  </Line>
+);
+export const TicketIcon = (p: Props) => (
+  <Line
+    {...p}
+    d={['M3 9V6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5V9a3 3 0 0 0 0 6v2.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5V15a3 3 0 0 0 0-6z', 'M14 5v2M14 11v2M14 17v2']}
+  />
+);
 export const BellIcon = (p: Props) => <Line {...p} d={['M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z', 'M10 21h4']} />;
 export const LogoutIcon = (p: Props) => <Line {...p} d={['M10 4H5v16h5', 'M14 8l4 4-4 4', 'M18 12H9']} />;
 export const TrashIcon = (p: Props) => <Line {...p} d={['M4 7h16', 'M9 7V4h6v3', 'M6 7l1 13h10l1-13']} />;

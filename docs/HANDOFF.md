@@ -241,3 +241,22 @@ Détail des RPC dans `docs/CONTRACT.md` §3, types dans `packages/shared/src/com
   (statistiques, révocation, rétablissement, lettres par période) ; repère « Prioritaire · Recommandé·e par X » dans
   la file des diplômes, le détail d'un dossier et la liste d'attente ; tuiles et prochains événements sur la vue
   d'ensemble. Réglages regroupés sous un onglet « Réglages ».
+
+## Lot 2 : app membre (agent app) : pour le back-office et la suite
+
+- **Fait dans l'app** :
+  - lettres de recommandation (`/settings/letters`, entrée « Recommander quelqu'un » de « Mon profil » si
+    `can_refer`) : lien `<app>/?ref=<code>`, partage du navigateur ou du téléphone, copie, sceau de cire animé,
+    compteur sans nom ;
+  - lien de recommandation : le code est lu à l'ouverture (`lib/referral.ts`), gardé pendant la connexion, montré
+    sur l'écran de connexion (`get_referral_preview`), utilisé une fois connecté (`ReferralClaimer`), puis oublié ;
+    saisie manuelle du code possible ;
+  - verdict « liste d'attente » recommandé (`verdict.waitlist.referred` et `.detail`) avec l'animation de la file ;
+  - événements : bandeau en tête de la découverte (masquable), agenda `/events`, fiche `/events/[id]` (cible des
+    emails et des push `type: "event"`), charte et inscription, confirmation animée, billet `/events/[id]/ticket`
+    (QR code, adresse, calendrier .ics, itinéraire, annulation) ; avis `event_promoted` et `event_cancelled`.
+- **QR code** : `uqr` (MIT, sans dépendance), rendu en SVG dans `components/QrCode.tsx`, chargé avec le seul écran
+  du billet. Le QR contient le code de billet brut (12 caractères), lisible par `admin_check_in(p_ticket_code)`.
+- **Variable** : `EXPO_PUBLIC_APP_URL` (adresse de l'app pour les liens partagés depuis un téléphone ; sur le web,
+  l'origine de la page suffit).
+

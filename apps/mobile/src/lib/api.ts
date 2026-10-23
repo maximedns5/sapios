@@ -5,7 +5,13 @@ import {
   type DiscoveryCounts,
   type DiscoveryPrefs,
   type DiscoverySort,
+  type EventDetail,
+  type EventSummary,
+  type EventTicket,
   type LikedItem,
+  type MyReferral,
+  type ReferralPreview,
+  type RegistrationResult,
   type ContentKind,
   type ProfileView,
   type SearchBooksResponse,
@@ -100,4 +106,17 @@ export const api = {
   deleteAccount: () => invoke<DeleteAccountResponse>(EDGE_FUNCTIONS.deleteAccount),
   /** Recherche de livres, relayée par le serveur : Open Library ne voit jamais l'adresse du membre. */
   searchBooks: (q: string) => invoke<SearchBooksResponse>(EDGE_FUNCTIONS.searchBooks, { q }),
+
+  // Lettres de recommandation (lot 2) : le parrain ne voit qu'un compteur, jamais un nom ni un verdict.
+  myReferral: () => rpc<'get_my_referral', MyReferral>('get_my_referral'),
+  /** Ouvert sans connexion : le prénom du parrain, ou null si le code est inutilisable. */
+  referralPreview: (code: string) => rpc<'get_referral_preview', ReferralPreview>('get_referral_preview', { p_code: code }),
+  claimReferral: (code: string) => rpc<'claim_referral', { referrer_first_name: string | null }>('claim_referral', { p_code: code }),
+
+  // Événements gratuits (lot 2) : jamais la liste des inscrits ; le lieu exact seulement pour une place confirmée.
+  events: () => rpc<'list_events', EventSummary[]>('list_events'),
+  event: (id: string) => rpc<'get_event', EventDetail>('get_event', { p_id: id }),
+  registerEvent: (id: string) => rpc<'register_event', RegistrationResult>('register_event', { p_id: id, p_accept_charter: true }),
+  cancelRegistration: (id: string) => rpc<'cancel_registration', RegistrationResult>('cancel_registration', { p_id: id }),
+  ticket: (id: string) => rpc<'get_my_ticket', EventTicket>('get_my_ticket', { p_id: id }),
 };

@@ -320,3 +320,17 @@ Pages « Événements », « Inscrits » (par événement) et « Parrainages » 
 7. **Landing** : un lien `/?ref=CODE` enregistre l'inscription à la liste d'attente avec `source = ref:CODE` (code
    normalisé et vérifié) ; la liste d'attente l'affiche « Recommandation · CODE ».
 
+## Lot 2 : app membre (agent app, 23 oct. 2026)
+
+1. **Pas de rang chiffré dans le verdict « recommandé »** : la maquette montrait « 42e → 37e », mais la base ne
+   publie aucune position sur la liste d'attente. L'app montre une file de dossiers anonymes où le vôtre remonte :
+   une illustration, sans chiffre inventé.
+2. **Lien de recommandation** : `<app>/?ref=<code>` (`referralLink` du paquet partagé) plutôt que `sapios.app/r/<code>`
+   des maquettes ; aucune route courte n'existe côté site.
+3. **Agenda sans barre d'onglets** : `/events` et ses écrans sont des pages empilées (retour en haut à gauche), comme
+   les critères, et non un onglet caché : la découverte reste l'entrée (bandeau), et « Mon profil » → « Mes événements ».
+4. **Charte** : les quatre règles résumées sont dans l'app ; le texte complet vient de `events.charter` (back-office).
+   Pas de prénom de référente : la base n'en connaît pas, l'app parle d'« une personne de l'équipe ».
+5. **Programme** : la description de l'événement est affichée telle quelle, paragraphe par paragraphe (pas de champ
+   « programme » ni d'heures structurées en base).
+

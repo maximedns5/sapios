@@ -14,6 +14,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { OverlayProvider } from '@/components/Overlay';
 import { Gate } from '@/components/Gate';
+import { ReferralClaimer } from '@/components/ReferralClaimer';
 import { AppStateProvider, useApp } from '@/lib/app-state';
 import { CopyProvider } from '@/lib/copy';
 import { InboxProvider } from '@/lib/inbox';
@@ -74,10 +75,12 @@ export default function RootLayout() {
               <OverlayProvider>
                 <InboxProvider>
                   <Gate />
+                  <ReferralClaimer />
                   <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: colors.bg } }}>
                     <Stack.Screen name="match/[matchId]" options={{ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } }} />
                     <Stack.Screen name="report/[userId]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
                     <Stack.Screen name="criteria" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+                    <Stack.Screen name="events/[id]/confirmed" options={{ animation: 'fade' }} />
                   </Stack>
                 </InboxProvider>
               </OverlayProvider>
