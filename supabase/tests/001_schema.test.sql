@@ -70,17 +70,19 @@ select has_trigger('public', 'degree_submissions', 'degree_submissions_enqueue',
 select has_trigger('public', 'messages', 'messages_notify', 'trigger notify sur les messages');
 select has_trigger('public', 'matches', 'matches_notify', 'trigger notify sur les matches');
 
--- Seule exception : referrals.referrer_id (on delete set null) garde la priorité du filleul
--- quand le parrain supprime son compte (lot 2).
+-- Exceptions : referrals.referrer_id (on delete set null) garde la priorité du filleul quand le
+-- parrain supprime son compte (lot 2) ; reports.reporter_id et reports.target_id (on delete set null)
+-- gardent les signalements, pseudonymisés, après la suppression d'un compte (conformité).
 select is(
-  (select array_agg(cl.relname::text || '.' || a.attname::text order by cl.relname::text)
+  (select array_agg(cl.relname::text || '.' || a.attname::text order by cl.relname::text || '.' || a.attname::text)
      from pg_constraint con
      join pg_class cl on cl.oid = con.conrelid
      join pg_namespace n on n.oid = cl.relnamespace
      join pg_attribute a on a.attrelid = con.conrelid and a.attnum = any (con.conkey)
     where con.contype = 'f' and n.nspname = 'public'
       and con.confrelid = 'auth.users'::regclass and con.confdeltype <> 'c'),
-  array['referrals.referrer_id'], 'clés étrangères vers auth.users en cascade, sauf referrals.referrer_id');
+  array['referrals.referrer_id', 'reports.reporter_id', 'reports.target_id'],
+  'clés étrangères vers auth.users en cascade, sauf referrals.referrer_id et les deux de reports');
 
 select is(
   (select count(*)::int from pg_constraint con where con.conrelid = 'public.audit_log'::regclass and con.contype = 'f'),

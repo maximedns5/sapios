@@ -171,3 +171,12 @@ Deno.test("rappel de la veille : toutes les places confirmées", async () => {
   assertEquals(msgs.map((m) => m.to), ["ExponentPushToken[aaa]", "ExponentPushToken[bbb]"]);
   assertEquals(msgs[0].body, "C'est demain : Dîner de thèse, samedi 14 novembre à 19 h 30.");
 });
+
+Deno.test("inactivité : jamais de push (email et avis dans l'app seulement)", async () => {
+  const msgs = await buildMessages(store().s, {
+    type: "inactivity",
+    user_id: "11111111-1111-4111-8111-111111111111",
+    delete_after: "2028-12-14",
+  });
+  assertEquals(msgs, []);
+});

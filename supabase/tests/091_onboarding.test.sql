@@ -2,7 +2,7 @@
 -- pause, localisation arrondie, photos, jetons push, export.
 begin;
 \ir _helpers.psql
-select plan(26);
+select plan(28);
 
 do $$
 begin
@@ -48,6 +48,9 @@ select throws_ok(
   '23514', null, 'photo hors de son dossier refusée');
 select throws_ok($$select public.activate_profile()$$, 'P0001', 'consent_missing', 'activation : consentement manquant');
 select lives_ok($$select public.set_sensitive_consent(true, '2026-10')$$, 'consentement donné');
+select throws_ok($$select public.activate_profile()$$, 'P0001', 'terms_required', 'activation : CGU non acceptées');
+select lives_ok($$select public.accept_terms(public.get_my_state() -> 'terms' ->> 'current_version')$$,
+  'CGU acceptées');
 select lives_ok($$select public.activate_profile()$$, 'activation');
 select is(public.get_my_state() ->> 'profile_status', 'active', 'profil actif');
 

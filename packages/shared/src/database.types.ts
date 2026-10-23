@@ -385,14 +385,14 @@ isOneToOne: false
                   ]
                 },"reports": {
                   Row: {
-                    "content_item_id": string | null,"content_kind": Database["public"]['Enums']["content_kind"] | null,"created_at": string,"details": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"reason": string,"reporter_id": string,"status": Database["public"]['Enums']["report_status"],"target_id": string
+                    "content_item_id": string | null,"content_kind": Database["public"]['Enums']["content_kind"] | null,"created_at": string,"details": string | null,"handled_at": string | null,"handled_by": string | null,"id": string,"reason": string,"reporter_id": string | null,"reporter_pseudonym": string | null,"status": Database["public"]['Enums']["report_status"],"target_deleted_at": string | null,"target_id": string | null,"target_pseudonym": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "content_item_id"?: string | null,"content_kind"?: Database["public"]['Enums']["content_kind"] | null,"created_at"?: string,"details"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"reason": string,"reporter_id": string,"status"?: Database["public"]['Enums']["report_status"],"target_id": string
+                    "content_item_id"?: string | null,"content_kind"?: Database["public"]['Enums']["content_kind"] | null,"created_at"?: string,"details"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"reason": string,"reporter_id"?: string | null,"reporter_pseudonym"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_deleted_at"?: string | null,"target_id"?: string | null,"target_pseudonym"?: string | null
                   }
                   Update: {
-                    "content_item_id"?: string | null,"content_kind"?: Database["public"]['Enums']["content_kind"] | null,"created_at"?: string,"details"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"reason"?: string,"reporter_id"?: string,"status"?: Database["public"]['Enums']["report_status"],"target_id"?: string
+                    "content_item_id"?: string | null,"content_kind"?: Database["public"]['Enums']["content_kind"] | null,"created_at"?: string,"details"?: string | null,"handled_at"?: string | null,"handled_by"?: string | null,"id"?: string,"reason"?: string,"reporter_id"?: string | null,"reporter_pseudonym"?: string | null,"status"?: Database["public"]['Enums']["report_status"],"target_deleted_at"?: string | null,"target_id"?: string | null,"target_pseudonym"?: string | null
                   }
                   Relationships: [
                     
@@ -407,6 +407,20 @@ isOneToOne: false
                   }
                   Update: {
                     "comment"?: string | null,"created_at"?: string,"direction"?: Database["public"]['Enums']["swipe_direction"],"liked_item"?: string | null,"swiper_id"?: string,"target_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"terms_acceptances": {
+                  Row: {
+                    "accepted_at": string,"user_id": string,"version": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "accepted_at"?: string,"user_id": string,"version": string
+                  }
+                  Update: {
+                    "accepted_at"?: string,"user_id"?: string,"version"?: string
                   }
                   Relationships: [
                     
@@ -471,7 +485,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "ack_notice":
+            "accept_terms":
+{ Args: { "p_version": string }; Returns: Json
+                           },
+"ack_notice":
 { Args: { "p_id": string }; Returns: undefined
                            },
 "activate_profile":
@@ -630,6 +647,14 @@ isOneToOne: false
                            },
 "get_referral_preview":
 { Args: { "p_code": string }; Returns: Json
+                           },
+"inactive_accounts_to_purge":
+{ Args: { "p_limit"?: number }; Returns: {
+              "user_id": string
+            }[]
+                           },
+"inactive_purge_eligible":
+{ Args: { "p_user": string }; Returns: boolean
                            },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean

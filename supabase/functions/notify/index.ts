@@ -1,5 +1,6 @@
 // Appelée par trigger (pg_net) au match et au message, avec l'en-tête x-sapios-secret ; par les RPC
-// d'événements (inscription, place libérée, annulation) et par le rappel de la veille (pg_cron).
+// d'événements (inscription, place libérée, annulation), par le rappel de la veille (pg_cron) et par
+// l'avertissement d'inactivité (pg_cron, conformité : email seulement).
 // Le verdict passe directement par `_shared/notify.ts` depuis `review-diploma`, mais reste accepté ici.
 // Push Expo pour tout ; email (Resend) pour le verdict, le match et les événements, jamais les messages.
 import { adminClient, requireInternalSecret } from "../_shared/auth.ts";
@@ -28,6 +29,13 @@ function parseRequest(body: Record<string, unknown>): NotifyRequest {
     case "event_reminder":
       if (isUuid(body.event_id)) return { type: "event_reminder", event_id: body.event_id };
       break;
+    case "inactivity": {
+      const deleteAfter = asString(body.delete_after);
+      if (isUuid(body.user_id) && deleteAfter && /^\d{4}-\d{2}-\d{2}$/.test(deleteAfter)) {
+        return { type: "inactivity", user_id: body.user_id, delete_after: deleteAfter };
+      }
+      break;
+    }
   }
   throw new HttpError(400, "invalid_body");
 }

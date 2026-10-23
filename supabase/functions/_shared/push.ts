@@ -144,6 +144,9 @@ export async function buildMessages(store: PushStore, req: NotifyRequest): Promi
       body: fill(text, { name: names.get(msg.sender_id) ?? "" }),
       data: { type: "message", match_id: msg.match_id, message_id: req.message_id },
     }));
+  } else if (req.type === "inactivity") {
+    // Avertissement d'inactivité : email et avis dans l'app, pas de push.
+    return [];
   } else if (req.type === "event" || req.type === "event_reminder") {
     const found = await eventTargets(store, req);
     if (!found) return [];

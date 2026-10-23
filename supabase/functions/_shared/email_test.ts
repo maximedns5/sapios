@@ -8,6 +8,8 @@ import {
   type EmailConfig,
   EVENT_EMAIL_COPY_KEYS,
   emailConfigFromEnv,
+  formatDay,
+  INACTIVITY_EMAIL_COPY_KEYS,
   type EmailDeps,
   type EmailStore,
   RESEND_API_URL,
@@ -370,4 +372,38 @@ Deno.test("clés email d'événement : toutes créées par une migration idempot
   assert(sql, "aucune migration ne crée les textes des emails d'événement");
   for (const key of EVENT_EMAIL_COPY_KEYS) assertStringIncludes(sql, `('${key}', 'fr',`);
   assertStringIncludes(sql, "on conflict (key, locale) do nothing");
+});
+
+Deno.test("inactivité : un email au membre averti, avec la date de suppression et le lien de l'app", async () => {
+  const [email, ...rest] = await buildEmails(store(), CONFIG, { type: "inactivity", user_id: A, delete_after: "2028-12-14" });
+  assertEquals(rest, []);
+  assertEquals(email.to, "alice@exemple.fr");
+  assertEquals(email.kind, "inactivity");
+  assertStringIncludes(email.subject, "14 décembre 2028");
+  assertStringIncludes(email.text, "Alice");
+  assertStringIncludes(email.html, "https://app.sapios.test/");
+  assertEquals(email.idempotencyKey, `inactivity-${A}-2028-12-14`);
+});
+
+Deno.test("inactivité : compte banni ou supprimé, aucun email ; jamais de push", async () => {
+  const none = store({ recipients: () => Promise.resolve(new Map()) });
+  assertEquals(await buildEmails(none, CONFIG, { type: "inactivity", user_id: A, delete_after: "2028-12-14" }), []);
+});
+
+Deno.test("date de suppression : « 14 décembre 2028 », vide si illisible", () => {
+  assertEquals(formatDay("2028-12-14"), "14 décembre 2028");
+  assertEquals(formatDay("demain"), "");
+});
+
+Deno.test("clés de l'email d'inactivité : créées par une migration idempotente, avec {date}", async () => {
+  const dir = new URL("../../migrations/", import.meta.url);
+  let sql = "";
+  for await (const entry of Deno.readDir(dir)) {
+    const content = await Deno.readTextFile(new URL(entry.name, dir));
+    if (content.includes("'email.inactivity.subject'")) sql = content;
+  }
+  assert(sql, "aucune migration ne crée les textes de l'email d'inactivité");
+  for (const key of INACTIVITY_EMAIL_COPY_KEYS) assertStringIncludes(sql, `('${key}', 'fr',`);
+  assertStringIncludes(sql, "on conflict (key, locale) do nothing");
+  assertStringIncludes(sql, "{date}");
 });

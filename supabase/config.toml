@@ -476,5 +476,8 @@ verify_jwt = true
 [functions.purge-diplomas]
 verify_jwt = false
 
+[functions.purge-inactive]
+verify_jwt = false
+
 [functions.search-books]
 verify_jwt = true
