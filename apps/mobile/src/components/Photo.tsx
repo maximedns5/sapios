@@ -2,17 +2,18 @@ import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { signedPhotoUrls } from '@/lib/media';
+import { signedPhotoUrls, type PhotoBucket } from '@/lib/media';
 import { colors, fonts } from '@/lib/theme';
 import { Body } from './Text';
 
-export function useSignedUrls(paths: string[]): Record<string, string> {
+/** URL signées (5 min, en cache) des photos privées d'un bucket ; chaîne vide si l'objet est absent ou interdit. */
+export function useSignedUrls(paths: string[], bucket: PhotoBucket = 'offer-photos'): Record<string, string> {
   const [urls, setUrls] = useState<Record<string, string>>({});
-  const key = paths.join('|');
+  const key = `${bucket}:${paths.join('|')}`;
   useEffect(() => {
     let alive = true;
     if (!paths.length) return;
-    signedPhotoUrls(paths).then((map) => alive && setUrls(map));
+    signedPhotoUrls(paths, bucket).then((map) => alive && setUrls(map));
     return () => {
       alive = false;
     };
@@ -21,7 +22,7 @@ export function useSignedUrls(paths: string[]): Record<string, string> {
   return urls;
 }
 
-/** Photo privée (URL signée courte). En attendant ou à défaut : fond chaud et initiale. */
+/** Photo privée (URL signée courte). En attendant ou à défaut : fond chaud et initiale. Jamais de photo de candidat. */
 export function Photo({
   path,
   url,
@@ -62,17 +63,6 @@ export function Photo({
           </Body>
         </View>
       )}
-    </View>
-  );
-}
-
-/** Avatar rond (listes, en-têtes de conversation). `ring` : anneau d'accent (nouveau match). */
-export function Avatar({ path, url, name, size = 52, ring }: { path?: string | null; url?: string; name: string; size?: number; ring?: boolean }) {
-  return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, padding: ring ? 3 : 0, backgroundColor: ring ? colors.accent : 'transparent' }}>
-      <View style={{ flex: 1, borderRadius: size / 2, overflow: 'hidden', borderWidth: ring ? 2 : 0, borderColor: '#FFFFFF' }}>
-        <Photo path={path} url={url} name={name} initialSize={size * 0.4} style={{ flex: 1 }} />
-      </View>
     </View>
   );
 }

@@ -15,7 +15,7 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Sapios utilise l'appareil photo pour photographier votre diplôme.",
-        "NSPhotoLibraryUsageDescription": "Sapios accède à vos photos pour votre profil et votre diplôme.",
+        "NSPhotoLibraryUsageDescription": "Sapios accède à vos photos pour la vérification de votre diplôme.",
         "NSLocationWhenInUseUsageDescription": "Sapios utilise une position arrondie (environ 1 km) pour afficher des distances approximatives."
       }
     },

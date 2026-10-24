@@ -11,7 +11,7 @@ import { Body, Small, Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
 import { useCopy } from '@/lib/copy';
 import { formatBytes } from '@/lib/diploma';
-import { loadLegalName } from '@/lib/profile';
+import { emploi } from '@/lib/emploi';
 import { colors, ease, radius } from '@/lib/theme';
 
 const CARD = 210;
@@ -95,7 +95,10 @@ export default function Analysis() {
   const [key, replay] = useReplay();
 
   useEffect(() => {
-    if (userId) loadLegalName(userId).then(setLegal);
+    emploi
+      .myIdentity()
+      .then((i) => i && setLegal(`${i.first_name} ${i.last_name}`))
+      .catch(() => {});
   }, [userId]);
 
   const file = [name || (kind === 'pdf' ? 'PDF' : 'Image'), size ? formatBytes(Number(size)) : null].filter(Boolean).join(' · ');
@@ -126,7 +129,7 @@ export default function Analysis() {
             <Title size={34}>C’est envoyé.</Title>
           </MaskUp>
           <Rise delay={300}>
-            <Body secondary>Einstein n’était pas disponible : c’est une personne de notre équipe qui relit votre diplôme.</Body>
+            <Body secondary>Une personne de notre équipe relit votre diplôme. Aucun algorithme ne décide.</Body>
           </Rise>
         </View>
         <Rise delay={400} style={{ borderWidth: 1, borderColor: colors.line, borderRadius: radius.card, paddingHorizontal: 20, paddingVertical: 4 }}>
@@ -139,7 +142,7 @@ export default function Analysis() {
         <Rise delay={2500} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <BellIcon size={18} color={colors.secondary} />
           <Body weight="semibold" size={14.5} secondary>
-            Le verdict s’affichera ici dès qu’il tombe.
+            Le badge apparaîtra sur votre profil dès qu’il est validé.
           </Body>
         </Rise>
       </View>

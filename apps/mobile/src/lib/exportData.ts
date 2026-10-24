@@ -2,12 +2,12 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
-import { api } from './api';
+import { emploi } from './emploi';
 import { AppError } from './errors';
 
-/** Export RGPD : export_my_data → fichier JSON partagé (feuille de partage native, téléchargement sur le web). */
+/** Export RGPD : export_my_emploi_data → fichier JSON partagé (feuille de partage native, téléchargement sur le web). */
 export async function exportMyData(): Promise<string> {
-  const data = await api.exportData();
+  const data = await emploi.exportData();
   const json = JSON.stringify(data, null, 2);
   const name = `sapios-export-${new Date().toISOString().slice(0, 10)}.json`;
   if (Platform.OS === 'web') {

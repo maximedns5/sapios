@@ -3,10 +3,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
-import { splitHeadline } from '@/lib/copy';
 import { colors, ease, radius } from '@/lib/theme';
 import { Button } from './Button';
-import { CheckIcon, ChevronRightIcon, HeartIcon, ReplayIcon, SlidersIcon, UserIcon, WifiIcon } from './Icons';
+import { CheckIcon, ChevronRightIcon, ReplayIcon, SlidersIcon, UserIcon, WifiIcon } from './Icons';
 import { MaskUp, PopIn, Rise } from './motion';
 import { Body, Small, Title } from './Text';
 
@@ -53,47 +52,37 @@ function Option({ icon, title, sub, onPress, testID }: { icon: ReactNode; title:
 }
 
 /**
- * Fin de sélection : tout a été vu, ou les critères excluent tout le monde (`tooStrict`, d'après
- * count_discovery). Des leviers réels (critères, profil, likes), jamais une impasse.
+ * Fin des offres : tout a été vu dans la zone de recherche. Des leviers réels (zone, contrats, CV),
+ * jamais une impasse.
  */
-export function EndOfSelection({ text, seesLikers, onRefresh, tooStrict }: { text: string; seesLikers: boolean; onRefresh: () => void; tooStrict?: boolean }) {
-  // « Personne ne remplit vos critères. Ils sont peut-être trop élevés. » : titre, puis la suite.
-  const [head, rest] = splitHeadline(text);
+export function EndOfOffers({ text, onRefresh }: { text: string; onRefresh: () => void }) {
   return (
-    <View style={{ gap: 18, paddingTop: 12 }} testID="feed-empty">
+    <View style={{ gap: 18, paddingTop: 12 }} testID="offers-empty">
       <View style={{ height: 190, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         {[0, 1, 2].map((i) => (
           <StackedCard key={i} index={i} />
         ))}
         <PopIn delay={650} style={{ position: 'absolute' }}>
           <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#FFFFFF' }}>
-            {tooStrict ? <SlidersIcon size={24} color="#FFFFFF" /> : <CheckIcon size={26} stroke={2.8} color="#FFFFFF" />}
+            <CheckIcon size={26} stroke={2.8} color="#FFFFFF" />
           </View>
         </PopIn>
       </View>
       <View style={{ gap: 8 }}>
         <MaskUp delay={300}>
           <Title size={28} align="center">
-            {tooStrict ? head : 'Vous avez tout vu pour aujourd’hui'}
+            Vous avez tout vu
           </Title>
         </MaskUp>
         <Rise delay={420}>
           <Body secondary align="center">
-            {tooStrict ? rest : text}
+            {text}
           </Body>
         </Rise>
       </View>
-      {tooStrict ? (
-        <Rise delay={480}>
-          <Button testID="empty-widen" label="Élargir mes critères" onPress={() => router.push('/criteria')} icon={<SlidersIcon size={20} color="#FFFFFF" />} />
-        </Rise>
-      ) : null}
       <Rise delay={520} style={{ gap: 10 }}>
-        {tooStrict ? null : (
-          <Option testID="empty-criteria" icon={<SlidersIcon size={20} color={colors.accent} />} title="Élargir mes critères" sub="Âge, distance, niveaux, domaines" onPress={() => router.push('/criteria')} />
-        )}
-        <Option testID="empty-profile" icon={<UserIcon size={20} color={colors.accent} />} title="Compléter mon profil" sub="Réponses, bibliothèque, photos" onPress={() => router.navigate('/account')} />
-        {seesLikers ? <Option icon={<HeartIcon size={20} color={colors.accent} />} title="Voir qui vous a liké" sub="Un like en retour, et c’est un match" onPress={() => router.navigate('/likes')} /> : null}
+        <Option testID="empty-search" icon={<SlidersIcon size={20} color={colors.accent} />} title="Élargir ma recherche" sub="Zone, rayon, contrats" onPress={() => router.push('/settings/search')} />
+        <Option testID="empty-cv" icon={<UserIcon size={20} color={colors.accent} />} title="Compléter mon CV" sub="Compétences, langues, expériences" onPress={() => router.push('/settings/cv')} />
       </Rise>
       <Button label="Actualiser" variant="ghost" onPress={onRefresh} icon={<ReplayIcon size={18} color={colors.muted} />} />
     </View>
@@ -141,7 +130,7 @@ export function LoadError({ network, message, onRetry }: { network: boolean; mes
       </MaskUp>
       <Rise delay={280}>
         <Body secondary align="center">
-          {network ? 'Impossible de charger les profils pour le moment. Votre sélection est intacte.' : message}
+          {network ? 'Impossible de charger les offres pour le moment. Rien n’est perdu.' : message}
         </Body>
       </Rise>
       {network ? (
@@ -166,7 +155,7 @@ export function FeedSkeleton() {
   }, [o, reduced]);
   const style = useAnimatedStyle(() => ({ opacity: o.value }));
   return (
-    <Animated.View style={[{ gap: 14 }, style]} accessibilityLabel="Chargement des profils" accessibilityRole="progressbar">
+    <Animated.View style={[{ gap: 14 }, style]} accessibilityLabel="Chargement" accessibilityRole="progressbar">
       <View style={{ width: 160, height: 32, borderRadius: 10, backgroundColor: colors.surface }} />
       <View style={{ width: 120, height: 16, borderRadius: 8, backgroundColor: colors.surface }} />
       <View style={{ height: 380, borderRadius: radius.card, backgroundColor: colors.surface }} />

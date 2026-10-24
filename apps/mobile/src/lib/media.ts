@@ -11,8 +11,7 @@ export const MAX_DIPLOMA_BYTES = 15 * 1024 * 1024;
 export type LocalFile = { uri: string; mime: string; name?: string | null; size?: number | null; width?: number; height?: number };
 
 /**
- * Convertit toute image (HEIC compris) en JPEG redimensionné. L'API d'extraction ne lit pas le HEIC
- * et les photos de profil n'ont pas besoin de plus de 1600 px.
+ * Convertit toute image (HEIC compris) en JPEG redimensionné : la revue du diplôme ne lit pas le HEIC.
  */
 export async function toJpeg(uri: string, maxSide: number, quality = 0.82, dims?: { width?: number; height?: number }): Promise<LocalFile> {
   try {
@@ -52,7 +51,7 @@ export function uuid(): string {
 }
 
 /** Upload dans un bucket privé, sous {uid}/{uuid}.{ext}. Retourne le chemin d'objet. */
-export async function uploadToBucket(bucket: 'photos' | 'diplomas', userId: string, file: LocalFile, ext: string): Promise<{ path: string; size: number }> {
+export async function uploadToBucket(bucket: 'diplomas', userId: string, file: LocalFile, ext: string): Promise<{ path: string; size: number }> {
   const bytes = await readBytes(file.uri);
   if (bucket === 'diplomas' && bytes.byteLength > MAX_DIPLOMA_BYTES) throw new AppError('too_large');
   const path = `${userId}/${uuid()}.${ext}`;
@@ -70,22 +69,25 @@ export async function uploadToBucket(bucket: 'photos' | 'diplomas', userId: stri
 const SIGNED_TTL = 300;
 const signedCache = new Map<string, { url: string; expires: number }>();
 
-export async function signedPhotoUrls(paths: string[]): Promise<Record<string, string>> {
+/** Buckets privés lus par l'app : photos des offres (lieu de travail, manager, équipe). */
+export type PhotoBucket = 'offer-photos';
+
+export async function signedPhotoUrls(paths: string[], bucket: PhotoBucket = 'offer-photos'): Promise<Record<string, string>> {
   const now = Date.now();
   const result: Record<string, string> = {};
   const missing: string[] = [];
   for (const p of paths) {
-    const hit = signedCache.get(p);
+    const hit = signedCache.get(`${bucket}/${p}`);
     if (hit && hit.expires > now) result[p] = hit.url;
     else missing.push(p);
   }
   if (missing.length) {
-    const { data, error } = await supabase.storage.from('photos').createSignedUrls(missing, SIGNED_TTL);
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrls(missing, SIGNED_TTL);
     if (!error && data) {
       for (const row of data) {
         if (row.signedUrl && row.path) {
           result[row.path] = row.signedUrl;
-          signedCache.set(row.path, { url: row.signedUrl, expires: now + (SIGNED_TTL - 60) * 1000 });
+          signedCache.set(`${bucket}/${row.path}`, { url: row.signedUrl, expires: now + (SIGNED_TTL - 60) * 1000 });
         }
       }
     }
@@ -95,6 +97,6 @@ export async function signedPhotoUrls(paths: string[]): Promise<Record<string, s
   return result;
 }
 
-export function forgetSignedUrl(path: string) {
-  signedCache.delete(path);
+export function forgetSignedUrl(path: string, bucket: PhotoBucket = 'offer-photos') {
+  signedCache.delete(`${bucket}/${path}`);
 }
