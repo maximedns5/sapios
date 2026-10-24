@@ -14,7 +14,7 @@ import { Backdrop, SheetFrame } from '@/components/Overlay';
 import { Body, Small, Title } from '@/components/Text';
 import { emploi, notifyApplied } from '@/lib/emploi';
 import { errorCode, errorMessage } from '@/lib/errors';
-import { formatShortDate } from '@/lib/format';
+import { endSentence, formatShortDate } from '@/lib/format';
 import { goToTab } from '@/lib/nav';
 import { findTarget, offerTargets } from '@/lib/targets';
 import { colors } from '@/lib/theme';
@@ -83,7 +83,7 @@ export default function Apply() {
               </MaskUp>
               <Rise delay={450}>
                 <Body secondary align="center">
-                  {company} voit votre CV anonyme. Réponse au plus tard le {formatShortDate(sent.due)}.
+                  {company} voit votre CV anonyme. Réponse au plus tard le {endSentence(formatShortDate(sent.due))}
                 </Body>
               </Rise>
               <Rise delay={550} style={{ alignSelf: 'stretch', gap: 6, marginTop: 6 }}>

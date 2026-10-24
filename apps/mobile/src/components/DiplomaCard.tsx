@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { useApp } from '@/lib/app-state';
 import { useCopy } from '@/lib/copy';
-import { formatShortDate } from '@/lib/format';
+import { endSentence, formatShortDate } from '@/lib/format';
 import { isInReview } from '@/lib/types';
 import { alpha, colors, radius } from '@/lib/theme';
 import { CapIcon, VerifiedBadge } from './Icons';
@@ -39,7 +39,7 @@ export function DiplomaCard() {
             {d
               ? [d.study_field ? STUDY_FIELD_LABELS[d.study_field] : null, d.institution].filter(Boolean).join(' · ') || `Vérifié le ${formatShortDate(d.verified_at)}`
               : inReview && sub
-                ? `Envoyé le ${formatShortDate(sub.created_at)}. ${t('review.delay')}`
+                ? `Envoyé le ${endSentence(formatShortDate(sub.created_at))} ${t('review.delay')}`
                 : 'Facultatif. Il rassure les recruteurs, sans jamais vous fermer une offre.'}
           </Small>
         </View>
