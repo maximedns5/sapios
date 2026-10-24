@@ -53,23 +53,59 @@ const RETENTION = [
   },
   {
     key: "notice_retention_days",
-    label: "Avis aux membres",
-    help: "Motifs de retrait, annulations, places obtenues.",
+    label: "Avis dans l’app",
+    help: "Décisions sur une candidature, une offre ou une entreprise, avis d’inactivité.",
     def: 365,
     min: 30,
     max: 1825,
   },
+  {
+    key: "application_content_retention_days",
+    label: "Contenu d’une candidature close",
+    help: "Mot du candidat, messages, notes et message de refus, effacés ensuite ; statut et dates restent.",
+    def: 180,
+    min: 30,
+    max: 730,
+  },
+  {
+    key: "offer_lifetime_days",
+    label: "Durée de vie d’une offre publiée",
+    help: "Au-delà, l’offre expire et disparaît des candidats.",
+    def: 60,
+    min: 15,
+    max: 120,
+  },
 ] as const;
 type RetentionKey = (typeof RETENTION)[number]["key"];
 
-const KEYS = [...RETENTION.map((r) => r.key), "terms_version"];
+// Versions en vigueur des deux textes à accepter (docs/EMPLOI_CONTRACT.md §2).
+const TERMS = [
+  {
+    key: "emploi_terms_candidate_version",
+    title: "CGU candidats",
+    who: "chaque candidat",
+    where: "l’application",
+    href: "/cgu",
+    page: "la page CGU",
+  },
+  {
+    key: "emploi_terms_recruiter_version",
+    title: "Conditions générales recruteurs",
+    who: "chaque recruteur",
+    where: "l’espace recruteur",
+    href: "/conditions-recruteurs",
+    page: "la page des conditions recruteurs",
+  },
+] as const;
+type TermsKey = (typeof TERMS)[number]["key"];
+
+const KEYS = [...RETENTION.map((r) => r.key), ...TERMS.map((t) => t.key)];
 const CONFIRM_WORD = "PUBLIER";
 
 interface Loaded {
   values: Record<RetentionKey, string>;
   stored: Record<RetentionKey, boolean>;
-  termsVersion: string | null;
-  termsUpdatedAt: string | null;
+  terms: Record<TermsKey, { version: string | null; updated_at: string | null }>;
   updated_at: string | null;
 }
 
@@ -78,12 +114,15 @@ async function load(): Promise<Loaded> {
   if (error) throw error;
   const rows = (data ?? []) as Array<{ key: string; value: unknown; updated_at: string }>;
   const get = (key: string) => rows.find((r) => r.key === key);
-  const terms = get("terms_version");
   return {
     values: Object.fromEntries(RETENTION.map((r) => [r.key, String(get(r.key)?.value ?? r.def)])) as Record<RetentionKey, string>,
     stored: Object.fromEntries(RETENTION.map((r) => [r.key, Boolean(get(r.key))])) as Record<RetentionKey, boolean>,
-    termsVersion: terms ? String(terms.value) : null,
-    termsUpdatedAt: terms?.updated_at ?? null,
+    terms: Object.fromEntries(
+      TERMS.map((t) => {
+        const row = get(t.key);
+        return [t.key, { version: row ? String(row.value) : null, updated_at: row?.updated_at ?? null }];
+      }),
+    ) as Loaded["terms"],
     updated_at: rows.map((r) => r.updated_at).sort().at(-1) ?? null,
   };
 }
@@ -105,7 +144,7 @@ function humanDays(v: string): string {
 async function describe(error: unknown): Promise<string> {
   const code = await errorCode(error);
   if (code === "unknown_setting") {
-    return "La base ne connaît pas encore ce réglage : la mise à jour « Conformité : base et app » doit être déployée avant.";
+    return "La base ne connaît pas encore ce réglage : la migration emploi doit être déployée avant.";
   }
   return errorMessage(code);
 }
@@ -117,8 +156,6 @@ export default function ComplianceSettings() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [version, setVersion] = useState(() => new Date().toISOString().slice(0, 10));
-  const [confirm, setConfirm] = useState("");
 
   const reload = useCallback(() => {
     load()
@@ -165,25 +202,6 @@ export default function ComplianceSettings() {
     reload();
   }
 
-  const versionOk = /^[0-9A-Za-z._-]{1,40}$/.test(version.trim()) && version.trim() !== saved?.termsVersion;
-
-  async function publishTerms(e: FormEvent) {
-    e.preventDefault();
-    if (!versionOk || confirm !== CONFIRM_WORD) return;
-    setBusy(true);
-    setNotice(null);
-    setError(null);
-    const { error } = await createClient().rpc("admin_update_settings", { p_values: { terms_version: version.trim() } });
-    setBusy(false);
-    if (error) {
-      setError(await describe(error));
-      return;
-    }
-    setConfirm("");
-    setNotice(`Version « ${version.trim()} » publiée. Chaque membre devra l’accepter à sa prochaine ouverture de l’application.`);
-    reload();
-  }
-
   return (
     <>
       <PageHead
@@ -193,7 +211,7 @@ export default function ComplianceSettings() {
             Conservation <em>et conformité</em>
           </>
         }
-        lead="Durées appliquées par les purges automatiques de la base, et version des CGU que chaque membre doit avoir acceptée. Chaque changement est journalisé."
+        lead="Durées appliquées par les purges automatiques de la base, et versions des CGU candidats et des conditions recruteurs à accepter. Chaque changement est journalisé."
         aside={saved?.updated_at ? <span className="label">Modifié le {fmtDateTime(saved.updated_at)}</span> : null}
       />
       {error ? <ErrorNotice message={error} onRetry={reload} /> : null}
@@ -240,62 +258,100 @@ export default function ComplianceSettings() {
             </div>
           </form>
 
-          <form onSubmit={publishTerms} noValidate>
-            <section className="panel" aria-labelledby={`${id}-cgu`}>
-              <div className="panel-h">
-                <h2 className="label" id={`${id}-cgu`}>
-                  Conditions générales d’utilisation
-                </h2>
-                <span className="label">
-                  {saved.termsVersion ? `Version en vigueur : ${saved.termsVersion}` : "Aucune version enregistrée"}
-                </span>
-              </div>
-              <div className="panel-b" style={{ display: "grid", gap: 16, maxWidth: 640 }}>
-                <p>
-                  Publier une nouvelle version oblige <strong>chaque membre</strong> à relire et accepter les CGU à sa
-                  prochaine ouverture de l’application, avant tout autre écran. À faire seulement après avoir mis en
-                  ligne le nouveau texte sur <Link href="/cgu">la page CGU</Link>, et au moins 30 jours après l’avoir
-                  annoncé (article 14.1).
-                  {saved.termsUpdatedAt ? ` Dernière publication : ${fmtDateTime(saved.termsUpdatedAt)}.` : ""}
-                </p>
-                <div className="field">
-                  <label className="label" htmlFor={`${id}-version`}>
-                    Nouvelle version
-                  </label>
-                  <input
-                    id={`${id}-version`}
-                    className="input"
-                    value={version}
-                    maxLength={40}
-                    onChange={(e) => setVersion(e.target.value)}
-                    aria-describedby={`${id}-version-help`}
-                  />
-                  <p className="form-hint muted" id={`${id}-version-help`}>
-                    Lettres, chiffres, point, tiret. Par exemple la date de la nouvelle version.
-                  </p>
-                </div>
-                <div className="field">
-                  <label className="label" htmlFor={`${id}-confirm`}>
-                    Tapez {CONFIRM_WORD} pour confirmer
-                  </label>
-                  <input
-                    id={`${id}-confirm`}
-                    className="input"
-                    autoComplete="off"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                  />
-                </div>
-                <div className="form-actions">
-                  <button className="btn" type="submit" disabled={busy || !versionOk || confirm !== CONFIRM_WORD}>
-                    Publier une nouvelle version des CGU
-                  </button>
-                </div>
-              </div>
-            </section>
-          </form>
+          {TERMS.map((t) => (
+            <TermsForm
+              key={t.key}
+              doc={t}
+              current={saved.terms[t.key]}
+              onPublished={(v) => {
+                setNotice(`Version « ${v} » publiée. ${t.who.charAt(0).toUpperCase()}${t.who.slice(1)} devra l’accepter à sa prochaine ouverture de ${t.where}.`);
+                reload();
+              }}
+              onError={setError}
+            />
+          ))}
         </div>
       ) : null}
     </>
+  );
+}
+
+function TermsForm({
+  doc,
+  current,
+  onPublished,
+  onError,
+}: {
+  doc: (typeof TERMS)[number];
+  current: { version: string | null; updated_at: string | null };
+  onPublished: (version: string) => void;
+  onError: (message: string) => void;
+}) {
+  const id = useId();
+  const [version, setVersion] = useState(() => `${doc.key.includes("candidate") ? "cgu" : "cgr"}-emploi-${new Date().toISOString().slice(0, 10)}`);
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const versionOk = /^[0-9A-Za-z._-]{3,40}$/.test(version.trim()) && version.trim() !== current.version;
+
+  async function publish(e: FormEvent) {
+    e.preventDefault();
+    if (!versionOk || confirm !== CONFIRM_WORD) return;
+    setBusy(true);
+    const { error } = await createClient().rpc("admin_update_settings", { p_values: { [doc.key]: version.trim() } });
+    setBusy(false);
+    if (error) {
+      onError(await describe(error));
+      return;
+    }
+    setConfirm("");
+    onPublished(version.trim());
+  }
+
+  return (
+    <form onSubmit={publish} noValidate>
+      <section className="panel" aria-labelledby={`${id}-t`}>
+        <div className="panel-h">
+          <h2 className="label" id={`${id}-t`}>
+            {doc.title}
+          </h2>
+          <span className="label">{current.version ? `Version en vigueur : ${current.version}` : "Aucune version enregistrée"}</span>
+        </div>
+        <div className="panel-b" style={{ display: "grid", gap: 16, maxWidth: 640 }}>
+          <p>
+            Publier une nouvelle version oblige <strong>{doc.who}</strong> à relire et accepter le texte à sa prochaine
+            ouverture de {doc.where}, avant tout autre écran. À faire seulement après avoir mis en ligne le nouveau texte
+            sur <Link href={doc.href}>{doc.page}</Link>, et après l’avoir annoncé dans le délai prévu par le texte.
+            {current.updated_at ? ` Dernière publication : ${fmtDateTime(current.updated_at)}.` : ""}
+          </p>
+          <div className="field">
+            <label className="label" htmlFor={`${id}-version`}>
+              Nouvelle version
+            </label>
+            <input
+              id={`${id}-version`}
+              className="input"
+              value={version}
+              maxLength={40}
+              onChange={(e) => setVersion(e.target.value)}
+              aria-describedby={`${id}-version-help`}
+            />
+            <p className="form-hint muted" id={`${id}-version-help`}>
+              Lettres, chiffres, point, tiret. Par exemple le type de texte et la date de la nouvelle version.
+            </p>
+          </div>
+          <div className="field">
+            <label className="label" htmlFor={`${id}-confirm`}>
+              Tapez {CONFIRM_WORD} pour confirmer
+            </label>
+            <input id={`${id}-confirm`} className="input" autoComplete="off" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          </div>
+          <div className="form-actions">
+            <button className="btn" type="submit" disabled={busy || !versionOk || confirm !== CONFIRM_WORD}>
+              Publier une nouvelle version
+            </button>
+          </div>
+        </div>
+      </section>
+    </form>
   );
 }

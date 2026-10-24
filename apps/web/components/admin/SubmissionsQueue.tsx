@@ -28,7 +28,7 @@ type Verified = { institution: string | null; study_field: StudyField | null; so
 
 export default function SubmissionsQueue({ status }: { status: SubmissionStatus }) {
   const [rows, setRows] = useState<SubmissionRow[] | null>(null);
-  // Validés : établissement et domaine retenus pour le membre, pour repérer ceux à saisir (rattrapage).
+  // Validés : établissement et domaine retenus pour le candidat, pour repérer ceux à saisir (rattrapage).
   const [verified, setVerified] = useState<Record<string, Verified>>({});
   const [error, setError] = useState<string | null>(null);
   // Colonnes de l'extraction IA, masquées quand toute la liste est en revue manuelle.
@@ -213,7 +213,7 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
                     ) : null}
                     <td className="span">
                       <Link className="row-link" href={`/admin/diplomes/${row.id}`}>
-                        Examiner<span className="sr-only"> la soumission de {row.display_name ?? row.legal_name ?? "ce membre"}</span>
+                        Examiner<span className="sr-only"> la soumission de {row.display_name ?? row.legal_name ?? "ce candidat"}</span>
                       </Link>{" "}
                       {row.status !== status ? <StatusBadge status={row.status} /> : null}
                     </td>

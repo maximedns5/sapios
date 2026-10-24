@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import ReportsView from "@/components/admin/ReportsView";
-import type { ReportStatus } from "@/lib/admin/types";
+import type { ReportStatus } from "@sapios/shared";
+import OfferReports from "@/components/admin/OfferReports";
+import { REPORT_FILTERS } from "@/lib/emploi/filters";
 
-export const metadata: Metadata = { title: "Signalements" };
+export const metadata: Metadata = { title: "Signalements d’offres" };
 
-const STATUSES: ReportStatus[] = ["open", "actioned", "dismissed"];
-
-export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ statut?: string }> }) {
+export default async function OfferReportsPage({ searchParams }: { searchParams: Promise<{ statut?: string }> }) {
   const { statut } = await searchParams;
-  const status = STATUSES.includes(statut as ReportStatus) ? (statut as ReportStatus) : "open";
-  return <ReportsView key={status} status={status} />;
+  const status = (REPORT_FILTERS as readonly string[]).includes(statut ?? "") ? (statut as ReportStatus) : "open";
+  return <OfferReports status={status} />;
 }

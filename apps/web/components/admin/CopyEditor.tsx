@@ -7,46 +7,22 @@ import type { CopyRow } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
 import { Empty, ErrorNotice, Loading, PageHead, SuccessNotice } from "./ui";
 
-// Clés minimales du contrat (§6).
-const REQUIRED_KEYS = [
-  "verdict.unlimited",
-  "verdict.standard",
-  "verdict.waitlist",
-  "verdict.refused",
-  "verdict.uninstall",
-  "verdict.rejected",
-  "verdict.needs_more",
-  "scan.title",
-  "scan.log.authenticity",
-  "scan.log.level",
-  "scan.log.einstein",
-  "scan.pending",
-  "feed.empty",
-  "match.title",
-  "onboarding.consent",
-  "push.match",
-  "push.message",
-  "push.verdict",
-];
+// Clés que l'emploi lit dans `app_copy` : l'écran des CGU. Les emails et notifications de l'emploi, dont le
+// verdict du diplôme, vivent dans `notify` (`_shared/emploi_notify.ts`, EMAILS.md §11) et ne s'éditent pas ici.
+// Les textes de l'app candidat ont un repli local ; les clés du dating restent éditables tant qu'elles existent.
+const REQUIRED_KEYS = ["terms.title", "terms.lead"];
 const LOCALE = "fr";
 
 // Groupe d'une clé = préfixe avant le premier point ; le libellé dit où le texte apparaît.
 const GROUP_LABELS: Record<string, string> = {
-  affinity: "Découverte · « Pourquoi ce profil »",
+  emploi: "Emploi",
   email: "Emails",
-  feed: "Découverte",
-  intellect: "Mon profil · conseils",
-  library: "Mon profil · bibliothèque",
-  likes: "Likes",
-  match: "Match",
-  onboarding: "Inscription",
-  profile: "Fiche d’un profil",
-  prompt: "Questions du profil",
   push: "Notifications",
-  quiz: "Test d’admission",
-  review: "Attente du verdict",
-  scan: "Analyse du diplôme",
-  verdict: "Verdicts",
+  safety: "Sécurité",
+  terms: "CGU",
+  notice: "Avis",
+  scan: "Analyse du diplôme (ancienne app)",
+  verdict: "Verdicts (ancienne app)",
 };
 
 /** Emplacements remplis par l'app ({title}, {count}…) : à garder tels quels. */
@@ -260,7 +236,7 @@ export default function CopyEditor() {
             Les <em>textes</em>
           </>
         }
-        lead="Tous les textes « second degré » de l’application. Modifiés ici, ils changent sans redéploiement."
+        lead="Textes des emails, du verdict du diplôme et des CGU. Modifiés ici, ils changent sans redéploiement."
       />
       {error ? <ErrorNotice message={error} onRetry={load} /> : null}
       {!rows && !error ? <Loading /> : null}
@@ -277,7 +253,7 @@ export default function CopyEditor() {
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="verdict, Einstein…"
+                placeholder="emploi, verdict, terms…"
               />
             </div>
             <span className="label">{rows.length} textes</span>

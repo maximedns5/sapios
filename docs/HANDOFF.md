@@ -437,3 +437,23 @@ L'app code contre `docs/EMPLOI_CONTRACT.md` et `packages/shared/src/emploi.ts`, 
    (conversation). Les ajouter à la publication `supabase_realtime` ; sinon la relecture périodique prend le relais.
 7. **`note_target`** envoyés : `mission:<0-2>`, `must:<i>`, `nice:<i>`, `team`, `process` (pas de `photo:`).
 8. **Lien des emails** : `/applications/<id>` existe dans l'app (détail de la candidature).
+
+## Emploi · recruteur : espace recruteur et back-office
+
+Pour l'agent base et pour l'intégration après la fusion de la base :
+
+1. **Redirections d'auth Supabase** : ajouter `<site>/recruteur/auth/callback` aux `additional_redirect_urls`
+   (local : `http://localhost:3000/recruteur/auth/callback`). La connexion recruteur crée le compte
+   (`shouldCreateUser: true`), contrairement au back-office.
+2. **Parcours testé contre le contrat**, à revérifier avec la vraie base : `get_emploi_state` → `set_account_kind`
+   → `accept_emploi_terms` → `company-lookup` → `register_company` → `save_offer` / `submit_offer` → (admin)
+   `admin_decide_company`, `admin_moderate_photo`, `admin_decide_offer` → `get_offer_pile` / `mark_application_seen`
+   / `decide_application` → `get_recruiter_application`, `propose_interview_slots`, `add_application_note`,
+   messages → `search_open_candidates` / `invite_candidate` → `close_offer`.
+3. **Comptages du back-office** : la barre lit directement `companies`, `offers` et `offer_reports` (`count`,
+   `head`) ; la RLS admin doit le permettre (contrat §2 : lecture admins).
+4. **Échelle des niveaux** : voir `DEVIATIONS.md`, section « Emploi · recruteur ».
+5. **Mot de passe pour les comptes de test** : `NEXT_PUBLIC_RECRUITER_PASSWORD_LOGIN=true` affiche la connexion par
+   mot de passe sur `/recruteur/connexion` (local et staging seulement, jamais en production).
+6. **`NEXT_PUBLIC_APP_URL`** (facultatif) : adresse de l'app candidats, liée depuis l'espace recruteur quand un
+   compte candidat s'y connecte.

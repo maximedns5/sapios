@@ -27,14 +27,13 @@ import {
   LEVELS,
   levelText,
   pct,
-  TIER_LABELS,
 } from "@/lib/admin/format";
 import { compareNames, NAME_MATCH_LABELS } from "@/lib/admin/names";
 import type { PolicyRow, SubmissionRow } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
 import LevelLabel from "@/components/LevelLabel";
 import { allSignals, isManualReview } from "./SubmissionsQueue";
-import { ErrorNotice, Loading, ReferredMark, StatusBadge, SuccessNotice, TierBadge } from "./ui";
+import { ErrorNotice, Loading, ReferredMark, StatusBadge, SuccessNotice } from "./ui";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const OPEN_STATUSES = ["needs_review", "pending", "processing", "needs_more"];
@@ -215,7 +214,7 @@ function DocumentViewer({ row }: { row: SubmissionRow }) {
             </button>
           </div>
         ) : isPdf ? (
-          <iframe src={`${url}#navpanes=0&view=FitH`} title={`Diplôme de ${row.legal_name ?? row.display_name ?? "ce membre"} (PDF)`} />
+          <iframe src={`${url}#navpanes=0&view=FitH`} title={`Diplôme de ${row.legal_name ?? row.display_name ?? "ce candidat"} (PDF)`} />
         ) : (
           <button
             type="button"
@@ -229,7 +228,7 @@ function DocumentViewer({ row }: { row: SubmissionRow }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={url}
-              alt={`Diplôme soumis par ${row.legal_name ?? row.display_name ?? "ce membre"}`}
+              alt={`Diplôme soumis par ${row.legal_name ?? row.display_name ?? "ce candidat"}`}
               style={zoom ? { transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
             />
           </button>
@@ -483,13 +482,8 @@ function DecisionForm({
                 <span>
                   {policy ? (
                     <>
-                      Palier <strong>{TIER_LABELS[policy.tier]}</strong>
-                      {policy.can_browse
-                        ? policy.daily_like_quota == null
-                          ? ", likes illimités"
-                          : `, ${policy.daily_like_quota} likes par jour`
-                        : ", pas d’accès au feed"}
-                      {policy.sees_likers ? ", voit qui l’a liké" : ""}. Texte du verdict : <code>{policy.copy_key}</code>.
+                      Badge « Diplôme vérifié · <strong>{levelText(level)}</strong> » sur le CV du candidat. Il informe
+                      les recruteurs et ne ferme aucune offre.
                     </>
                   ) : (
                     "Aucune ligne de la politique d’accès ne couvre ce niveau : la décision sera refusée."
@@ -497,7 +491,7 @@ function DecisionForm({
                   {keepsHigher ? (
                     <>
                       {" "}
-                      Le membre a déjà le niveau {keepsHigher.level} ({TIER_LABELS[keepsHigher.tier]}) : pas de
+                      Le candidat a déjà un niveau vérifié supérieur ({levelText(keepsHigher.level)}) : pas de
                       rétrogradation.
                     </>
                   ) : null}
@@ -521,7 +515,7 @@ function DecisionForm({
         ) : (
           <div className="field">
             <label className="label" htmlFor={`${id}-reason`}>
-              {decision === "reject" ? "Motif du refus (visible par le membre)" : "Ce qu’il faut fournir (visible par le membre)"}
+              {decision === "reject" ? "Motif du refus (visible par le candidat)" : "Ce qu’il faut fournir (visible par le candidat)"}
             </label>
             <div className="chips">
               {(decision === "reject" ? REJECT_REASONS : MORE_REASONS).map((r) => (
@@ -560,7 +554,7 @@ function DecisionForm({
   );
 }
 
-/* ───────────── Établissement d'un membre déjà validé (rattrapage) ───────────── */
+/* ───────────── Établissement d'un candidat déjà validé (rattrapage) ───────────── */
 
 function InstitutionBackfill({ userId, access, onSaved }: { userId: string; access: Access; onSaved: () => void }) {
   const id = useId();
@@ -601,7 +595,7 @@ function InstitutionBackfill({ userId, access, onSaved }: { userId: string; acce
       }}
     >
       <p className="label">
-        {access.institution ? "Corriger" : "À saisir : membre validé avant l’enregistrement de l’établissement"}
+        {access.institution ? "Corriger" : "À saisir : candidat validé avant l’enregistrement de l’établissement"}
       </p>
       <div className="decide-row">
         <div className="field">
@@ -674,7 +668,7 @@ function ModeratorNote({ row }: { row: SubmissionRow }) {
       }}
     >
       <label className="label" htmlFor={`${id}-note`}>
-        Note interne (jamais montrée au membre)
+        Note interne (jamais montrée au candidat)
       </label>
       <textarea id={`${id}-note`} className="textarea" value={note} onChange={(e) => setNote(e.target.value)} />
       <div className="form-actions">
@@ -843,7 +837,6 @@ export default function SubmissionDetail({ id }: { id: string }) {
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <StatusBadge status={row.status} />
-          <TierBadge tier={data.access?.tier} />
         </div>
       </div>
 
@@ -851,12 +844,10 @@ export default function SubmissionDetail({ id }: { id: string }) {
         <div style={{ marginBottom: 20, display: "grid", gap: 10 }}>
           <SuccessNotice>
             {result.decision === "approve"
-              ? `Diplôme validé. Le membre est au niveau ${result.res.level ?? "—"}, palier ${
-                  result.res.tier ? TIER_LABELS[result.res.tier] : "—"
-                }.`
+              ? `Diplôme validé : badge ${result.res.level ? levelText(result.res.level) : "—"} ajouté au CV du candidat.`
               : result.decision === "reject"
-                ? "Diplôme refusé. Le membre est notifié avec le motif."
-                : "Complément demandé. Le membre est notifié."}
+                ? "Diplôme refusé. Le candidat est notifié avec le motif."
+                : "Complément demandé. Le candidat est notifié."}
             {nextId && autoNext ? " Dossier suivant dans un instant…" : ""}
           </SuccessNotice>
           <div className="form-actions">
@@ -1031,7 +1022,7 @@ export default function SubmissionDetail({ id }: { id: string }) {
               {data.history.length > 1 ? (
                 <div>
                   <p className="label" style={{ marginBottom: 8 }}>
-                    Soumissions de ce membre
+                    Soumissions de ce candidat
                   </p>
                   <ul style={{ listStyle: "none", display: "grid", gap: 6 }}>
                     {data.history.map((h) => (
