@@ -3,31 +3,27 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { untyped } from "@/lib/emploi/rpc";
 import { createClient } from "@/lib/supabase/client";
 import SignOutButton from "./SignOutButton";
 
-type Counts = { diplomas: number | null; reports: number | null; content: number | null; waitlist: number | null };
+type Counts = { companies: number | null; offers: number | null; reports: number | null; diplomas: number | null };
 
 const NAV: Array<{ href: string; label: string; count?: keyof Counts; group?: readonly string[] }> = [
   { href: "/admin", label: "Vue d’ensemble" },
-  { href: "/admin/diplomes", label: "Diplômes", count: "diplomas" },
+  { href: "/admin/entreprises", label: "Entreprises", count: "companies" },
+  { href: "/admin/offres", label: "Offres et photos", count: "offers" },
   { href: "/admin/signalements", label: "Signalements", count: "reports" },
-  { href: "/admin/contenus", label: "Contenus", count: "content" },
-  { href: "/admin/liste-attente", label: "Liste d’attente", count: "waitlist" },
-  { href: "/admin/evenements", label: "Événements" },
-  { href: "/admin/parrainages", label: "Parrainages" },
+  { href: "/admin/diplomes", label: "Diplômes", count: "diplomas" },
   {
-    href: "/admin/paliers",
+    href: "/admin/textes",
     label: "Réglages",
-    group: ["/admin/paliers", "/admin/decouverte", "/admin/questions", "/admin/textes", "/admin/conformite", "/admin/securite"],
+    group: ["/admin/textes", "/admin/conformite", "/admin/securite"],
   },
 ];
 
 // Les réglages tiennent sous un seul onglet ; leurs pages ont une barre secondaire.
 const SETTINGS: Array<{ href: string; label: string }> = [
-  { href: "/admin/paliers", label: "Paliers" },
-  { href: "/admin/decouverte", label: "Découverte" },
-  { href: "/admin/questions", label: "Questions" },
   { href: "/admin/textes", label: "Textes" },
   { href: "/admin/conformite", label: "Conformité" },
   { href: "/admin/securite", label: "Sécurité" },
@@ -35,24 +31,26 @@ const SETTINGS: Array<{ href: string; label: string }> = [
 
 export default function AdminShell({ email, children }: { email: string; children: React.ReactNode }) {
   const pathname = usePathname();
-  const [counts, setCounts] = useState<Counts>({ diplomas: null, reports: null, content: null, waitlist: null });
+  const [counts, setCounts] = useState<Counts>({ companies: null, offers: null, reports: null, diplomas: null });
 
   useEffect(() => {
     const supabase = createClient();
+    // Tables de l'emploi absentes du typage généré tant que leur migration n'est pas fusionnée.
+    const db = untyped(supabase);
     let alive = true;
     const head = { count: "exact" as const, head: true };
     Promise.all([
+      db.from("companies").select("id", head).eq("status", "pending"),
+      db.from("offers").select("id", head).eq("status", "pending_review"),
+      db.from("offer_reports").select("id", head).eq("status", "open"),
       supabase.from("degree_submissions").select("id", head).eq("status", "needs_review"),
-      supabase.from("reports").select("id", head).eq("status", "open"),
-      supabase.from("content_flags").select("id", head).eq("status", "open"),
-      supabase.from("user_access").select("user_id", head).eq("tier", "waitlist"),
-    ]).then(([d, r, c, w]) => {
+    ]).then(([c, o, r, d]) => {
       if (!alive) return;
       setCounts({
-        diplomas: d.error ? null : d.count,
+        companies: c.error ? null : c.count,
+        offers: o.error ? null : o.count,
         reports: r.error ? null : r.count,
-        content: c.error ? null : c.count,
-        waitlist: w.error ? null : w.count,
+        diplomas: d.error ? null : d.count,
       });
     });
     return () => {

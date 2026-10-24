@@ -379,3 +379,23 @@ navigateur sur l'app web et dans des cookies sur le back-office.
     `Content-Security-Policy-Report-Only`, pousser, puis la remettre une fois corrigé.
 - **zod sans `new Function`** : `packages/shared/src/extraction.ts` active `z.config({ jitless: true })`. Sans cela,
   zod teste `new Function` au chargement de ses schémas et la CSP le signale à chaque page de l'app.
+
+## Emploi · recruteur : espace recruteur et back-office
+
+Pour l'agent base et pour l'intégration après la fusion de la base :
+
+1. **Redirections d'auth Supabase** : ajouter `<site>/recruteur/auth/callback` aux `additional_redirect_urls`
+   (local : `http://localhost:3000/recruteur/auth/callback`). La connexion recruteur crée le compte
+   (`shouldCreateUser: true`), contrairement au back-office.
+2. **Parcours testé contre le contrat**, à revérifier avec la vraie base : `get_emploi_state` → `set_account_kind`
+   → `accept_emploi_terms` → `company-lookup` → `register_company` → `save_offer` / `submit_offer` → (admin)
+   `admin_decide_company`, `admin_moderate_photo`, `admin_decide_offer` → `get_offer_pile` / `mark_application_seen`
+   / `decide_application` → `get_recruiter_application`, `propose_interview_slots`, `add_application_note`,
+   messages → `search_open_candidates` / `invite_candidate` → `close_offer`.
+3. **Comptages du back-office** : la barre lit directement `companies`, `offers` et `offer_reports` (`count`,
+   `head`) ; la RLS admin doit le permettre (contrat §2 : lecture admins).
+4. **Échelle des niveaux** : voir `DEVIATIONS.md`, section « Emploi · recruteur ».
+5. **Mot de passe pour les comptes de test** : `NEXT_PUBLIC_RECRUITER_PASSWORD_LOGIN=true` affiche la connexion par
+   mot de passe sur `/recruteur/connexion` (local et staging seulement, jamais en production).
+6. **`NEXT_PUBLIC_APP_URL`** (facultatif) : adresse de l'app candidats, liée depuis l'espace recruteur quand un
+   compte candidat s'y connecte.

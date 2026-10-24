@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
-// Politique de sécurité du contenu (CSP) du site et du back-office : c'est le seul endroit où elle se
+// Politique de sécurité du contenu (CSP) du site, de l'espace recruteur et du back-office : c'est le seul endroit où elle se
 // règle. Un nonce neuf par requête : Next.js l'ajoute à ses propres scripts, le layout le pose sur le
 // script de démarrage, et aucun autre script ne s'exécute ('strict-dynamic', ni 'unsafe-inline' ni
 // 'unsafe-eval' en production). Ajouter une origine : dans la liste de la directive concernée.
@@ -21,7 +21,8 @@ function contentSecurityPolicy(nonce: string, https: boolean): string {
     ],
     // Styles en ligne (attributs style, animations) : ils n'exécutent pas de code.
     "style-src": ["'self'", "'unsafe-inline'"],
-    // data: pour le QR code de la double authentification ; Supabase pour les photos et diplômes signés.
+    // data: pour le QR code de la double authentification ; Supabase pour les photos (offres, diplômes)
+    // signées ; blob: pour l'aperçu d'une photo avant envoi.
     "img-src": ["'self'", "data:", "blob:", ...supabase.http],
     "font-src": ["'self'", "data:"],
     "connect-src": ["'self'", ...supabase.http, ...supabase.ws],
@@ -68,9 +69,12 @@ export async function proxy(request: NextRequest) {
   };
 
   let response = next();
-  if (!request.nextUrl.pathname.startsWith("/admin") || !SUPABASE_URL || !SUPABASE_ANON_KEY) return response;
+  const path = request.nextUrl.pathname;
+  const withSession = path.startsWith("/admin") || path.startsWith("/recruteur");
+  if (!withSession || !SUPABASE_URL || !SUPABASE_ANON_KEY) return response;
 
-  // Back-office : rafraîchit la session Supabase (cookies) avant le rendu.
+  // Back-office et espace recruteur : rafraîchit la session Supabase (cookies) avant le rendu. Les gardes
+  // serveur des pages tranchent ensuite (connexion, type de compte, entreprise, double authentification).
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
       getAll: () => request.cookies.getAll(),
@@ -92,7 +96,7 @@ export const config = {
     {
       // Toutes les pages, sauf les fichiers statiques de Next et les icônes ; les préchargements de
       // next/link n'ont pas besoin de CSP.
-      source: "/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|robots.txt|sitemap.xml).*)",
+      source: "/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|opengraph-image|robots.txt|sitemap.xml).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },
