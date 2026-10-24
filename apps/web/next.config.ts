@@ -16,9 +16,13 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   agentRules: false,
   // Pages légales rendues à chaque requête (nonce de la CSP) : leurs textes doivent suivre au déploiement.
+  // Les pages légales de l'emploi (conditions recruteurs, confidentialité, classement) sont déclarées d'avance.
   outputFileTracingIncludes: {
     "/cgu": ["./content/legal/**"],
     "/mentions-legales": ["./content/legal/**"],
+    "/conditions-recruteurs": ["./content/legal/**"],
+    "/confidentialite": ["./content/legal/**"],
+    "/comment-nous-classons": ["./content/legal/**"],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

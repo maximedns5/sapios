@@ -1432,3 +1432,33 @@ kbd {
   font-size: 13px;
   opacity: 0.75;
 }
+
+/* Emploi : photos d'offres à modérer */
+.emp-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.emp-photo {
+  margin: 0;
+  border: 1.5px solid var(--k);
+  display: flex;
+  flex-direction: column;
+}
+.emp-photo img,
+.emp-photo-ph {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: repeating-linear-gradient(135deg, var(--w) 0 10px, #e4e2dc 10px 20px);
+}
+.emp-photo figcaption {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  font-size: 13px;
+}
+.emp-photo .badge {
+  justify-self: start;
+}
