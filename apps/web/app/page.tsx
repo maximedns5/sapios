@@ -84,7 +84,7 @@ const FAQ = [
   },
   {
     q: "Quels postes pendant le pilote ?",
-    a: "Des CDI et des CDD pour les jeunes diplômés, de Bac+3 à Bac+5, à Paris, dans quelques familles de métiers. Pas de stage, d’alternance ni d’intérim pour l’instant.",
+    a: "Des CDI et des CDD pour les diplômés de Bac+3 à Bac+5 en début de parcours, à Paris, dans quelques familles de métiers. Pas de stage, d’alternance ni d’intérim pour l’instant.",
   },
   {
     q: "Où sont mes données ?",
@@ -104,7 +104,7 @@ export default function Home() {
         <section className="lp-section lp-hero" aria-labelledby="hero-title">
           <div className="lp-hero-copy">
             <span className="s-kicker s-rise" style={delay("0.05s")}>
-              Pour les jeunes diplômés et ceux qui les recrutent
+              Pour les diplômés Bac+3 à Bac+5 et ceux qui les recrutent
             </span>
             <h1 className="s-h1" id="hero-title">
               <span className="s-mask">
