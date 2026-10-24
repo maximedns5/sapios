@@ -21,6 +21,10 @@ export default function CompanyProfile({ initial, error }: { initial: MyCompany 
   const [website, setWebsite] = useState(initial?.company.website ?? "");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [firstName, setFirstName] = useState(initial?.me.first_name ?? "");
+  const [jobTitle, setJobTitle] = useState(initial?.me.job_title ?? "");
+  const [meBusy, setMeBusy] = useState(false);
+  const [meNotice, setMeNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
   if (!initial) return <ErrorBox message={emploiErrorMessage(error ?? "not_member")} onRetry={() => router.refresh()} />;
   const c = initial.company;
@@ -40,6 +44,23 @@ export default function CompanyProfile({ initial, error }: { initial: MyCompany 
       return;
     }
     setNotice({ ok: true, text: "Page entreprise mise à jour." });
+    router.refresh();
+  }
+
+  async function saveMe(e: FormEvent) {
+    e.preventDefault();
+    setMeBusy(true);
+    setMeNotice(null);
+    const { error } = await rpc<null>(createClient(), "update_my_member_profile", {
+      p_first_name: firstName.trim(),
+      p_job_title: jobTitle.trim() || null,
+    });
+    setMeBusy(false);
+    if (error) {
+      setMeNotice({ ok: false, text: await describeEmploiError(error) });
+      return;
+    }
+    setMeNotice({ ok: true, text: "Profil mis à jour." });
     router.refresh();
   }
 
@@ -133,6 +154,26 @@ export default function CompanyProfile({ initial, error }: { initial: MyCompany 
                 <span className="badge">{ROLE_LABELS[m.role]}</span>
               </div>
             ))}
+            <form style={{ display: "grid", gap: 12, marginTop: 8 }} onSubmit={saveMe} aria-label="Votre profil">
+              <h3>Vous</h3>
+              <p className="hint">Votre prénom et votre fonction sont montrés aux candidats après le match, jamais avant.</p>
+              <label className="field">
+                <span className="field-label">Prénom</span>
+                <input className="input" maxLength={40} autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </label>
+              <label className="field">
+                <span className="field-label">Fonction</span>
+                <input className="input" minLength={2} maxLength={80} value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
+              </label>
+              {meNotice ? (
+                <p className={meNotice.ok ? "alert alert--ok" : "alert"} role={meNotice.ok ? "status" : "alert"}>
+                  {meNotice.text}
+                </p>
+              ) : null}
+              <button type="submit" className="btn btn--soft" style={{ justifySelf: "start" }} disabled={meBusy || jobTitle.trim().length < 2}>
+                {meBusy ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            </form>
           </section>
           <section className="surface" style={{ display: "grid", gap: 8 }} aria-label="Vérification">
             <h3>Vérification</h3>

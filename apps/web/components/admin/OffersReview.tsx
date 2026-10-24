@@ -149,7 +149,7 @@ function OfferCard({
             <dt>Contrat</dt>
             <dd>{CONTRACT_LABELS[o.contract]}</dd>
             <dt>Lieu</dt>
-            <dd>{[o.address_label, o.postcode, o.city].filter(Boolean).join(", ") || "—"}</dd>
+            <dd>{o.address_label || [o.postcode, o.city].filter(Boolean).join(" ") || "—"}</dd>
             <dt>Télétravail</dt>
             <dd>{fmtRemote(o.remote_days)}</dd>
             <dt>Salaire</dt>

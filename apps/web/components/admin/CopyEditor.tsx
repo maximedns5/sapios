@@ -7,16 +7,10 @@ import type { CopyRow } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
 import { Empty, ErrorNotice, Loading, PageHead, SuccessNotice } from "./ui";
 
-// Clés que l'emploi lit dans `app_copy` (docs/EMPLOI_CONTRACT.md §5) : verdict du diplôme envoyé par `notify`
-// et écran des CGU. Les textes de l'app candidat ont un repli local ; les clés du dating restent éditables
-// tant qu'elles existent en base.
-const REQUIRED_KEYS = [
-  "emploi.verdict.approved",
-  "emploi.verdict.rejected",
-  "emploi.verdict.needs_more",
-  "terms.title",
-  "terms.lead",
-];
+// Clés que l'emploi lit dans `app_copy` : l'écran des CGU. Les emails et notifications de l'emploi, dont le
+// verdict du diplôme, vivent dans `notify` (`_shared/emploi_notify.ts`, EMAILS.md §11) et ne s'éditent pas ici.
+// Les textes de l'app candidat ont un repli local ; les clés du dating restent éditables tant qu'elles existent.
+const REQUIRED_KEYS = ["terms.title", "terms.lead"];
 const LOCALE = "fr";
 
 // Groupe d'une clé = préfixe avant le premier point ; le libellé dit où le texte apparaît.

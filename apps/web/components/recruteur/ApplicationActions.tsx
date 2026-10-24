@@ -15,7 +15,7 @@ import {
   type RefusalReason,
 } from "@sapios/shared";
 import { describeEmploiError } from "@/lib/emploi/errors";
-import { fmtDay, fmtLongDate, fmtNumber, fmtSlot } from "@/lib/emploi/format";
+import { fmtDay, fmtLongDate, fmtNumber, fmtSlot, parisLocalToMs } from "@/lib/emploi/format";
 import { rpc } from "@/lib/emploi/rpc";
 import { createClient } from "@/lib/supabase/client";
 import { IconCalendar, IconHeart, IconPlus, IconX } from "./Icons";
@@ -305,7 +305,7 @@ function SlotsForm({ applicationId, onCancel, onDone }: { applicationId: string;
   const [now] = useState(() => Date.now());
   const today = new Date(now).toISOString().slice(0, 10);
   const filled = slots.filter((s) => s.date && s.time);
-  const future = filled.every((s) => new Date(`${s.date}T${s.time}`).getTime() > now);
+  const future = filled.every((s) => parisLocalToMs(s.date, s.time) > now);
 
   function update(i: number, patch: Partial<SlotDraft>) {
     setSlots((list) => list.map((s, j) => (j === i ? { ...s, ...patch } : s)));
@@ -319,7 +319,7 @@ function SlotsForm({ applicationId, onCancel, onDone }: { applicationId: string;
     const { data, error } = await rpc<number>(createClient(), "propose_interview_slots", {
       p_id: applicationId,
       p_slots: filled.map((s) => ({
-        starts_at: new Date(`${s.date}T${s.time}`).toISOString(),
+        starts_at: new Date(parisLocalToMs(s.date, s.time)).toISOString(),
         duration_min: s.duration,
         mode: s.mode,
         location: s.location.trim() || null,
