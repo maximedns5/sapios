@@ -2,6 +2,7 @@
 // Une RPC qui renvoie un type de ce fichier renvoie exactement ces champs, avec ces noms.
 
 import type { StudyField } from "./intellect";
+import type { PhotoModeration, ReportStatus } from "./tiers";
 
 // Enums -----------------------------------------------------------------------------------------
 
@@ -38,8 +39,6 @@ export type InterviewMode = "visio" | "onsite";
 export type SlotStatus = "proposed" | "accepted" | "declined" | "cancelled";
 export type InvitationStatus = "sent" | "applied" | "declined";
 export type EmploiAccountKind = "candidate" | "recruiter";
-export type PhotoModeration = "pending" | "approved" | "rejected";
-export type ReportStatus = "open" | "actioned" | "dismissed";
 
 export const LANGUAGE_LEVELS = ["a2", "b1", "b2", "c1", "c2"] as const;
 export type LanguageLevel = (typeof LANGUAGE_LEVELS)[number];

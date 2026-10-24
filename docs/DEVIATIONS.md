@@ -417,3 +417,24 @@ Nom légal, date de naissance et texte libre des signalements sont chiffrés dan
 3. **`upgrade-insecure-requests`** : posé par le site seulement en HTTPS (pas en local). Sur l'app, Vercel sert
    toujours en HTTPS.
 4. **zod en mode `jitless`** (schéma d'extraction partagé) : même résultat d'analyse, sans `new Function`.
+
+## Emploi · site public et pages légales (24 oct. 2026)
+
+- **Textes légaux alignés sur le contrat emploi, pas copiés mot pour mot.** Les brouillons Claude Docs (CGU candidats,
+  conditions recruteurs, politique de confidentialité) parlaient encore d'une photo de candidat après le match, d'une
+  adresse ou d'un « point de départ » pour le temps de trajet, de cinq compétences et d'un email révélé au match. Les
+  pages publiques suivent `docs/EMPLOI_CONTRACT.md` : aucune photo de candidat (E4), distance depuis le centre de la ville
+  de recherche sans adresse (E6), dix compétences au plus, prénom et nom seuls au match (E9). Les quotas et durées
+  repris du contrat : 400 caractères et 20 invitations par semaine et par entreprise pour l'approche directe, effacement
+  des notes, messages et mots 6 mois après la clôture d'une candidature.
+- **Retirés des pages publiques** : notes « [Juriste] », listes « Points à vérifier avec l'avocat », cases à cocher de
+  mise en ligne, sources. Les passages « [À compléter] » restent visibles, avec le bandeau « Version provisoire » tant
+  que `NEXT_PUBLIC_LEGAL_PAGES_READY` n'est pas `true`. Les listes imbriquées et titres `###` des brouillons sont mis à
+  plat (le rendu Markdown des pages légales ne gère que `##`, listes simples et tableaux).
+- **Politique de confidentialité en Markdown** (`content/legal/confidentialite.md`) au lieu de la page codée en dur du
+  dating. Elle prend le bandeau « Version provisoire » et le `noindex` comme les autres textes, mais reste toujours liée
+  au pied de page. Jetons `{{contactEmail}}`, `{{privacyEmail}}`, `{{privacyUpdatedAt}}` remplacés à la lecture
+  (`readLegal`).
+- **Signaler une conversation ou une invitation** : la base ne prévoit que `report_offer` ; les CGU renvoient ces
+  signalements vers l'email de contact.
+- **Liste d'attente** : le formulaire est retiré, la table `waitlist_signups` n'est pas touchée.
