@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState as RNAppState, Platform } from 'react-native';
 
-import { api } from './api';
+import { emploi } from './emploi';
 import { AppError } from './errors';
 import { supabase } from './supabase';
-import type { MyState } from './types';
+import type { AppState } from './types';
 
 const FOCUS_THROTTLE = 10_000;
 const POLL = 60_000;
@@ -16,11 +16,11 @@ type AppContext = {
   ready: boolean;
   session: Session | null;
   userId: string | null;
-  state: MyState | null;
+  state: AppState | null;
   stateError: AppError | null;
   loadingState: boolean;
-  refresh: () => Promise<MyState | null>;
-  /** Verdicts déjà montrés (clé locale par utilisateur). */
+  refresh: () => Promise<AppState | null>;
+  /** Écrans déjà montrés une fois (clé locale par utilisateur) : invitation au diplôme, matchs. */
   seen: Set<string>;
   markSeen: (key: string) => Promise<void>;
   /** local : efface la session sans appel serveur (compte déjà supprimé). */
@@ -29,15 +29,29 @@ type AppContext = {
 
 const Ctx = createContext<AppContext | null>(null);
 
+/** Lit get_emploi_state() ; un compte sans type est déclaré candidat (l'app est réservée aux candidats). */
+async function loadState(): Promise<AppState> {
+  const first = (await emploi.state()) as AppState;
+  if (first.kind) return { ...first, notices: first.notices ?? [] };
+  try {
+    await emploi.setAccountKind('candidate');
+  } catch (e) {
+    // Déclaré entre-temps (autre appareil, site recruteur) : l'état relu dira lequel.
+    if (!(e instanceof AppError && e.code === 'kind_already_set')) throw e;
+  }
+  const next = (await emploi.state()) as AppState;
+  return { ...next, notices: next.notices ?? [] };
+}
+
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
-  const [state, setState] = useState<MyState | null>(null);
+  const [state, setState] = useState<AppState | null>(null);
   const [stateError, setStateError] = useState<AppError | null>(null);
   const [loadingState, setLoadingState] = useState(false);
   const [seen, setSeen] = useState<Set<string>>(new Set());
   const userId = session?.user.id ?? null;
-  const inflight = useRef<Promise<MyState | null> | null>(null);
+  const inflight = useRef<Promise<AppState | null> | null>(null);
 
   useEffect(() => {
     supabase.auth
@@ -58,8 +72,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (inflight.current) return inflight.current;
     lastRead.current = Date.now();
     setLoadingState(true);
-    const run = api
-      .myState()
+    const run = loadState()
       .then((next) => {
         setState(next);
         setStateError(null);
@@ -88,18 +101,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
   }, [userId, refresh]);
 
-  // Verdict, admission, pause : relus au retour sur l'app (au plus une fois toutes les 10 s) et toutes
-  // les 60 s quand elle est au premier plan. Sur le web, il n'y a pas de push pour annoncer un verdict.
+  // Réponses des recruteurs, avis, compteurs : relus au retour sur l'app (au plus une fois toutes les 10 s)
+  // et toutes les 60 s au premier plan. Sur le web, il n'y a pas de push pour les annoncer.
   useEffect(() => {
     if (!userId) return;
     const soft = () => {
       if (Date.now() - lastRead.current > FOCUS_THROTTLE) refresh();
     };
-    const sub = AppState.addEventListener('change', (next) => next === 'active' && soft());
+    const sub = RNAppState.addEventListener('change', (next) => next === 'active' && soft());
     const onFocus = () => soft();
     if (Platform.OS === 'web') window.addEventListener('focus', onFocus);
     const poll = setInterval(() => {
-      if (AppState.currentState === 'active' && Date.now() - lastRead.current >= POLL - 1000) refresh();
+      if (RNAppState.currentState === 'active' && Date.now() - lastRead.current >= POLL - 1000) refresh();
     }, POLL);
     return () => {
       sub.remove();

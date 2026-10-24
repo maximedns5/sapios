@@ -1,90 +1,61 @@
-import type { MyState, VerdictVariant } from './types';
+import type { AppState } from './types';
 
-/** Écran cible et chemins autorisés pour un état donné (routage piloté par get_my_state). */
+/** Écran cible et chemins autorisés pour un état donné (routage piloté par get_emploi_state). */
 export type Route = { target: string; allowed: string[] };
 
-const APP_PATHS = ['/feed', '/likes', '/messages', '/account', '/criteria', '/chat', '/match', '/profile', '/report', '/settings', '/events'];
-const DIPLOMA_FLOW = ['/diploma', '/diploma/analysis', '/diploma/review'];
+/** Espace candidat : onglets, fiches, conversations, réglages, diplôme. */
+export const APP_PATHS = [
+  '/offers',
+  '/applications',
+  '/messages',
+  '/profile',
+  '/offer',
+  '/apply',
+  '/chat',
+  '/match',
+  '/interview',
+  '/company',
+  '/report',
+  '/settings',
+  '/diploma',
+  '/diploma/analysis',
+  '/diploma/review',
+];
 
-export const IN_REVIEW = ['pending', 'processing', 'needs_review'] as const;
+/** Zones à sous-routes dynamiques (correspondance par préfixe). */
+const PREFIXED = ['/offer', '/apply', '/applications', '/chat', '/match', '/interview', '/company', '/report', '/settings', '/onboarding', '/diploma'];
 
-export function onboardingStep(state: MyState): string {
-  const o = state.onboarding;
-  if (!o.identity_set) return '/onboarding/identity';
-  if (!o.consent_sensitive) return '/onboarding/consent';
-  if (!o.profile_complete) return '/onboarding/profile';
-  return '/onboarding/photos';
-}
+/** Clé locale : l'invitation « Vérifions votre diplôme » a été vue (passée ou suivie). */
+export const DIPLOMA_INTRO_KEY = 'diploma-intro';
 
-export function variantFromCopyKey(copyKey: string | null): VerdictVariant | null {
-  if (!copyKey) return null;
-  const v = copyKey.replace(/^verdict\./, '');
-  const known: VerdictVariant[] = ['unlimited', 'standard', 'waitlist', 'refused', 'uninstall', 'rejected', 'needs_more'];
-  return (known as string[]).includes(v) ? (v as VerdictVariant) : null;
-}
+export function decide(state: AppState, seen: Set<string>): Route | null {
+  // Compte sans type : l'app le déclare candidat, puis relit l'état (écran d'attente en attendant).
+  if (!state.kind) return null;
+  if (state.kind === 'recruiter') return { target: '/recruiter', allowed: ['/recruiter', '/settings'] };
 
-export function tierVerdictKey(state: MyState): string | null {
-  return state.copy_key ? `tier:${state.copy_key}:${state.level ?? ''}` : null;
-}
-
-export function submissionVerdictKey(state: MyState): string | null {
-  const s = state.latest_submission;
-  return s && (s.status === 'rejected' || s.status === 'needs_more') ? `sub:${s.id}:${s.status}` : null;
-}
-
-/** Variante de verdict à afficher pour l'état courant (null : rien à montrer). */
-export function currentVerdict(state: MyState, seen: Set<string>): VerdictVariant | null {
-  const subKey = submissionVerdictKey(state);
-  const tierKey = tierVerdictKey(state);
-  const tierVariant = variantFromCopyKey(state.copy_key);
-  const sub = state.latest_submission;
-  if (state.can_browse) {
-    if (tierKey && !seen.has(tierKey)) return tierVariant;
-    if (subKey && !seen.has(subKey)) return sub!.status as VerdictVariant;
-    return null;
+  if (!state.terms.accepted) {
+    // Jamais inscrit : étape « Conditions » de l'inscription ; sinon écran bloquant « Nos conditions évoluent ».
+    if (!state.candidate) return { target: '/onboarding/terms', allowed: ['/onboarding/terms', '/settings'] };
+    return { target: '/terms', allowed: ['/terms', '/settings'] };
   }
-  if (subKey && (!tierKey || !seen.has(subKey))) return sub!.status as VerdictVariant;
-  return tierVariant;
-}
+  if (!state.identity_set) return { target: '/onboarding/identity', allowed: ['/onboarding/identity', '/settings'] };
+  if (!state.candidate || !state.candidate.complete) return { target: '/onboarding/profile', allowed: ['/onboarding/profile', '/settings'] };
 
-/**
- * CGU de la version en vigueur non acceptées : étape « Conditions d'utilisation » avant l'inscription
- * (jamais acceptées), sinon écran bloquant « Nos conditions évoluent ». null : rien à demander.
- */
-export function termsRoute(state: MyState): Route | null {
-  const terms = state.terms;
-  if (!terms || terms.accepted) return null;
-  if (state.profile_status === 'onboarding' && !terms.last_accepted_version) {
-    return { target: '/onboarding/terms', allowed: ['/onboarding/terms', '/settings'] };
-  }
-  return { target: '/terms', allowed: ['/terms', '/settings'] };
-}
-
-export function decide(state: MyState, seen: Set<string>): Route {
-  if (state.profile_status === 'banned') return { target: '/banned', allowed: ['/banned', '/settings'] };
-  const terms = termsRoute(state);
-  if (terms) return terms;
-  if (state.profile_status === 'onboarding') {
-    const step = onboardingStep(state);
-    return { target: step, allowed: [step, '/settings'] };
-  }
-  const sub = state.latest_submission;
-  const inReview = !!sub && (IN_REVIEW as readonly string[]).includes(sub.status);
-  const verdict = currentVerdict(state, seen);
-
-  if (state.can_browse) {
-    if (verdict) return { target: `/verdict?v=${verdict}`, allowed: ['/verdict', '/settings'] };
-    return { target: '/feed', allowed: [...APP_PATHS, '/verdict', ...DIPLOMA_FLOW] };
-  }
-  if (inReview) return { target: '/diploma/review', allowed: [...DIPLOMA_FLOW, '/settings'] };
-  if (verdict) return { target: `/verdict?v=${verdict}`, allowed: ['/verdict', '/diploma', '/diploma/analysis', '/settings'] };
-  return { target: '/diploma', allowed: ['/diploma', '/diploma/analysis', '/settings'] };
+  // Diplôme facultatif : proposé une fois après l'inscription, jamais imposé.
+  const noDiploma = !state.diploma && !state.latest_submission;
+  if (noDiploma && !seen.has(DIPLOMA_INTRO_KEY)) return { target: '/diploma?intro=1', allowed: [...APP_PATHS] };
+  return { target: '/offers', allowed: [...APP_PATHS] };
 }
 
 export const SIGNED_OUT: Route = { target: '/sign-in', allowed: ['/sign-in', '/verify', '/auth/callback'] };
 
 /** Correspondance exacte, ou préfixe pour les zones à sous-routes dynamiques. */
 export function isAllowed(pathname: string, allowed: string[]): boolean {
-  const prefixed = ['/chat', '/match', '/profile', '/report', '/settings', '/onboarding', '/events'];
-  return allowed.some((p) => pathname === p || (prefixed.includes(p) && pathname.startsWith(`${p}/`)));
+  return allowed.some((p) => {
+    const base = p.split('?')[0];
+    if (pathname === base) return true;
+    if (PREFIXED.includes(base) && pathname.startsWith(`${base}/`)) return true;
+    // `/applications/<id>` (lien des emails) appartient à l'espace candidat.
+    return base === '/applications' && pathname.startsWith('/applications/');
+  });
 }

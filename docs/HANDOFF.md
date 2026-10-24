@@ -379,3 +379,27 @@ navigateur sur l'app web et dans des cookies sur le back-office.
     `Content-Security-Policy-Report-Only`, pousser, puis la remettre une fois corrigé.
 - **zod sans `new Function`** : `packages/shared/src/extraction.ts` active `z.config({ jitless: true })`. Sans cela,
   zod teste `new Function` au chargement de ses schémas et la CSP le signale à chaque page de l'app.
+
+## Emploi · app candidat (agent app) : pour l'agent base et l'intégration
+
+L'app code contre `docs/EMPLOI_CONTRACT.md` et `packages/shared/src/emploi.ts`, par des appels non typés
+(`apps/mobile/src/lib/emploi.ts`) en attendant les types générés. À vérifier une fois la base fusionnée :
+
+1. **Échelle des niveaux** : le contrat dit « `level` 1 à 8 : Bac+N » et le seed « niveau 5 » pour un Master, mais
+   `user_access.level` suit l'échelle existante (`levelLabel` : 7 = Bac+5, 8 = Bac+8, 6 = Bac+3). L'app affiche
+   `levelLabel(level)` ; un Master doit donc valoir 7 dans le seed, sinon il s'affiche « Bac+2 ».
+2. **`save_candidate_profile` à la création** : l'app envoie les champs de la recherche (poste, ville, rayon, contrats,
+   salaire, télétravail, disponibilité, expérience) sans `work_authorization` ni `looking_for`, puis les envoie dans un
+   second appel. La création doit accepter leur absence (défaut `false` et `null`).
+3. **`candidate.complete`** doit passer à vrai après `save_cv` avec trois compétences (c'est lui qui fait sortir de
+   l'inscription).
+4. **Avis** : `get_emploi_state().notices` peut contenir `inactivity_warning` (conformité) ; l'app l'affiche en tête des
+   offres. `application_interested` doit porter `payload.application_id` (écran de match).
+5. **Push** : l'app lit `data = { type: "emploi", event, id }` (ou `application_id`) ; `message` et
+   `interview_proposed` ouvrent `/chat/<candidature>`, `application_interested` `/match/<candidature>`, les autres
+   `/applications/<candidature>`, `invitation_received` l'onglet Candidatures. Verdict de diplôme : `{ type: "verdict" }`
+   ouvre le profil.
+6. **Realtime** : l'app s'abonne aux INSERT de `application_messages` (bandeau, conversation) et de `interview_slots`
+   (conversation). Les ajouter à la publication `supabase_realtime` ; sinon la relecture périodique prend le relais.
+7. **`note_target`** envoyés : `mission:<0-2>`, `must:<i>`, `nice:<i>`, `team`, `process` (pas de `photo:`).
+8. **Lien des emails** : `/applications/<id>` existe dans l'app (détail de la candidature).

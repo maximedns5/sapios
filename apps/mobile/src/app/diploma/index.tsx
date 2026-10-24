@@ -1,10 +1,10 @@
 import { DIPLOMA_RETENTION_DAYS } from '@sapios/shared';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, IconButton } from '@/components/Button';
+import { Button, IconButton, TextLink } from '@/components/Button';
 import { ProgressBar } from '@/components/Controls';
 import { DropTarget } from '@/components/DropTarget';
 import { ArrowRightIcon, CameraIcon, CapIcon, CheckIcon, FileIcon, GearIcon, ImageIcon, LockIcon } from '@/components/Icons';
@@ -16,7 +16,8 @@ import { Body, Eyebrow, Heading, Small, Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
 import { CAMERA_AVAILABLE, diplomaFromFile, formatBytes, pickAnyWeb, pickFromCamera, pickFromLibrary, pickPdf, submitDiploma, type DiplomaPick, type SubmitStep } from '@/lib/diploma';
 import { AppError, errorMessage } from '@/lib/errors';
-import { loadLegalName } from '@/lib/profile';
+import { emploi } from '@/lib/emploi';
+import { DIPLOMA_INTRO_KEY } from '@/lib/routing';
 import { useCopy } from '@/lib/copy';
 import { alpha, colors, radius } from '@/lib/theme';
 
@@ -39,9 +40,13 @@ function PromiseLine({ text }: { text: string }) {
   );
 }
 
-/** Étape 5 (ou nouvelle tentative) : choix du document, promesse de confidentialité, envoi suivi. */
+/**
+ * Badge diplôme vérifié (facultatif) : choix du document, promesse de confidentialité, envoi suivi. Proposé
+ * une fois à la fin de l'inscription (`?intro=1`, avec « Plus tard »), puis depuis le profil.
+ */
 export default function DiplomaUpload() {
-  const { userId, state, refresh } = useApp();
+  const { userId, state, refresh, markSeen } = useApp();
+  const { intro } = useLocalSearchParams<{ intro?: string }>();
   const { t } = useCopy();
   const [legalName, setLegalName] = useState<string | null>(null);
   const [pick, setPick] = useState<DiplomaPick | null>(null);
@@ -50,15 +55,25 @@ export default function DiplomaUpload() {
   const [canBack, setCanBack] = useState(false);
 
   useEffect(() => {
-    if (userId) loadLegalName(userId).then(setLegalName);
+    emploi
+      .myIdentity()
+      .then((i) => i && setLegalName(`${i.first_name} ${i.last_name}`))
+      .catch(() => {});
     setCanBack(router.canGoBack());
   }, [userId]);
 
   const left = state?.submissions_left ?? 3;
-  const hasTier = !!state?.tier;
+  const hasBadge = !!state?.diploma;
   const sub = state?.latest_submission;
   const redo = sub?.status === 'rejected' || sub?.status === 'needs_more';
   const blocked = left <= 0;
+  const first = !!intro && !hasBadge && !sub;
+
+  /** « Plus tard » : l'invitation ne revient pas ; le badge reste disponible depuis le profil. */
+  const skip = async () => {
+    await markSeen(DIPLOMA_INTRO_KEY);
+    router.replace('/offers');
+  };
 
   const choose = async (fn: () => Promise<DiplomaPick | null>) => {
     setError(null);
@@ -75,30 +90,31 @@ export default function DiplomaUpload() {
     setError(null);
     try {
       const id = await submitDiploma(userId, pick, setStep);
+      await markSeen(DIPLOMA_INTRO_KEY);
       await refresh();
       router.replace({ pathname: '/diploma/analysis', params: { submission: id, kind: pick.kind, name: pick.name, size: pick.size != null ? String(pick.size) : '' } });
     } catch (e) {
-      setError(errorMessage(e instanceof AppError ? e : new AppError('unknown')));
+      setError(e instanceof AppError && e.code === 'rate_limited' ? 'Trois tentatives par période de 30 jours : revenez plus tard.' : errorMessage(e instanceof AppError ? e : new AppError('unknown')));
     } finally {
       setStep(null);
     }
   };
 
-  const header = hasTier || redo ? (
+  const header = first ? (
+    <StepHeader step={5} fraction={pick ? 0.5 : 0} />
+  ) : (
     <Header
-      onBack={canBack ? () => router.back() : undefined}
+      onBack={canBack ? () => router.back() : () => router.replace('/profile')}
       right={
         <IconButton label="Compte" onPress={() => router.push('/settings')}>
           <GearIcon size={20} />
         </IconButton>
       }
     />
-  ) : (
-    <StepHeader step={6} fraction={pick ? 0.5 : 0} />
   );
 
-  const eyebrow = redo ? 'Nouvel envoi' : hasTier ? 'Nouvelle tentative' : 'Dernière étape';
-  const title = redo ? 'Un autre document' : hasTier ? 'Un diplôme supérieur' : 'Votre diplôme';
+  const eyebrow = redo ? 'Nouvel envoi' : hasBadge ? 'Diplôme supérieur' : first ? 'Dernière étape, facultative' : 'Badge diplôme vérifié';
+  const title = redo ? 'Un autre document' : hasBadge ? 'Un diplôme supérieur' : 'Vérifions votre diplôme';
 
   return (
     <Screen
@@ -109,7 +125,7 @@ export default function DiplomaUpload() {
         <>
           <Button
             testID="diploma-send"
-            label={step ? STEP[step].label : 'Envoyer au jury'}
+            label={step ? STEP[step].label : 'Envoyer pour vérification'}
             loading={!!step}
             disabled={!pick || blocked}
             onPress={send}
@@ -118,6 +134,11 @@ export default function DiplomaUpload() {
           <Small align="center" size={13}>
             {blocked ? 'Trois tentatives par période de 30 jours : revenez plus tard.' : `Tentatives restantes : ${left} / 3`}
           </Small>
+          {first ? (
+            <View style={{ alignItems: 'center' }}>
+              <TextLink testID="diploma-skip" label="Plus tard" color={colors.muted} size={15} onPress={skip} />
+            </View>
+          ) : null}
         </>
       }
     >
@@ -130,7 +151,7 @@ export default function DiplomaUpload() {
             <Title size={34}>{title}</Title>
           </MaskUp>
           <Rise delay={200}>
-            <Body muted>Le plus élevé que vous ayez. Il décide de votre accès, et de rien d’autre.</Body>
+            <Body muted>Le plus élevé que vous ayez. Il ajoute un badge « Diplôme vérifié » à votre CV anonyme ; sans lui, toutes les offres restent ouvertes.</Body>
           </Rise>
         </View>
 
@@ -140,7 +161,7 @@ export default function DiplomaUpload() {
             <Heading size={15.5}>Votre document reste privé</Heading>
           </View>
           <PromiseLine text={`Vérifié par notre équipe. ${t('review.delay')}`} />
-          <PromiseLine text="Jamais montré aux autres membres." />
+          <PromiseLine text="Jamais montré aux entreprises : elles voient le badge, pas le document." />
           <PromiseLine text={`Supprimé ${DIPLOMA_RETENTION_DAYS} jours après la décision.`} />
         </Rise>
 
@@ -205,7 +226,7 @@ export default function DiplomaUpload() {
         )}
 
         <Small>
-          Le nom inscrit doit être votre nom légal{legalName ? ` : ${legalName}` : ''}.
+          Le nom inscrit doit être le vôtre{legalName ? ` : ${legalName}` : ''}.
         </Small>
         {error ? <Notice testID="diploma-error" kind="error" title="Envoi refusé" message={error} /> : null}
       </View>

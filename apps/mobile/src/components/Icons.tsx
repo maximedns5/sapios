@@ -115,6 +115,17 @@ export const TicketIcon = (p: Props) => (
     d={['M3 9V6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5V9a3 3 0 0 0 0 6v2.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5V15a3 3 0 0 0 0-6z', 'M14 5v2M14 11v2M14 17v2']}
   />
 );
+export const BriefcaseIcon = (p: Props) => <Line {...p} d={['M4 8h16v11H4z', 'M9 8V5h6v3', 'M4 13h16']} />;
+export const ListIcon = (p: Props) => <Line {...p} d={['M9 6h11M9 12h11M9 18h11', 'M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2']} />;
+export const HomeIcon = (p: Props) => <Line {...p} d={['M4 11l8-6 8 6v9H4z', 'M10 20v-5h4v5']} />;
+export const GlobeIcon = (p: Props) => (
+  <Line {...p} d={['M3 12h18', 'M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z']}>
+    <Circle cx={12} cy={12} r={9} />
+  </Line>
+);
+export const EuroIcon = (p: Props) => <Line {...p} d={['M17 6.5A6.5 6.5 0 1 0 17 17.5', 'M4 10h9M4 14h9']} />;
+export const SendIcon = (p: Props) => <Line {...p} d={['M4 12l16-8-6 16-3-7z', 'M11 13l9-9']} />;
+export const VideoIcon = (p: Props) => <Line {...p} d={['M3 7h12v10H3z', 'M15 10l6-3v10l-6-3']} />;
 export const BellIcon = (p: Props) => <Line {...p} d={['M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z', 'M10 21h4']} />;
 export const LogoutIcon = (p: Props) => <Line {...p} d={['M10 4H5v16h5', 'M14 8l4 4-4 4', 'M18 12H9']} />;
 export const TrashIcon = (p: Props) => <Line {...p} d={['M4 7h16', 'M9 7V4h6v3', 'M6 7l1 13h10l1-13']} />;
