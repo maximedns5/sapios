@@ -491,3 +491,35 @@ de `main` ; il reste dans la branche `archive/dating`.
 11. **Web sans push** : les nouveaux messages arrivent par Realtime (`application_messages`, INSERT) avec un bandeau, et
     les compteurs par relecture de l'état (focus et toutes les 60 s). Sans Realtime, la conversation se relit toutes les
     20 s.
+
+## Emploi · recruteur : espace recruteur et back-office (28 oct. 2026)
+
+- **Composants client avec la session de l'utilisateur.** Comme le back-office existant, les écrans interactifs
+  de `/recruteur` appellent les RPC depuis le navigateur (`createBrowserClient`, clé anon + session en cookies).
+  Les gardes sont des composants serveur : `app/recruteur/(espace)/layout.tsx` (session, compte recruteur,
+  conditions acceptées, entreprise inscrite) et la garde aal2 existante du back-office. Aucune clé service_role.
+- **Appels non typés en attendant la base.** Les RPC et tables de l'emploi n'existent pas encore dans
+  `database.types.ts` : `lib/emploi/rpc.ts` les appelle sans typage généré et type la réponse avec
+  `packages/shared/src/emploi.ts`. À garder tel quel après la migration (les formes de `emploi.ts` font foi).
+- **Pile recruteur dans le site, pas dans l'app Expo** (décision E2) : `/recruteur/offres/[id]/pile` est pensée
+  pour le téléphone (boutons collés en bas, flèches du clavier sur ordinateur).
+- **Échelle des niveaux de diplôme.** `user_access.level` suit l'échelle nationale (6 = Bac+3, 7 = Bac+5,
+  8 = Bac+8, `levelLabel` de `tiers.ts`). Le commentaire « 1 à 8 : Bac+N » de `DiplomaBadge` et l'exemple
+  « niveau 5 » du §9 du contrat sont à corriger côté base : le filtre d'approche directe envoie `p_min_level`
+  6, 7 ou 8, et la règle « critère qui contient bac+N » du §6 doit convertir N vers cette échelle.
+- **Refus après le match.** Le contrat ne dit pas si `decide_application(…, 'rejected')` est permis depuis un
+  statut apparié. L'interface le propose (« Ne pas donner suite, poliment ») pour tenir la promesse d'une réponse
+  polie ; si la base renvoie `invalid_status`, le message s'affiche et rien ne change.
+- **Brouillon d'offre incomplet.** L'éditeur enregistre le brouillon à chaque étape avec `save_offer` : la base
+  doit accepter un brouillon sans salaire ni trois missions (contrôles dans `submit_offer`). Clés de `p_fields` :
+  celles d'`OfferDraft` (`lat`, `lng` pour le lieu choisi via `geocode`).
+- **Photos d'offre écrites en direct.** Envoi dans le bucket `offer-photos`, puis `insert` dans `offer_photos`
+  (droit des membres prévu au contrat §2) ; suppression : `delete` de la ligne puis de l'objet.
+- **Back-office : pages du dating retirées** (contenus, découverte, événements, liste d'attente, paliers,
+  parrainages, questions, signalements de membres), conservées dans `archive/dating`. `/admin/signalements`
+  devient la file des signalements d'offres ; la vue d'ensemble lit `admin_emploi_stats`.
+- **Conformité.** Deux textes à accepter (`emploi_terms_candidate_version`, `emploi_terms_recruiter_version`) au
+  lieu de `terms_version`, et deux durées ajoutées : `application_content_retention_days` (30 à 730 jours dans
+  l'interface) et `offer_lifetime_days` (15 à 120). Les bornes réelles sont celles d'`admin_update_settings`.
+- **Textes.** L'éditeur met en avant `emploi.verdict.approved|rejected|needs_more` et les clés `terms.*` ; noms
+  exacts des clés de verdict à confirmer par l'agent base (contrat §5 : `emploi.verdict.*`).
