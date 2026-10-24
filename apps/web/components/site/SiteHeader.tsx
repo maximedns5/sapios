@@ -1,20 +1,27 @@
 import Link from "next/link";
+import { RECRUITER_PATH } from "@/lib/site";
 
-/** En-tête du site public : logo, lien vers le test, accès direct au formulaire. */
-export default function SiteHeader({ applyHref = "/#postuler" }: { applyHref?: string }) {
+/** En-tête du site public : logo, liens vers le fonctionnement et les règles, accès à l'espace recruteur. */
+export default function SiteHeader() {
   return (
     <header className="s-header">
       <div className="s-header-in">
-        <Link className="s-wordmark" href="/" aria-label="Sapios, accueil">
-          sapios
+        <Link className="s-brand" href="/" aria-label="Sapios Emploi, accueil">
+          <span className="s-wordmark">sapios</span>
+          <span className="s-brand-tag" aria-hidden="true">
+            Emploi
+          </span>
         </Link>
         <nav aria-label="Navigation">
-          <Link className="s-header-link" href="/test">
-            Le test d’admission
+          <Link className="s-header-link" href="/#comment">
+            Comment ça marche
           </Link>
-          <a className="s-btn s-btn--sm" href={applyHref}>
-            Postuler
-          </a>
+          <Link className="s-header-link" href="/comment-nous-classons">
+            Nos règles
+          </Link>
+          <Link className="s-btn s-btn--sm s-btn--soft" href={RECRUITER_PATH}>
+            Espace recruteur
+          </Link>
         </nav>
       </div>
     </header>

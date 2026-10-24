@@ -25,7 +25,7 @@ const mono = IBM_Plex_Mono({
   display: "swap",
 });
 
-// Police du site public (landing, test, pages légales). Le back-office garde Inter et Plex Mono.
+// Police du site public (landing, pages légales, espace recruteur). Le back-office garde Inter et Plex Mono.
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
@@ -36,12 +36,20 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
   title: {
-    default: "Sapios — L’amour est aveugle. Nous, non.",
-    template: "%s — Sapios",
+    default: "Sapios Emploi — Recrutement à l’aveugle, diplôme vérifié",
+    template: "%s — Sapios Emploi",
   },
   description:
-    "Sapios, l’application de rencontre pour les gens vraiment intelligents. Diplôme vérifié obligatoire. Réservé à 2 % de la population.",
-  applicationName: "Sapios",
+    "Sapios Emploi : des offres avec salaire affiché et vraies photos du lieu de travail, des CV anonymes jusqu’au match, des diplômes vérifiés et une réponse garantie. Gratuit pour les candidats.",
+  applicationName: "Sapios Emploi",
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    siteName: "Sapios Emploi",
+    title: "Recrutement à l’aveugle, diplôme vérifié.",
+    description: "Salaire affiché, CV sans photo, réponse garantie. Gratuit pour les candidats.",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

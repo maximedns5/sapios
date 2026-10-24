@@ -47,26 +47,6 @@ export const Check = (p: IconProps) => (
   </Svg>
 );
 
-export const Heart = (p: IconProps) => (
-  <Svg {...p} filled>
-    <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
-  </Svg>
-);
-
-export const Share = (p: IconProps) => (
-  <Svg {...p} strokeWidth={2.2}>
-    <path d="M12 15V3M7 8l5-5 5 5" />
-    <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
-  </Svg>
-);
-
-export const Download = (p: IconProps) => (
-  <Svg {...p} strokeWidth={2.2}>
-    <path d="M12 3v12M7 10l5 5 5-5" />
-    <path d="M5 21h14" />
-  </Svg>
-);
-
 export const Alert = (p: IconProps) => (
   <Svg {...p} strokeWidth={2.2}>
     <circle cx="12" cy="12" r="9" />
@@ -74,10 +54,40 @@ export const Alert = (p: IconProps) => (
   </Svg>
 );
 
-export const Timer = (p: IconProps) => (
-  <Svg {...p}>
-    <circle cx="12" cy="13" r="8" />
-    <path d="M12 13V9M10 2h4" />
+/** Symbole euro : « salaire affiché ». */
+export const Salary = (p: IconProps) => (
+  <Svg {...p} strokeWidth={2}>
+    <path d="M17 6.5A7 7 0 1 0 17 17.5" />
+    <path d="M4 10h9M4 14h9" />
+  </Svg>
+);
+
+/** Œil barré : « CV sans photo ». */
+export const EyeOff = (p: IconProps) => (
+  <Svg {...p} strokeWidth={2}>
+    <path d="M3 12s3.5-6 9-6c2 0 3.7.8 5 1.8M21 12s-3.5 6-9 6c-2 0-3.7-.8-5-1.8" />
+    <path d="M4 20L20 4" />
+  </Svg>
+);
+
+export const Clock = (p: IconProps) => (
+  <Svg {...p} strokeWidth={2}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </Svg>
+);
+
+export const Lock = (p: IconProps) => (
+  <Svg {...p} strokeWidth={2.2}>
+    <rect x="5" y="11" width="14" height="9" rx="2" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </Svg>
+);
+
+export const MapPin = (p: IconProps) => (
+  <Svg {...p} strokeWidth={2.2}>
+    <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
+    <circle cx="12" cy="10" r="2.4" />
   </Svg>
 );
 
@@ -90,27 +100,3 @@ export function Verified({ size = 22 }: { size?: number }) {
     </svg>
   );
 }
-
-/** Rond en filet à la couleur d'accent : « accès, avec limites ». */
-export function Partial({ size = 22 }: { size?: number }) {
-  return (
-    <svg aria-hidden="true" focusable="false" width={size} height={size} viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9.2" fill="none" strokeWidth="1.8" style={{ stroke: "var(--accent)" }} />
-      <path d="M7.5 12.5l3 3 6-6.5" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "var(--accent)" }} />
-    </svg>
-  );
-}
-
-export const Waiting = (p: IconProps) => (
-  <Svg {...p} strokeWidth={1.8}>
-    <circle cx="12" cy="12" r="9.2" />
-    <path d="M12 7v5l3 2" />
-  </Svg>
-);
-
-export const Refused = (p: IconProps) => (
-  <Svg {...p} strokeWidth={1.8}>
-    <circle cx="12" cy="12" r="9.2" />
-    <path d="M9 9l6 6M15 9l-6 6" />
-  </Svg>
-);

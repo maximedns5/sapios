@@ -4,7 +4,7 @@ import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
-  description: "Éditeur, directeur de la publication, hébergeurs et point de contact de Sapios.",
+  description: "Éditeur, directeur de la publication, hébergeurs et point de contact de Sapios Emploi.",
   robots: SITE.legalPagesReady ? undefined : { index: false, follow: false },
 };
 
