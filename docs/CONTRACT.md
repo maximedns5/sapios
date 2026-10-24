@@ -1,6 +1,6 @@
 # Sapios — Contrat d'interface entre les modules
 
-Ce document fige les noms partagés entre `supabase/` (base + Edge Functions), `apps/web`, `apps/mobile` et `packages/shared`. Il complète `docs/SAPIOS_BRIEF.md` (qui fait foi pour les règles métier). Si tu dois t'en écarter, note-le dans `docs/DEVIATIONS.md` avec la raison.
+Ce document fige les noms partagés entre `supabase/` (base + Edge Functions), `apps/web`, `apps/mobile` et `packages/shared`. Sapios Emploi (pivot recrutement) a son propre contrat : `docs/EMPLOI_CONTRACT.md`. Il complète `docs/SAPIOS_BRIEF.md` (qui fait foi pour les règles métier). Si tu dois t'en écarter, note-le dans `docs/DEVIATIONS.md` avec la raison.
 
 Décisions ouvertes du brief (§11) : on applique les valeurs par défaut du brief.
 - Visibilité : tous les éligibles se voient (pas de filtre « même niveau ou supérieur »).

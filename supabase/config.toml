@@ -132,6 +132,14 @@ file_size_limit = "10MiB"
 allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
 objects_path = "./seed/photos"
 
+# Sapios Emploi : photos des offres (migration 20261028090000_emploi_tables.sql), seed local
+# dans ./seed/offer-photos/{company_id}/*.jpg.
+[storage.buckets.offer-photos]
+public = false
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
+objects_path = "./seed/offer-photos"
+
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
 enabled = true
@@ -172,6 +180,7 @@ site_url = "http://localhost:3000"
 additional_redirect_urls = [
   "http://localhost:3000",
   "http://localhost:3000/**",
+  "http://localhost:3000/recruteur/auth/callback",
   "http://127.0.0.1:3000/**",
   "sapios://",
   "sapios://**",
@@ -481,4 +490,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.search-books]
+verify_jwt = true
+
+[functions.company-lookup]
+verify_jwt = true
+
+[functions.geocode]
 verify_jwt = true

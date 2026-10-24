@@ -240,3 +240,39 @@ Apple for Email Communication* → *Configure* : ajouter le domaine `mail.<domai
 - Préférences de notification par email dans *Compte*, et en-tête `List-Unsubscribe`.
 - Webhook Resend (rebonds, plaintes) pour cesser d'écrire aux adresses invalides.
 - Textes dans d'autres langues (`app_copy.locale`).
+
+## 11. Sapios Emploi
+
+Textes dans `supabase/functions/_shared/emploi_notify.ts` (`EMPLOI_TEXTS`) ; ils ne sont pas dans `app_copy`.
+Étiquette « Sapios Emploi », pied : « Vous recevez cet email parce que vous avez un compte Sapios Emploi. Inutile de
+répondre à cette adresse. » Variables : `{name}` (prénom du destinataire ; sans prénom, « Bonjour, »), `{offer}`,
+`{company}`, `{candidate}` (prénom et nom, **après le match seulement**), `{date}` (heure de Paris, « jeudi 5 novembre à
+9 h 30 »), `{count}`, `{reason}`, `{level}` (« Bac+5 », `levelLabel`).
+
+Secrets : les mêmes que §4 (`RESEND_API_KEY`, `EMAIL_FROM`, `SAPIOS_APP_URL`) et `SAPIOS_WEB_URL` (adresse du site, pour
+les liens de l'espace recruteur).
+
+| Clé | Destinataire | Push | Sujet de l'email | Bouton |
+|---|---|---|---|---|
+| `application_interested` | candidat | « {company} veut vous rencontrer : c'est un match pour « {offer} ». » | C'est un match : {company} veut vous rencontrer | Ouvrir la conversation |
+| `application_rejected` | candidat | « Réponse de {company} pour « {offer} ». » | Réponse de {company} pour le poste de {offer} | Lire la réponse |
+| `application_closed` | candidat | « {company} n'a pas répondu à temps : votre candidature à « {offer} » est close. » | {company} n'a pas répondu dans le délai promis | Voir des offres proches |
+| `interview_proposed` | candidat | « {company} vous propose des créneaux d'entretien. » | {company} vous propose un entretien | Choisir un créneau |
+| `invitation_received` | candidat | « {company} vous invite à postuler : « {offer} ». » | {company} vous invite à postuler | Voir l'offre |
+| `message.to_candidate` | candidat | « Nouveau message de {company}. » | (pas d'email) | |
+| `message.to_recruiter` | recruteur | | Nouveau message de {candidate} ({offer}) | Répondre |
+| `interview_accepted` | recruteur | | Entretien confirmé avec {candidate} | Voir la candidature |
+| `company_decided.verified` | recruteur | | {company} est vérifiée | Ouvrir l'espace recruteur |
+| `company_decided.rejected` | recruteur | | Vérification de {company} (corps : `{reason}`) | Ouvrir l'espace recruteur |
+| `company_decided.suspended` | recruteur | | {company} est suspendue (corps : `{reason}`) | Ouvrir l'espace recruteur |
+| `offer_decided.published` | recruteur | | Votre offre est en ligne : {offer} | Voir l'offre |
+| `offer_decided.rejected` | recruteur | | Votre offre n'a pas été publiée : {offer} (corps : `{reason}`) | Modifier l'offre |
+| `deadline_reminder` | recruteur | | {count} candidature(s) attendent votre réponse | Répondre |
+| `diploma_verdict.approved` | candidat | « Diplôme vérifié : le badge {level} apparaît sur votre CV. » | Votre diplôme est vérifié | Voir mon CV |
+| `diploma_verdict.rejected` | candidat | « Nous n'avons pas pu vérifier votre diplôme. » | Vérification de votre diplôme | Voir le motif |
+| `diploma_verdict.needs_more` | candidat | « Il nous manque une information pour vérifier votre diplôme. » | Votre diplôme : une information manque | Compléter |
+
+Corps complets : voir `EMPLOI_TEXTS`. Deux principes : un refus rappelle que le CV est resté anonyme ; une candidature
+close à l'échéance n'est jamais présentée comme un refus (« Pas de réponse, pas de refus. »). Le rappel
+`deadline_reminder` part chaque jour à 8 h 07 UTC, une fois par entreprise, pour les candidatures à échéance dans les
+48 h.

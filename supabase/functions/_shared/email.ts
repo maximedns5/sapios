@@ -87,7 +87,7 @@ const FALLBACK_COPY: Record<EmailCopyKey, string> = {
 const FALLBACK_NAME = "Bonjour";
 const FALLBACK_VERDICT = "Verdict rendu.";
 
-export type EmailKind = "verdict" | "match" | "event" | "inactivity";
+export type EmailKind = "verdict" | "match" | "event" | "inactivity" | "emploi";
 
 export interface EmailConfig {
   apiKey: string;
@@ -195,6 +195,7 @@ const LABELS: Record<EmailKind, string> = {
   match: "Sapios · Match",
   event: "Sapios · Événement",
   inactivity: "Sapios · Compte",
+  emploi: "Sapios Emploi",
 };
 
 /** « 14 décembre 2028 » pour une date AAAA-MM-JJ ; chaîne vide si illisible. */

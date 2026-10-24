@@ -1,0 +1,133 @@
+-- Helpers des tests de Sapios Emploi, inclus après _helpers.psql (`\ir _emploi_helpers.psql`).
+-- Par défaut tout se passe à Reykjavik, loin des offres et candidats seedés à Paris et Lyon.
+
+-- SIREN de test valide (clé de Luhn) : 998 + numéro sur 5 chiffres + clé.
+create function pg_temp.siren(p_n int)
+returns text
+language plpgsql
+as $$
+declare
+  v_base text := '998' || lpad(p_n::text, 5, '0');
+begin
+  for d in 0..9 loop
+    if private.siren_valid(v_base || d) then
+      return v_base || d;
+    end if;
+  end loop;
+  return null;
+end;
+$$;
+
+create function pg_temp.point(p_lat double precision, p_lng double precision)
+returns extensions.geography
+language sql
+immutable
+as $$
+  select extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography;
+$$;
+
+create function pg_temp.new_candidate(
+  p_n int,
+  p_skills text[] default '{SQL,Python,Excel}',
+  p_level int default null,
+  p_lat double precision default 64.1466,
+  p_lng double precision default -21.9426,
+  p_radius int default 20,
+  p_contracts public.contract_type[] default '{cdi}',
+  p_open boolean default false,
+  p_first text default null,
+  p_last text default null
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  v uuid := pg_temp.new_user(p_n);
+begin
+  insert into public.emploi_accounts (user_id, kind) values (v, 'candidate');
+  insert into public.terms_acceptances (user_id, version) values (v, private.emploi_terms_version('candidate'));
+  insert into public.candidate_identities (user_id, first_name, last_name_enc)
+  values (v, coalesce(p_first, 'Prenomtest' || p_n), private.encrypt_text(coalesce(p_last, 'Nomtest' || p_n)));
+  insert into public.candidates (user_id, target_role, search_city, search_location, search_radius_km, contract_types,
+                                 salary_min_k, salary_max_k, experience_band, open_to_opportunities)
+  values (v, 'Data analyst', 'Reykjavik', pg_temp.point(p_lat, p_lng), p_radius, p_contracts, 40, 46, 'y0_1', p_open);
+  insert into public.cv_skills (user_id, position, label)
+  select v, (u.i - 1)::int, u.s from unnest(p_skills) with ordinality as u(s, i);
+  if p_level is not null then
+    insert into public.user_access (user_id, level, tier, copy_key, institution, study_field)
+    values (v, p_level, 'standard', 'verdict.standard', 'Université de Test', 'economics');
+  end if;
+  return v;
+end;
+$$;
+
+create function pg_temp.new_recruiter(p_n int)
+returns uuid
+language plpgsql
+as $$
+declare
+  v uuid := pg_temp.new_user(p_n);
+begin
+  insert into public.emploi_accounts (user_id, kind) values (v, 'recruiter');
+  insert into public.terms_acceptances (user_id, version) values (v, private.emploi_terms_version('recruiter'));
+  return v;
+end;
+$$;
+
+-- Entreprise et son recruteur propriétaire (compte p_n).
+create function pg_temp.new_company(p_n int, p_status public.company_status default 'verified')
+returns uuid
+language plpgsql
+as $$
+declare
+  v_owner uuid := pg_temp.new_recruiter(p_n);
+  v_id uuid;
+begin
+  insert into public.companies (siren, legal_name, display_name, city, status, email_domain, created_by)
+  values (pg_temp.siren(p_n), 'ENTREPRISE ' || p_n, 'Entreprise ' || p_n, 'Reykjavik', p_status, 'test' || p_n || '.test', v_owner)
+  returning id into v_id;
+  insert into public.company_members (company_id, user_id, role, job_title, first_name)
+  values (v_id, v_owner, 'owner', 'RH', 'Recruteur' || p_n);
+  return v_id;
+end;
+$$;
+
+create function pg_temp.owner_of(p_company uuid)
+returns uuid
+language sql
+as $$
+  select cm.user_id from public.company_members cm where cm.company_id = p_company and cm.role = 'owner' limit 1;
+$$;
+
+-- Offre complète (3 missions, salaire, lieu, photo du lieu de travail approuvée), publiée par défaut.
+create function pg_temp.new_offer(
+  p_company uuid,
+  p_title text default 'Analyste',
+  p_lat double precision default 64.1466,
+  p_lng double precision default -21.9426,
+  p_status public.offer_status default 'published',
+  p_must text[] default '{SQL,Python}',
+  p_nice text[] default '{dbt}',
+  p_contract public.contract_type default 'cdi',
+  p_published_ago interval default interval '1 day',
+  p_response_days int default 7
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_id uuid;
+begin
+  insert into public.offers (company_id, title, contract, city, location, remote_days, salary_min_k, salary_max_k,
+                             missions, must_have, nice_to_have, response_days, status, submitted_at, published_at, expires_at)
+  values (p_company, p_title, p_contract, 'Reykjavik', pg_temp.point(p_lat, p_lng), 2, 40, 48,
+          array['Mission une', 'Mission deux', 'Mission trois'], p_must, p_nice, p_response_days, p_status,
+          now() - p_published_ago - interval '1 hour',
+          case when p_status in ('published', 'expired', 'filled') then now() - p_published_ago end,
+          case when p_status in ('published', 'expired', 'filled') then now() - p_published_ago + interval '60 days' end)
+  returning id into v_id;
+  insert into public.offer_photos (offer_id, company_id, kind, storage_path, moderation)
+  values (v_id, p_company, 'workplace', p_company::text || '/' || v_id::text || '.jpg', 'approved');
+  return v_id;
+end;
+$$;
