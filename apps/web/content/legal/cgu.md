@@ -1,193 +1,273 @@
-## Article 1. Objet, éditeur et acceptation
+Conditions générales d’utilisation de Sapios Emploi pour les candidats. Version 2026-11-emploi-brouillon, en vigueur le [À compléter].
 
-*Le ton de Sapios est volontairement excessif. Ces conditions, elles, ne le sont pas.*
+Les entreprises et les recruteurs sont soumis aux [conditions générales recruteurs](/conditions-recruteurs). Le traitement de vos données est décrit dans la [politique de confidentialité](/confidentialite).
 
-1.1. Les présentes conditions générales d’utilisation (« CGU ») règlent l’utilisation de l’application Sapios et du site associé (ensemble, le « Service »), édités par [Dénomination sociale], [forme] au capital de […] €, immatriculée au RCS de [ville] sous le n° […], dont le siège est situé [adresse] (« Sapios », « nous »).
+## Article 1. Éditeur du service
 
-1.2. Vous acceptez les CGU en cochant la case prévue lors de la création de votre compte. Sans cette acceptation, le compte ne peut pas être créé. La version acceptée et sa date sont enregistrées.
+1.1. Le service Sapios Emploi (le « Service ») est édité par Sapios, [forme sociale, À compléter], au capital de [À compléter] euros, immatriculée au RCS de [À compléter] sous le numéro [À compléter], dont le siège est situé [À compléter] (« Sapios », « nous »).
 
-1.3. Les CGU sont accessibles à tout moment depuis l’application (Compte) et sur le site, à l’adresse [domaine]/cgu. Elles complètent la [politique de confidentialité](/confidentialite), qui décrit le traitement de vos données.
+1.2. Directeur de la publication : [À compléter]. Contact : [adresse email, À compléter].
 
-1.4. Le site public (liste d’attente, test d’admission) est accessible sans compte. Seuls les articles 10, 12 et 14 s’appliquent à son utilisation sans compte.
+1.3. Le Service est accessible sur le site [domaine, À compléter] et dans l’application web associée. Il est hébergé dans l’Union européenne ; la liste des hébergeurs et des prestataires figure dans les [mentions légales](/mentions-legales) et la [politique de confidentialité](/confidentialite).
 
-## Article 2. Le Service
+1.4. Sapios exerce une activité de placement au sens de l’article L5321-1 du Code du travail : il rapproche des offres et des demandes d’emploi sans devenir partie au contrat de travail.
 
-2.1. Sapios est un service de rencontre entre personnes majeures dont le diplôme a été vérifié. Il permet de créer un profil (photos, réponses à des questions, bibliothèque, domaine d’études), de découvrir d’autres profils, d’aimer une photo ou une réponse en y joignant un mot, et d’échanger des messages après un match.
+## Article 2. Objet et définitions
 
-2.2. Le Service est **gratuit**. Aucune fonctionnalité payante n’est proposée à ce jour. Si des offres payantes sont créées, elles feront l’objet de conditions générales de vente distinctes, et l’accès gratuit décrit ici ne sera pas retiré sans préavis (article 14).
+2.1. Les présentes conditions générales d’utilisation (les « CGU ») fixent les règles d’usage du Service par les personnes qui cherchent un emploi (le « Candidat », « vous »). Elles forment un contrat entre vous et Sapios dès que vous les acceptez à l’inscription.
 
-2.3. Le Service est destiné aux personnes résidant en France. Il est fourni en français.
+2.2. Le Service vous permet de créer un CV, de faire vérifier votre diplôme, de consulter des offres d’emploi publiées par des entreprises vérifiées, d’y postuler, puis d’échanger avec l’entreprise et de convenir d’un entretien.
 
-2.4. Sapios met des personnes en relation. Sapios n’organise pas de rencontres, ne sélectionne pas de partenaire pour vous et n’intervient pas dans vos échanges.
+2.3. Les mots suivants ont le sens indiqué :
 
-2.5. Le Service est fourni en l’état. Sapios fait ses meilleurs efforts pour qu’il soit disponible, sans garantie de disponibilité permanente. Des interruptions pour maintenance peuvent avoir lieu.
+| Terme | Sens dans les CGU |
+| --- | --- |
+| Offre | Annonce d’un poste réel et disponible, publiée par une Entreprise, avec au minimum un intitulé, une fourchette de salaire brut annuel, un lieu, un type de contrat, des missions en français, une photo du lieu de travail et un délai de réponse |
+| Entreprise | Personne morale ou entrepreneur qui recrute pour son propre compte et dont le compte a été vérifié par Sapios |
+| Recruteur | Personne habilitée par une Entreprise à utiliser l’espace recruteur en son nom |
+| Candidature | Votre demande, envoyée en glissant une Offre vers la droite ou en touchant « Postuler », avec un mot facultatif |
+| CV anonyme | Votre CV tel que l’Entreprise le voit avant le Match, sans prénom, nom, âge, genre, adresse ni photo |
+| Match | Le moment où l’Entreprise répond « Intéressé » à votre Candidature ; votre prénom et votre nom lui sont alors révélés et la messagerie s’ouvre |
+| Délai de réponse garanti | Nombre de jours, choisi par l’Entreprise et affiché sur l’Offre, dans lequel elle s’engage à répondre à chaque Candidature |
 
-## Article 3. Conditions d’accès
+2.4. **Ce que certifie le badge « Diplôme vérifié ».** Un membre de l’équipe Sapios a examiné le justificatif que vous avez envoyé et l’a jugé conforme au niveau, au domaine et, si vous l’affichez, à l’établissement déclarés, ainsi qu’à votre nom. Le badge ne certifie pas que l’établissement a confirmé le diplôme, ni vos compétences, ni vos notes.
 
-3.1. Pour créer un compte, vous devez :
+2.5. **Ce que certifie le badge « Entreprise vérifiée ».** Trois contrôles ont été menés :
 
-1. avoir **18 ans révolus** ;
-2. être une personne physique agissant pour elle-même, et ne pas détenir d’autre compte ;
-3. résider en France ;
-4. ne pas avoir été exclu du Service ;
-5. fournir des informations exactes, notamment vos nom légal et date de naissance.
+- le numéro SIREN correspond à une entreprise active dans la base Sirene de l’Insee ;
+- le Recruteur a confirmé une adresse email professionnelle sur le domaine de cette entreprise, ou fourni un extrait Kbis ;
+- un membre de l’équipe Sapios a relu le dossier.
 
-3.2. Vos **nom légal et date de naissance** sont saisis une seule fois et ne sont jamais montrés aux autres membres. Ils servent à contrôler votre âge et à vérifier que le diplôme envoyé est bien le vôtre. Ils ne se modifient que sur demande, après vérification.
+Le badge ne certifie ni la qualité de l’employeur, ni ses conditions de travail, ni sa situation financière.
 
-3.3. Les genres que vous recherchez peuvent révéler votre orientation sexuelle. Ils ne sont traités qu’avec votre **consentement explicite**, recueilli séparément. Sans ce consentement, ou après son retrait, la mise en relation n’est plus possible.
+2.6. Pendant la phase pilote, seuls des CDI et des CDD sont publiés. Les stages, l’alternance et l’intérim ne sont pas proposés.
 
-3.4. L’accès à la découverte, aux likes et aux messages suppose en plus un diplôme vérifié et un palier qui y donne accès (article 4).
+## Article 3. Accès au service
 
-3.5. Si nous constatons qu’une de ces conditions n’est pas remplie, notamment en cas de compte d’une personne mineure, le compte est suspendu sans délai (article 5).
+3.1. Le Service est réservé aux personnes physiques âgées de **18 ans au moins**, qui cherchent un emploi pour elles-mêmes. Pendant la phase pilote, il s’adresse aux titulaires d’un diplôme de niveau Bac+3 à Bac+5, dans les métiers et la ville indiqués sur le site.
 
-## Article 4. Vérification du diplôme et paliers d’accès
+3.2. Votre âge est vérifié par une simple déclaration à l’inscription. Il n’est jamais affiché ni transmis à une Entreprise.
 
-4.1. Vous envoyez une photo ou un PDF de votre diplôme le plus élevé. **Chaque décision est prise par une personne de l’équipe Sapios**, qui examine le document, vérifie que le nom correspond à votre nom légal et fixe le niveau validé (de 1 à 8). Aucune décision n’est prise par un traitement entièrement automatisé. Nous visons une réponse sous 48 heures, sans pouvoir le garantir.
+3.3. Votre compte est **personnel**. Vous ne pouvez en ouvrir qu’un, ni le prêter, ni le céder, ni l’utiliser pour le compte d’une autre personne. Vous gardez vos moyens de connexion confidentiels et nous prévenez sans délai en cas d’usage frauduleux.
 
-4.2. Le niveau validé détermine votre palier d’accès :
+3.4. Pour utiliser le Service, vous acceptez les CGU en cochant la case prévue à l’inscription. Sapios enregistre la version acceptée et sa date.
 
-| Niveau validé | Palier | Ce qu’il permet |
-| --- | --- | --- |
-| Bac+8 (doctorat) | Accès complet | Likes illimités ; vous voyez qui vous a liké |
-| Bac+5 (master, ingénieur, grande école) | Accès standard | 20 likes par jour ; vous voyez combien de personnes vous ont liké, pas qui |
-| Bac+3 (licence) | Liste d’attente | Pas encore d’accès à la découverte ; admission par vagues décidées par Sapios |
-| Bac+2 et en dessous | Pas d’accès | Le compte peut être supprimé à tout moment |
+3.5. Une personne qui recrute ne peut pas utiliser un compte candidat pour consulter des CV ou contacter des candidats. Elle doit ouvrir un compte recruteur.
 
-Ces règles peuvent évoluer. Tout changement vous est annoncé dans l’application au moins 15 jours avant de s’appliquer.
+## Article 4. Gratuité
 
-4.3. Votre **niveau et votre domaine** sont visibles par les autres membres (par exemple « Bac+8 · Philosophie »). L’établissement n’est affiché que si vous l’activez.
+4.1. Le Service est **entièrement gratuit pour vous**, et le restera. Conformément à l’article L5321-3 du Code du travail, aucune rétribution, directe ou indirecte, ne peut vous être demandée en contrepartie d’un service de placement.
 
-4.4. Le verdict peut être : validé, liste d’attente, à compléter (par exemple si le nom du diplôme diffère de votre nom légal) ou refusé. Il est toujours motivé. Vous pouvez envoyer **3 documents au plus par période de 30 jours**.
+4.2. Concrètement, vous ne payez jamais pour :
 
-4.5. **Recours** : vous pouvez contester un verdict en écrivant à [contact@domaine] dans les 6 mois. Le dossier est réexaminé par une personne et la réponse est motivée. Vous pouvez aussi, à tout moment, envoyer un diplôme plus élevé.
+- créer votre compte, votre CV ou faire vérifier votre diplôme ;
+- consulter une Offre ou y postuler ;
+- lire une réponse, échanger avec une Entreprise ou fixer un entretien ;
+- être mieux placé dans les résultats ou plus visible des Entreprises.
 
-4.6. Le fichier du diplôme est **supprimé 30 jours après la décision**. Seuls le niveau validé, l’établissement, le domaine et l’année sont conservés.
+4.3. Sapios ne vend pas vos données. Le paiement éventuel des Entreprises n’a aucun effet sur le classement des Offres que vous voyez, sauf mention contraire affichée sur l’Offre elle-même.
 
-4.7. L’envoi d’un document falsifié ou appartenant à une autre personne entraîne l’exclusion définitive du Service, sans préjudice de poursuites (faux et usage de faux, article 441-1 du Code pénal).
+4.4. Si une Entreprise ou un Recruteur vous demande de l’argent, à quelque titre que ce soit (frais de dossier, formation obligatoire, matériel), signalez-le immédiatement depuis l’Offre ou la conversation. C’est interdit et l’Entreprise sera suspendue.
 
-## Article 5. Votre compte
+## Article 5. Inscription, CV et diplôme
 
-5.1. **Sécurité** : la connexion se fait par un code ou un lien envoyé à votre adresse email. Vous gardez le contrôle de cette adresse et nous prévenez à [contact@domaine] si quelqu’un d’autre y accède.
+5.1. **Inscription.** Vous indiquez votre prénom et votre nom, le poste visé, la ville et le rayon de recherche, le type de contrat, la fourchette de salaire souhaitée, vos jours de télétravail souhaités et votre disponibilité. Votre prénom et votre nom ne sont jamais montrés à une Entreprise avant le Match. Votre adresse n’est pas demandée : les distances sont calculées depuis le centre de la ville que vous choisissez.
 
-5.2. **Pause** : vous pouvez mettre votre profil en pause depuis l’application. Il n’apparaît plus dans la découverte ; vos matchs et messages restent accessibles.
+5.2. **CV structuré.** Votre CV se compose de champs prédéfinis : poste visé, diplôme, tranche d’expérience, expériences, dix compétences au plus, langues, prétentions salariales, zone de recherche, autorisation de travailler en France (oui ou non) et une réponse à la question « Ce que je cherche dans mon prochain poste ». Vous vous engagez à y donner des informations exactes.
 
-5.3. **Suppression à votre initiative** : vous pouvez supprimer votre compte à tout moment depuis l’application, sans motif. La suppression est immédiate et efface le profil, les photos, les réponses, les messages et les diplômes envoyés. Avant de supprimer, vous pouvez télécharger une copie de vos données depuis l’application.
+5.3. **Ce que le CV ne contient jamais.** Pour respecter les articles L1132-1 et L1221-6 du Code du travail, le Service ne vous demande pas et n’affiche pas :
 
-5.4. **Suspension ou exclusion par Sapios** : nous pouvons suspendre ou supprimer un compte en cas de manquement grave aux CGU, de fraude au diplôme, de compte d’une personne mineure, ou de comportement mettant en danger d’autres membres. Sauf urgence ou obligation légale contraire, la décision vous est notifiée avec ses motifs, les faits en cause et les moyens de la contester (article 7.5).
+- votre âge ou votre date de naissance, votre genre ;
+- votre photo ;
+- votre nationalité, votre origine, votre situation de famille ;
+- votre état de santé, un handicap, vos opinions, votre religion, votre appartenance syndicale ;
+- votre salaire actuel ou passé ;
+- votre adresse.
 
-5.5. Une trace des décisions de modération est conservée après la suppression du compte, sans les documents, pour justifier ces décisions et empêcher le retour d’une personne exclue.
+N’écrivez pas ces informations dans les champs libres. Si vous le faites, Sapios peut les retirer lors de la modération et vous en informe.
 
-## Article 6. Règles de contenu et de conduite
+5.4. **Vérification du diplôme.** Vous pouvez envoyer un justificatif de votre plus haut diplôme. Un membre de l’équipe Sapios l’examine à la main, sans outil d’intelligence artificielle, et rend une décision motivée : vérifié, à compléter ou non vérifié. Le délai indicatif est de 48 heures.
 
-6.1. Vous êtes responsable de ce que vous publiez : photos, réponses, livres, phrase de thèse ou de mémoire, mots joints aux likes et messages.
+5.5. Le diplôme est **un badge, pas une condition d’accès**. Sans badge, vous pouvez utiliser le Service et postuler ; votre CV ne porte alors pas de badge « Diplôme vérifié ».
 
-6.2. **Sont interdits** :
+5.6. Vous pouvez envoyer **3 documents au plus par période de 30 jours**. Le justificatif est supprimé après la décision ; seuls le badge, le niveau et le domaine sont conservés. Vous choisissez d’afficher ou non le nom de l’établissement.
 
-1. les photos qui ne vous représentent pas, ou qui montrent de la nudité ou un contenu sexuel ;
-2. les propos injurieux, diffamatoires, haineux ou discriminatoires, le harcèlement et les menaces ;
-3. tout contenu impliquant une personne mineure ;
-4. l’usurpation d’identité et les faux profils ;
-5. les coordonnées publiées sur le profil (téléphone, email, pseudo de réseau social, lien) : elles s’échangent en message, après un match ;
-6. les informations sur un tiers sans son accord ;
-7. la publicité, la prospection commerciale, la sollicitation d’argent et la prostitution ;
-8. tout contenu illicite, ou qui porte atteinte aux droits d’autrui (droit d’auteur, droit à l’image).
+5.7. Un faux justificatif entraîne la résiliation de votre compte (article 11) et peut être signalé aux autorités.
 
-6.3. **Précautions** : votre profil est visible par les membres admis. Évitez d’y écrire des informations sur votre santé, vos opinions politiques ou religieuses, ou tout ce qui permettrait de vous retrouver hors de l’application. Un sujet de thèse suffit souvent à retrouver un nom complet : c’est pourquoi votre phrase de thèse n’est visible qu’après un match, sauf si vous choisissez de la montrer à tous.
+## Article 6. De l’offre à l’entretien
 
-6.4. **Conduite** : vous ne contournez pas les limites du Service (nombre de likes, palier), vous n’utilisez pas de robot ou d’outil automatisé, vous ne collectez pas les données d’autres membres et vous respectez un refus.
+6.1. **Parcourir les Offres.** Les Offres s’affichent sous forme de cartes. Glisser une carte vers la gauche ou toucher « Passer » l’écarte ; l’Entreprise n’en est pas informée. Glisser vers la droite ou toucher « Postuler » ouvre l’envoi de la Candidature.
 
-## Article 7. Signalement, modération et recours
+6.2. **Postuler.** Avant l’envoi, vous voyez votre CV anonyme exactement tel que l’Entreprise le recevra. Vous pouvez ajouter un mot de 140 caractères au plus, ou répondre à un point précis de l’Offre. La Candidature est envoyée quand vous confirmez ; la date de réponse garantie s’affiche alors.
 
-7.1. **Signaler** : depuis l’application, vous pouvez signaler une personne ou un texte précis (réponse, livre, phrase de thèse), en choisissant un motif : faux profil ou usurpation, diplôme douteux, photos ou propos inappropriés, harcèlement ou menaces, personne mineure, autre. Toute personne, membre ou non, peut aussi signaler un contenu illicite à [contact@domaine].
+6.3. **Anonymat jusqu’au Match.** Avant le Match, l’Entreprise ne voit que votre CV anonyme. Il ne contient ni votre prénom, ni votre nom, ni votre âge, ni votre genre, ni votre adresse, ni de photo. Vous êtes identifié par un numéro, par exemple « Candidat·e n° 0427 ». Les Entreprises s’engagent à ne pas chercher à vous identifier par d’autres moyens.
 
-7.2. **Messages privés** : l’équipe Sapios ne lit pas vos conversations. Si vous signalez un message, recopiez-le ou décrivez-le dans le signalement.
+6.4. **Match et révélation de l’identité.** Quand l’Entreprise répond « Intéressé », Sapios lui transmet votre prénom et votre nom, et rien d’autre. Cette transmission vaut uniquement pour cette Entreprise et cette Offre. Vous en êtes prévenu, et la messagerie s’ouvre.
 
-7.3. **Filtre automatique** : les réponses, livres et phrases de thèse sont analysés par un filtre simple qui repère les numéros de téléphone, adresses email, pseudos de réseaux sociaux, liens et une liste de mots. Un texte repéré **reste publié** et part dans une file d’examen. Le filtre ne supprime jamais rien : chaque retrait est décidé par une personne.
+6.5. **Messagerie.** Vous échangez avec le Recruteur dans le Service. Restez courtois et ne partagez pas d’informations dont le poste n’a pas besoin. L’Entreprise ne peut pas vous demander votre salaire actuel ou passé ; vous n’êtes pas tenu de répondre à une telle question et pouvez la signaler.
 
-7.4. **Décisions** : après examen, un texte est gardé ou retiré ; une photo peut être retirée ; un compte peut être averti, suspendu ou supprimé (article 5.4). Chaque retrait vous est notifié dans l’application avec son motif (exposé des motifs prévu par l’article 17 du DSA).
+6.6. **Entretiens.** Le Recruteur vous propose des créneaux, sur place ou en visio. Vous en choisissez un ou en demandez d’autres par message. Prévenez au moins 24 heures avant si vous ne pouvez plus venir. Sapios n’assiste pas aux entretiens.
 
-7.5. **Recours interne** : vous pouvez contester gratuitement une décision qui vous concerne pendant 6 mois, depuis l’avis reçu dans l’application ou à [contact@domaine]. La contestation est examinée par une personne, et la réponse motivée. Vous pouvez aussi saisir un organisme de règlement extrajudiciaire des litiges certifié (article 21 du DSA) ou le juge.
+6.7. **Retrait.** Vous pouvez retirer une Candidature à tout moment depuis « Mes candidatures ». Si le Match a eu lieu, l’Entreprise conserve les informations déjà reçues selon ses propres règles, décrites dans la politique de confidentialité.
 
-7.6. **Autorités** : Sapios répond aux réquisitions légales des autorités et signale aux autorités compétentes tout contenu laissant soupçonner une infraction menaçant la vie ou la sécurité d’une personne.
+6.8. **Réponse négative.** Si l’Entreprise répond « Pas pour ce poste », la Candidature passe en « Non retenue », avec le motif et le message choisis par le Recruteur. Votre identité ne lui a jamais été transmise.
 
-## Article 8. Likes, matchs et messages
+6.9. Chaque réponse « Intéressé » ou « Pas pour ce poste » est donnée par une personne. Aucune Candidature n’est écartée automatiquement par le Service.
 
-8.1. Vous pouvez aimer un profil, une photo ou une réponse, et y joindre un mot de 140 caractères au plus. La personne likée le voit selon son palier (article 4.2).
+## Article 7. Réponse garantie
 
-8.2. Quand deux personnes se sont likées, c’est un match : une conversation s’ouvre. Le mot joint au like en devient le premier message, avec la citation de ce qui a été aimé.
+7.1. Chaque Offre affiche un délai de réponse garanti, de 3, 7 ou 10 jours, choisi par l’Entreprise. Il court à partir de l’envoi de votre Candidature, et la date limite s’affiche dans « Mes candidatures ».
 
-8.3. Vous pouvez à tout moment annuler un match ou bloquer une personne. Une personne bloquée ne voit plus votre profil et ne peut plus vous écrire ; elle n’en est pas prévenue.
+7.2. Avant la date limite, l’Entreprise répond « Intéressé » ou « Pas pour ce poste ». Sapios lui envoie des rappels.
 
-8.4. Les messages ne sont visibles que des deux personnes du match. La conversation entière est supprimée dès que l’une des deux personnes supprime son compte.
+7.3. **Si l’Entreprise n’a pas répondu à la date limite**, votre Candidature passe en **« Close sans réponse de l’entreprise »**. Ce statut n’est pas un refus :
 
-## Article 9. Découverte : comment les profils sont choisis et classés
+- aucune décision n’a été prise sur votre profil, ni par l’Entreprise, ni par le Service ;
+- le Service n’affiche jamais « Non retenue » à la place de l’Entreprise ;
+- votre identité n’a pas été transmise.
 
-9.1. **Qui vous voyez** : un profil vous est proposé seulement si toutes ces conditions sont remplies.
+7.4. Le retard est compté dans le « délai de réponse moyen » affiché sur la page de l’Entreprise. Une Entreprise qui manque souvent ses délais peut voir ses Offres suspendues, selon les conditions générales recruteurs.
 
-- Vos genres et genres recherchés sont compatibles dans les deux sens.
-- Chacun est dans la tranche d’âge recherchée par l’autre.
-- La distance est dans votre rayon (de 5 à 200 km, 50 km par défaut).
-- Aucun de vous deux n’a bloqué l’autre, et le profil n’est ni en pause ni suspendu.
-- Les deux paliers donnent accès à la découverte.
+7.5. La réponse garantie est un engagement de l’Entreprise envers Sapios. Elle ne garantit ni un entretien, ni une embauche (article 12).
 
-Vous pouvez aussi choisir des niveaux et des domaines, en « préférence » (ils remontent) ou en « strict » (les autres sont exclus).
+## Article 8. Classement des offres et des candidatures
 
-9.2. **Dans quel ordre** : par défaut, les profils actifs le plus récemment passent d’abord. À activité égale, viennent ceux qui correspondent à vos préférences, puis ceux avec qui vous avez le plus d’affinités, puis les plus proches. Vous pouvez choisir de faire passer les affinités avant l’activité.
+8.1. Conformément à l’article L111-7 du Code de la consommation, voici les règles qui décident de l’ordre d’affichage. Ce sont des règles fixes, écrites par l’équipe Sapios ; aucun outil d’intelligence artificielle ne trie les Offres ni les Candidatures. Elles sont détaillées sur la page « [Comment nous classons](/comment-nous-classons) ».
 
-9.3. **Affinités** : elles sont calculées avec des règles simples et explicables : même domaine, livres en commun, mêmes questions répondues, même établissement si vous l’affichez tous les deux. La raison est indiquée sur chaque profil (« Pourquoi ce profil »). Aucune intelligence artificielle n’intervient dans ce calcul.
+8.2. **Règle 1 : les Offres que vous voyez.** Seules s’affichent les Offres situées dans votre zone de recherche et du type de contrat choisi. Elles sont ensuite classées par nombre de correspondances avec votre CV, puis par date de publication, la plus récente d’abord, puis par distance.
 
-9.4. **Ce qui n’influence pas l’ordre** : aucune rémunération. Personne ne peut payer pour apparaître plus haut.
+8.3. **Règle 2 : les correspondances.** La ligne « Vous avez déjà » compte les critères de l’Offre que votre CV remplit. Un critère du type « Bac+5 » n’est rempli que par un diplôme vérifié de ce niveau ; une compétence citée dans le critère ne suffit pas. Tout autre critère est rempli si l’une de vos compétences ou de vos langues y figure en mot entier. Chaque critère est affiché, rempli ou non. Il n’y a ni note globale, ni pourcentage de compatibilité.
 
-9.5. Ces critères sont aussi expliqués dans l’application (« Comment nous choisissons vos profils »), conformément à l’article L111-7 du Code de la consommation.
+8.4. **Règle 3 : l’ordre chez l’Entreprise.** Les Candidatures arrivent chez l’Entreprise dans leur ordre d’envoi. Le Service ne les reclasse pas et ne leur attribue aucun score. Un critère « indispensable » manquant est signalé à l’Entreprise, mais n’écarte jamais votre Candidature.
 
-## Article 10. Test d’admission : un jeu, pas une mesure
+8.5. **Ce qui n’influence pas le classement :** le paiement des Entreprises, et toute donnée sur votre âge, votre genre ou votre origine. Si Sapios proposait un jour une mise en avant payante pour les Entreprises, l’Offre concernée porterait la mention « Mise en avant ».
 
-10.1. Le « test d’admission » proposé sur le site et dans l’application est un **jeu humoristique**. Son résultat (« QI estimé : 130 ») est le même pour tout le monde. Ce n’est pas un test psychométrique et il ne mesure rien.
+8.6. Toute modification de ces règles est annoncée selon l’article 14.
 
-10.2. Le test n’a **aucun effet** sur l’accès au Service, sur votre palier ou sur l’ordre des profils : seul le diplôme vérifié compte.
+## Article 9. « Ouvert·e aux opportunités » et approche directe
 
-10.3. Vos réponses ne sont ni envoyées ni enregistrées. Dans l’application, seul votre choix d’afficher ou non le badge « QI : non communiqué. Par modestie. » est conservé.
+9.1. L’option « Ouvert·e aux opportunités » est **désactivée par défaut**. Vous l’activez depuis votre CV si vous acceptez que des Entreprises vous trouvent sans que vous ayez postulé.
 
-10.4. Le test est gratuit et ne sera jamais associé à un paiement.
+9.2. Une fois l’option activée, votre CV anonyme peut apparaître aux Recruteurs d’Entreprises vérifiées. Ils ne peuvent filtrer que sur le diplôme, les compétences et votre zone de recherche, jamais sur votre adresse ni sur un critère protégé par la loi. Vous pouvez masquer votre profil à des Entreprises précises, par exemple votre employeur actuel.
 
-## Article 11. Données personnelles
+9.3. Un Recruteur peut vous envoyer une invitation à postuler. Elle est toujours liée à une Offre publiée, avec sa fourchette de salaire, et peut contenir un court message. Le nombre d’invitations par Entreprise est limité.
 
-11.1. Sapios traite vos données en tant que responsable de traitement, comme décrit dans la [politique de confidentialité](/confidentialite).
+9.4. Vous êtes libre de répondre ou non :
 
-11.2. Vous pouvez à tout moment exporter vos données et supprimer votre compte depuis l’application, et exercer vos autres droits à [confidentialite@domaine]. Vous pouvez aussi saisir la CNIL.
+- **si vous acceptez**, vous ouvrez l’Offre et pouvez y postuler, avec les mêmes règles d’anonymat et le même délai de réponse garanti ;
+- **si vous déclinez ou ne répondez pas**, l’Entreprise sait seulement que l’invitation n’a pas abouti, sans motif ni identité.
 
-11.3. Vous vous engagez à ne pas utiliser les données d’autres membres hors du Service : pas de copie, de diffusion ni de capture de profil publiée ailleurs sans l’accord de la personne.
+9.5. Vous pouvez désactiver l’option à tout moment, avec effet immédiat : votre CV disparaît des recherches. Les invitations déjà reçues restent consultables.
 
-## Article 12. Propriété intellectuelle
+9.6. Une invitation insistante, hors sujet ou sans Offre réelle peut être signalée (article 10).
 
-12.1. Le Service, sa marque, ses textes, son design et son code appartiennent à Sapios. Vous n’en recevez qu’un droit d’usage personnel, pour la durée de votre compte.
+## Article 10. Règles de contenu et modération
 
-12.2. Vous restez propriétaire de vos contenus (photos, réponses, livres, messages). Vous accordez à Sapios une licence gratuite, non exclusive et limitée au Service, pour les héberger, les afficher aux membres autorisés et les adapter techniquement (format, taille). Cette licence prend fin à la suppression du contenu ou du compte. Sapios n’utilise pas vos contenus pour sa publicité sans votre accord écrit.
+10.1. **Vos contenus.** Votre CV, vos mots de candidature et vos messages doivent être exacts et licites. Sont interdits :
 
-12.3. Vous garantissez détenir les droits sur ce que vous publiez, notamment sur les photos (droit d’auteur du photographe, droit à l’image des personnes visibles).
+1. les informations fausses sur vos diplômes, vos expériences ou votre identité ;
+2. les propos injurieux, haineux, discriminatoires ou harcelants ;
+3. les contenus sexuels, violents ou contraires à la loi ;
+4. les données personnelles d’autres personnes sans leur accord ;
+5. la publicité et la sollicitation commerciale ;
+6. les liens vers des sites malveillants.
 
-12.4. L’image partageable du test d’admission peut être publiée librement par vous sur vos propres comptes.
+10.2. **Signaler.** Depuis chaque Offre, le bouton « Signaler » vous permet d’indiquer un contenu que vous estimez illicite ou contraire aux CGU. C’est notamment le cas d’une Offre fausse ou trompeuse, discriminatoire, sans salaire réel, ou d’une demande d’argent. Vous précisez le motif et, si possible, une explication. Une conversation ou une invitation peut être signalée par email à [adresse, À compléter]. Sapios accuse réception du signalement.
 
-## Article 13. Responsabilité et sécurité des rencontres
+10.3. **Outils automatiques.** Un filtre repère certains mots interdits dans les Offres et les champs libres, par exemple une limite d’âge. Il ne supprime rien seul : le contenu repéré part en relecture humaine.
 
-13.1. Sapios vérifie le diplôme et contrôle l’âge à partir de la date de naissance déclarée. Sapios ne vérifie pas l’identité des membres par une pièce d’identité et ne peut garantir l’exactitude de tout ce qu’ils publient.
+10.4. **Décisions motivées.** Toute décision qui vous concerne est prise par un membre de l’équipe Sapios : retrait d’un contenu, limitation, suspension ou résiliation. Elle vous est notifiée avec les faits retenus, la règle des CGU ou la loi appliquée, et les voies de recours. Si vous avez fait un signalement, vous êtes informé de la suite donnée.
 
-13.2. Les rencontres hors de l’application se font sous votre responsabilité. Quelques conseils, rappelés dans l’application : premier rendez-vous dans un lieu public, un proche prévenu, jamais d’argent prêté ou envoyé, un signalement au moindre doute.
+10.5. **Recours interne.** Vous pouvez contester une décision dans les 6 mois, depuis le Service ou par email. Votre recours est examiné par une autre personne que celle qui a décidé. La réponse est motivée et vous parvient dans un délai de [À compléter] jours.
 
-13.3. En tant qu’hébergeur des contenus publiés par les membres, Sapios n’est pas responsable de ces contenus tant qu’il n’a pas connaissance de leur caractère illicite. Dès qu’il en a connaissance, notamment par un signalement, il agit promptement pour les retirer.
+10.6. **Messages privés.** L’équipe Sapios ne lit pas vos conversations, sauf après un signalement, et seulement les messages concernés, ou sur demande d’une autorité habilitée.
 
-13.4. Sapios répond des dommages directs causés par un manquement à ses obligations. Rien dans les CGU ne limite les droits que vous tenez du Code de la consommation.
+10.7. **Autorités.** Sapios informe les autorités compétentes de tout contenu laissant soupçonner une infraction qui menace la vie ou la sécurité d’une personne, et répond aux réquisitions légales.
 
-13.5. Vous répondez des dommages causés par vos contenus ou votre comportement, envers les autres membres et envers Sapios.
+## Article 11. Conduite, suspension et résiliation
 
-## Article 14. Modification des CGU, droit applicable et litiges
+11.1. **Conduite.** Vous vous engagez à :
 
-14.1. **Modification** : Sapios peut modifier les CGU pour suivre l’évolution du Service ou de la loi. Toute modification importante vous est annoncée dans l’application et par email au moins 30 jours avant son entrée en vigueur. Vous devez accepter la nouvelle version pour continuer à utiliser le Service ; vous pouvez aussi supprimer votre compte, sans frais.
+- postuler uniquement aux Offres qui vous intéressent réellement ;
+- vous présenter aux entretiens acceptés, ou prévenir le Recruteur par message ;
+- rester courtois avec les Recruteurs, y compris après une réponse négative ;
+- ne pas utiliser de robot, de script ou d’envoi automatisé, ni copier en masse les Offres ou les données des Recruteurs.
 
-14.2. **Droit applicable** : les CGU sont soumises au droit français.
+Sapios limite le nombre de Candidatures par jour pour préserver la qualité des réponses.
 
-14.3. **Réclamation** : écrivez d’abord à [contact@domaine] ; nous répondons sous 30 jours.
+11.2. **Pause.** Vous pouvez mettre votre recherche en pause : vos Candidatures en cours continuent, mais aucune Entreprise ne peut vous inviter.
 
-14.4. **Médiation** : en cas de litige non résolu, vous pouvez recourir gratuitement au médiateur de la consommation [nom et coordonnées, à compléter], dans un délai d’un an à compter de votre réclamation écrite.
+11.3. **Suppression par vous.** Vous pouvez supprimer votre compte à tout moment depuis les réglages. Vos Candidatures en cours sont alors closes. Les Entreprises avec lesquelles vous avez eu un Match conservent les informations déjà reçues selon leurs propres règles.
 
-14.5. **Juridiction** : à défaut d’accord, le litige relève des tribunaux français compétents. Si vous êtes consommateur, vous pouvez saisir le tribunal de votre domicile.
+11.4. **Inactivité.** Un compte sans connexion pendant 2 ans est supprimé. Vous en êtes prévenu par email 30 jours avant.
+
+11.5. **Suspension ou résiliation par Sapios.** En cas de manquement aux CGU, Sapios peut retirer un contenu, limiter votre compte, le suspendre ou le résilier. La mesure est proportionnée à la gravité des faits :
+
+- **sans avertissement**, pour un manquement grave : faux justificatif, harcèlement, propos discriminatoires, fraude, usurpation d’identité ;
+- **après un avertissement resté sans effet**, pour les autres manquements.
+
+Toute mesure est motivée et peut être contestée selon l’article 10.5.
+
+11.6. Après une résiliation pour manquement grave, vous ne pouvez pas ouvrir un nouveau compte pendant [durée, À compléter].
+
+## Article 12. Responsabilité
+
+12.1. **Sapios n’est pas l’employeur.** Sapios met en relation. Le contrat de travail se négocie et se conclut directement entre vous et l’Entreprise. Sapios n’est partie ni à l’entretien, ni à la décision d’embauche, ni au contrat.
+
+12.2. **Aucune garantie d’embauche.** Sapios ne garantit ni un nombre d’Offres, ni un entretien, ni une embauche. La seule garantie est celle de l’article 7 : une réponse ou une clôture visible à la date affichée.
+
+12.3. **Les Offres.** Chaque Entreprise répond du contenu de ses Offres. Sapios vérifie l’Entreprise, relit chaque Offre à sa première publication et retire les Offres signalées qui ne respectent pas la loi ou les règles du Service. Sapios ne peut toutefois pas garantir l’exactitude de chaque détail d’une Offre.
+
+12.4. **Vos contenus.** Vous répondez de l’exactitude de votre CV et du contenu de vos messages.
+
+12.5. **Disponibilité.** Sapios fait ses meilleurs efforts pour que le Service soit accessible et sécurisé. Il peut être interrompu pour maintenance ; les interruptions prévues sont annoncées quand c’est possible.
+
+12.6. Rien dans les CGU ne limite la responsabilité de Sapios en cas de faute lourde ou intentionnelle, ni les droits que la loi vous accorde en tant que consommateur.
+
+12.7. **Votre sécurité.** Ne versez jamais d’argent à un recruteur. Ne transmettez ni coordonnées bancaires ni copie de pièce d’identité avant la signature d’un contrat de travail. Pour un entretien sur place, vérifiez que l’adresse correspond à celle de l’Entreprise. En cas de doute, signalez.
+
+## Article 13. Données personnelles
+
+13.1. Le traitement de vos données est décrit dans la [politique de confidentialité](/confidentialite), accessible à tout moment depuis le Service.
+
+13.2. En résumé :
+
+- Sapios est responsable du traitement de vos données sur la plateforme ;
+- chaque Entreprise devient responsable des données qu’elle reçoit, à partir du Match ;
+- vos données sont hébergées dans l’Union européenne et ne sont jamais vendues.
+
+13.3. Vous disposez des droits d’accès, de rectification, d’effacement, de limitation, d’opposition et de portabilité, ainsi que du droit de retirer votre consentement. Votre droit d’accès couvre les notes qu’un Recruteur a prises sur votre Candidature. Vous les exercez depuis les réglages ou par email à [adresse, À compléter], et pouvez saisir la CNIL.
+
+13.4. L’option « Ouvert·e aux opportunités » repose sur votre consentement, retirable à tout moment (article 9).
+
+## Article 14. Modification des CGU
+
+14.1. Sapios peut modifier les CGU pour suivre l’évolution du Service ou de la loi, par exemple la transposition de la directive sur la transparence salariale.
+
+14.2. Toute modification vous est annoncée par email et dans le Service **au moins 15 jours avant** son entrée en vigueur, avec un résumé des changements. Ce délai ne s’applique pas à une modification imposée par la loi ou nécessaire pour faire face à un risque de sécurité ou de fraude.
+
+14.3. Si vous refusez les nouvelles CGU, vous pouvez supprimer votre compte avant leur entrée en vigueur. Continuer d’utiliser le Service après cette date vaut acceptation ; pour un changement important, Sapios vous demande une nouvelle acceptation expresse.
+
+14.4. Les règles de classement de l’article 8 ne sont jamais modifiées sans cette annonce préalable.
+
+## Article 15. Droit applicable, litiges et médiation
+
+15.1. **Droit applicable.** Les CGU sont soumises au droit français.
+
+15.2. **Réclamation.** Écrivez d’abord à [adresse, À compléter] : la plupart des difficultés se règlent ainsi. Sapios vous répond dans un délai de [À compléter] jours.
+
+15.3. **Médiation.** En cas de litige non résolu, vous pouvez recourir gratuitement au médiateur de la consommation [nom et coordonnées, À compléter], dans un délai d’un an à compter de votre réclamation écrite.
+
+15.4. **Modération.** Pour une décision de modération, vous pouvez aussi saisir un organisme de règlement extrajudiciaire des litiges certifié au titre de l’article 21 du règlement sur les services numériques (DSA), après le recours interne de l’article 10.5.
+
+15.5. **Juridiction.** À défaut d’accord amiable, le litige est porté devant la juridiction compétente selon les règles de droit commun. En tant que consommateur, vous pouvez saisir le tribunal du lieu de votre domicile.
+
+## Article 16. Contact
+
+16.1. Pour toute question sur le Service ou les CGU : [adresse email, À compléter].
+
+16.2. Point de contact unique pour les autorités et pour les utilisateurs, au sens des articles 11 et 12 du DSA : [adresse email, À compléter]. Langues acceptées : français et anglais.
+
+16.3. Pour vos données personnelles : [adresse email ou délégué à la protection des données, À compléter].
+
+16.4. Par courrier : Sapios, [adresse du siège, À compléter].

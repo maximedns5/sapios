@@ -4,9 +4,17 @@ import LegalShell from "@/components/LegalShell";
 import { LegalMarkdown } from "@/lib/legal-markdown";
 import { SITE } from "@/lib/site";
 
-/** Texte légal lu au build dans content/legal/<file>.md (pages statiques). */
+// Valeurs remplacées dans les textes : adresses de contact et date de mise à jour (lib/site.ts).
+const TOKENS: Record<string, string> = {
+  contactEmail: SITE.contactEmail,
+  privacyEmail: SITE.privacyEmail,
+  privacyUpdatedAt: SITE.privacyUpdatedAt,
+};
+
+/** Texte légal lu dans content/legal/<file>.md, avec les `{{jeton}}` de TOKENS remplacés. */
 export function readLegal(file: string): string {
-  return readFileSync(path.join(process.cwd(), "content", "legal", `${file}.md`), "utf8");
+  const source = readFileSync(path.join(process.cwd(), "content", "legal", `${file}.md`), "utf8");
+  return source.replace(/\{\{(\w+)\}\}/g, (match, key: string) => TOKENS[key] ?? match);
 }
 
 export default function LegalDocument({

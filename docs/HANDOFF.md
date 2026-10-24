@@ -379,3 +379,15 @@ navigateur sur l'app web et dans des cookies sur le back-office.
     `Content-Security-Policy-Report-Only`, pousser, puis la remettre une fois corrigé.
 - **zod sans `new Function`** : `packages/shared/src/extraction.ts` active `z.config({ jitless: true })`. Sans cela,
   zod teste `new Function` au chargement de ses schémas et la CSP le signale à chaque page de l'app.
+
+## Emploi · site public (landing, règles de classement, pages légales)
+
+- **À configurer sur Vercel** : `NEXT_PUBLIC_APP_URL` (adresse de l'app candidat) pour le bouton « Je cherche un
+  emploi » ; sans elle, il mène à `/#comment`. `NEXT_PUBLIC_SITE_URL` alimente le plan du site, `robots.txt` et l'image
+  d'aperçu.
+- **Pour l'espace recruteur** : la landing, l'en-tête (« Espace recruteur ») et la page Contact pointent vers
+  `/recruteur`. `robots.txt` interdit `/admin` et `/recruteur`.
+- **Pour `proxy.ts`** (agent espace recruteur) : `/opengraph-image` passe par le proxy et reçoit la CSP, sans effet
+  sur une image ; l'exclure du `matcher` est facultatif.
+- **Retirés** : `/test` et `/test/partage/*` (test d'admission du dating, archivé dans `archive/dating`), formulaire de
+  liste d'attente, `components/landing/WaitlistForm.tsx` et `StickyApply.tsx`, `components/test/`.

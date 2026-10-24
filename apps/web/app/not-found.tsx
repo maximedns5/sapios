@@ -10,9 +10,9 @@ export default function NotFound() {
       <main className="nf">
         <p className="s-kicker">Erreur 404</p>
         <h1>
-          Page <em>non admise.</em>
+          Poste <em>introuvable.</em>
         </h1>
-        <p>Elle n’a pas le niveau requis. Ou elle n’existe pas.</p>
+        <p>Cette page n’existe pas, ou plus. L’offre a peut-être été pourvue.</p>
         <Link className="s-btn" href="/">
           Retour à l’accueil
         </Link>

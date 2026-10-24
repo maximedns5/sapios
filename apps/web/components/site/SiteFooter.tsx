@@ -6,15 +6,16 @@ export default function SiteFooter({ note }: { note?: React.ReactNode }) {
     <footer className="s-footer">
       <div className="s-footer-in">
         <div>
-          <Link className="s-wordmark" href="/" aria-label="Sapios, accueil">
+          <Link className="s-wordmark" href="/" aria-label="Sapios Emploi, accueil">
             sapios
           </Link>
-          <p className="s-small">© 2026 Sapios. Réservé aux personnes majeures.</p>
+          <p className="s-small">© 2026 Sapios. Gratuit pour les candidats, réservé aux personnes majeures.</p>
         </div>
         <nav aria-label="Informations">
-          <Link href="/test">Test d’admission</Link>
+          <Link href="/comment-nous-classons">Comment nous classons</Link>
           <Link href="/confidentialite">Confidentialité</Link>
-          {SITE.legalPagesReady ? <Link href="/cgu">CGU</Link> : null}
+          {SITE.legalPagesReady ? <Link href="/cgu">CGU candidats</Link> : null}
+          {SITE.legalPagesReady ? <Link href="/conditions-recruteurs">Conditions recruteurs</Link> : null}
           {SITE.legalPagesReady ? <Link href="/mentions-legales">Mentions légales</Link> : null}
           <Link href="/contact">Contact</Link>
         </nav>

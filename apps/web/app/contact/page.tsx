@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import LegalShell from "@/components/LegalShell";
-import { SITE } from "@/lib/site";
+import { RECRUITER_PATH, SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contacter l’éditeur de Sapios : questions, données personnelles, signalements, presse.",
+  description: "Contacter l’éditeur de Sapios Emploi : questions, données personnelles, signalement d’une offre, entreprises.",
 };
 
 export const viewport: Viewport = { themeColor: "#FFFFFF", colorScheme: "light" };
@@ -19,7 +19,7 @@ export default function ContactPage() {
           Nous <em>contacter</em>
         </>
       }
-      intro={<p>Une question, une demande, un problème avec un membre : écrivez-nous. Une personne vous répond.</p>}
+      intro={<p>Une question, une demande, une offre qui vous semble douteuse : écrivez-nous. Une personne vous répond.</p>}
     >
       <section aria-labelledby="ecrire">
         <h2 id="ecrire">
@@ -39,7 +39,7 @@ export default function ContactPage() {
           <span className="label">02</span>Données personnelles
         </h2>
         <div className="legal-contact">
-          <p>Accès, rectification, effacement, portabilité, retrait du consentement.</p>
+          <p>Accès, y compris aux notes d’un recruteur sur votre candidature, rectification, effacement, portabilité.</p>
           <a className="big" href={`mailto:${SITE.privacyEmail}`}>
             {SITE.privacyEmail}
           </a>
@@ -52,20 +52,32 @@ export default function ContactPage() {
 
       <section aria-labelledby="signaler">
         <h2 id="signaler">
-          <span className="label">03</span>Signaler un membre ou un contenu
+          <span className="label">03</span>Signaler une offre ou une photo
         </h2>
         <p>
-          Dans l’application, depuis le profil ou la conversation : bouton « Signaler », ou « Bloquer » pour ne
-          plus voir la personne ni recevoir ses messages. Chaque signalement est examiné par l’équipe de
-          modération.
+          Dans l’application, chaque offre a un bouton « Signaler » : offre fictive, critère discriminatoire, salaire
+          trompeur, demande d’argent. Chaque signalement est examiné par une personne de l’équipe.
         </p>
         <p>
-          Vous pouvez aussi écrire à <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a> en précisant
-          le prénom affiché du membre et la date des faits.
+          Une conversation, une invitation, ou une photo sur laquelle vous figurez : écrivez à{" "}
+          <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a> avec l’offre concernée. Une photo est
+          retirée sous 72 heures à la demande d’une personne qui y figure.
         </p>
         <div className="legal-callout">
-          <p>En cas de danger immédiat, appelez le 17 (police) ou le 112.</p>
+          <p>Un recruteur ne vous demande jamais d’argent. Si c’est le cas, ne payez pas et signalez-le.</p>
         </div>
+      </section>
+
+      <section aria-labelledby="entreprises">
+        <h2 id="entreprises">
+          <span className="label">04</span>Entreprises
+        </h2>
+        <p>
+          Pour publier des offres pendant le pilote, ouvrez un compte depuis l’
+          <Link href={RECRUITER_PATH}>espace recruteur</Link> : la vérification de l’entreprise prend en général
+          moins de 24 heures ouvrées. Les règles sont dans les{" "}
+          <Link href="/conditions-recruteurs">conditions générales recruteurs</Link>.
+        </p>
       </section>
     </LegalShell>
   );
