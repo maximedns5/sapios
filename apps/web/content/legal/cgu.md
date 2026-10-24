@@ -136,7 +136,7 @@ N’écrivez pas ces informations dans les champs libres. Si vous le faites, Sap
 
 8.2. **Règle 1 : les Offres que vous voyez.** Seules s’affichent les Offres situées dans votre zone de recherche et du type de contrat choisi. Elles sont ensuite classées par nombre de correspondances avec votre CV, puis par date de publication, la plus récente d’abord, puis par distance.
 
-8.3. **Règle 2 : les correspondances.** La ligne « Vous avez déjà » compte les critères de l’Offre que votre CV remplit, par exemple le niveau de diplôme ou une compétence. Chaque critère est affiché, rempli ou non. Il n’y a ni note globale, ni pourcentage de compatibilité.
+8.3. **Règle 2 : les correspondances.** La ligne « Vous avez déjà » compte les critères de l’Offre que votre CV remplit. Un critère du type « Bac+5 » n’est rempli que par un diplôme vérifié de ce niveau ; une compétence citée dans le critère ne suffit pas. Tout autre critère est rempli si l’une de vos compétences ou de vos langues y figure en mot entier. Chaque critère est affiché, rempli ou non. Il n’y a ni note globale, ni pourcentage de compatibilité.
 
 8.4. **Règle 3 : l’ordre chez l’Entreprise.** Les Candidatures arrivent chez l’Entreprise dans leur ordre d’envoi. Le Service ne les reclasse pas et ne leur attribue aucun score. Un critère « indispensable » manquant est signalé à l’Entreprise, mais n’écarte jamais votre Candidature.
 

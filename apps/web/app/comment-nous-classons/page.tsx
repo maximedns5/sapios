@@ -73,10 +73,14 @@ export default function CommentNousClassonsPage() {
         </p>
         <ul>
           <li>
-            un critère est rempli si l’une de vos compétences ou de vos langues y figure, en mot entier, sans tenir compte
-            des majuscules ni des accents ;
+            un critère du type « Bac+5 » n’est rempli que par un diplôme vérifié de ce niveau ou plus ; une
+            compétence citée dans le critère ne suffit pas ;
           </li>
-          <li>un critère du type « Bac+5 » est rempli si votre diplôme vérifié est de ce niveau ou plus ;</li>
+          <li>
+            tout autre critère est rempli si l’une de vos compétences ou de vos langues y figure, en mot entier, sans
+            tenir compte des majuscules, des accents ni de la ponctuation : « SQL » remplit « Maîtrise de SQL »,
+            pas « MySQL » ; le niveau d’une langue n’est pas comparé ;
+          </li>
           <li>il n’y a ni note globale, ni pourcentage de compatibilité.</li>
         </ul>
         <p>
