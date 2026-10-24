@@ -29,6 +29,7 @@ const MESSAGES: Record<string, string> = {
   not_matched: "Disponible seulement après votre « Intéressé ».",
   offer_not_published: "L’offre doit être publiée pour inviter des candidats.",
   already_invited: "Ce candidat est déjà invité sur cette offre.",
+  already_applied: "Ce candidat a déjà postulé à cette offre : retrouvez sa candidature dans le suivi.",
   quota_exceeded: "Quota d’invitations atteint pour cette semaine.",
   company_not_verified: "L’entreprise n’est pas encore vérifiée.",
   photos_pending: "Des photos attendent encore une décision.",
