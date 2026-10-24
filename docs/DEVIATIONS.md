@@ -458,3 +458,36 @@ Nom légal, date de naissance et texte libre des signalements sont chiffrés dan
     `purge-inactive`), archive les offres ouvertes de l'entreprise s'il en était le seul membre et efface les photos.
 12. **Temps réel** : `application_messages` et `interview_slots` ajoutées à `supabase_realtime` (test 001 mis à jour) ;
     le test des clés étrangères liste les nouveaux auteurs `set null`.
+
+## Emploi · app candidat (agent app, 24 oct. 2026)
+
+L'app Expo devient l'app candidat de Sapios Emploi (contrat `docs/EMPLOI_CONTRACT.md`). Le code du dating est retiré
+de `main` ; il reste dans la branche `archive/dating`.
+
+1. **Compte sans type** : à la première lecture de `get_emploi_state`, l'app appelle `set_account_kind('candidate')`
+   (l'app est réservée aux candidats) puis relit l'état. Un compte recruteur voit un écran qui renvoie vers
+   `<EXPO_PUBLIC_SITE_URL>/recruteur`.
+2. **Identité** : prénom et nom, plus une case « J’ai 18 ans ou plus ». Ni date de naissance ni photo, nulle part.
+   Le prénom et le nom restent modifiables depuis « Mon CV » (`set_candidate_identity` rappelé).
+3. **Inscription** : cinq étapes (conditions, identité, recherche, CV, diplôme). La recherche est enregistrée d'un coup
+   (`save_candidate_profile` à la création, sans `looking_for` ni `work_authorization`), puis le CV (`save_cv`) et un
+   second `save_candidate_profile` avec `looking_for` et `work_authorization`. Une inscription interrompue reprend au CV.
+4. **Diplôme facultatif** : proposé une fois après l'inscription (`/diploma?intro=1`, bouton « Plus tard »). Le choix
+   est mémorisé localement (clé `diploma-intro` de `seen`) ; le badge reste disponible depuis le profil. Les
+   tentatives et la revue humaine sont celles du dating, avec un texte emploi.
+5. **Ville** : cherchée par l'Edge Function `geocode` (`kind: "city"`), jamais par la position de l'appareil. La
+   distance affichée est celle du contrat (vol d'oiseau depuis le centre de la zone). `expo-location` reste dans les
+   dépendances et `app.json` (non retiré dans cette PR pour ne pas toucher au lockfile).
+6. **Pause** : `save_candidate_profile({ paused })`, depuis le compte et l'écran « Vous faites une pause ».
+7. **Match** : un avis `application_interested` non vu ouvre une fois l'écran « C’est un match » quand le candidat est
+   sur un onglet ; l'écran acquitte l'avis (`ack_notice`). Les autres avis (refus, clôture, créneaux) s'affichent en
+   tête de « Candidatures ».
+8. **Classement** : le texte des règles (`emploi.ranking`) s'affiche en fin de pile et depuis le compte ; les clés de
+   texte de l'emploi sont préfixées `emploi.` pour ne jamais reprendre un texte du dating stocké dans `app_copy`.
+9. **Photos d'offre** : bucket `offer-photos`, URL signées de 5 minutes. Sans URL (photo absente ou refusée), un
+   monogramme de l'entreprise s'affiche. Aucun logo téléversé (initiales sur une teinte stable).
+10. **Entretien** : « Ajouter au calendrier » produit un fichier `.ics` local (téléchargement sur le web, feuille de
+    partage sur téléphone) ; aucune donnée n'est envoyée à un service tiers.
+11. **Web sans push** : les nouveaux messages arrivent par Realtime (`application_messages`, INSERT) avec un bandeau, et
+    les compteurs par relecture de l'état (focus et toutes les 60 s). Sans Realtime, la conversation se relit toutes les
+    20 s.

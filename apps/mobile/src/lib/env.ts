@@ -12,15 +12,15 @@ export const EAS_PROJECT_ID: string | undefined =
 
 export const CONTACT_EMAIL = process.env.EXPO_PUBLIC_CONTACT_EMAIL || 'contact@sapios.app';
 
-/** Version du texte de consentement (donnée sensible, art. 9 RGPD) envoyée à set_sensitive_consent. */
-export const CONSENT_VERSION = '2026-10-v1';
-
 /** Site public (landing) : pages légales et contact. À régler sur l'hébergeur (EXPO_PUBLIC_SITE_URL). */
 export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL || 'https://sapios.app').replace(/\/$/, '');
 
+/** Espace recruteur (site Next) : un compte recruteur qui ouvre l'app y est renvoyé. */
+export const RECRUITER_URL = `${SITE_URL}/recruteur`;
+
 /**
- * Adresse de l'app membre, pour les liens partagés (lettres de recommandation). Sur le web, l'origine de
- * la page ; sur téléphone, EXPO_PUBLIC_APP_URL (repli : le site public).
+ * Adresse de l'app candidat. Sur le web, l'origine de la page ; sur téléphone, EXPO_PUBLIC_APP_URL
+ * (repli : le site public).
  */
 export const APP_URL = (
   process.env.EXPO_PUBLIC_APP_URL ||

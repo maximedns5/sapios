@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { api } from '@/lib/api';
+import { emploi } from '@/lib/emploi';
 import { useCopy } from '@/lib/copy';
 import { errorMessage } from '@/lib/errors';
 import { alpha, colors, radius } from '@/lib/theme';
-import type { TermsState } from '@sapios/shared';
 import { Button } from './Button';
 import { Checkbox } from './Controls';
 import { CheckIcon } from './Icons';
@@ -14,20 +13,21 @@ import { MaskUp, Rise } from './motion';
 import { Notice } from './Notice';
 import { Body, Eyebrow, Small, Title } from './Text';
 
-const POINTS = ['terms.point.access', 'terms.point.data', 'terms.point.conduct'] as const;
+const POINTS = ['emploi.terms.point.free', 'emploi.terms.point.blind', 'emploi.terms.point.data'] as const;
 
 /**
- * Acceptation des CGU (CGU art. 1.2) : trois points essentiels, liens vers les textes complets, case
- * jamais pré-cochée. `update` : la version a changé depuis la dernière acceptation (art. 14.1), avec la
- * suppression du compte comme alternative.
+ * Acceptation des CGU candidats : trois points essentiels, liens vers les textes complets, case jamais
+ * pré-cochée. `update` : la version a changé depuis la dernière acceptation, avec la suppression du compte
+ * comme alternative.
  */
 export function TermsForm({
-  terms,
+  version,
   mode,
   onDone,
   onDelete,
 }: {
-  terms: TermsState;
+  /** Version des CGU candidats en vigueur (get_emploi_state().terms.required_version). */
+  version: string;
   mode: 'first' | 'update';
   onDone: () => Promise<unknown> | void;
   onDelete?: () => void;
@@ -40,7 +40,7 @@ export function TermsForm({
   const accept = async () => {
     setError(null);
     try {
-      await api.acceptTerms(terms.current_version);
+      await emploi.acceptTerms(version);
       await onDone();
     } catch (e) {
       setError(errorMessage(e));
@@ -56,11 +56,11 @@ export function TermsForm({
           <Eyebrow>{update ? 'Mise à jour des conditions' : 'Conditions d’utilisation'}</Eyebrow>
         </Rise>
         <MaskUp delay={80}>
-          <Title size={34}>{t(update ? 'terms.update.title' : 'terms.title')}</Title>
+          <Title size={34}>{t(update ? 'emploi.terms.update.title' : 'emploi.terms.title')}</Title>
         </MaskUp>
       </View>
       <Rise delay={200}>
-        <Body secondary>{t(update ? 'terms.update.lead' : 'terms.lead')}</Body>
+        <Body secondary>{t(update ? 'emploi.terms.update.lead' : 'emploi.terms.lead')}</Body>
       </Rise>
       <Rise delay={280} style={{ backgroundColor: colors.surface, borderRadius: radius.card, paddingHorizontal: 18, paddingVertical: 6 }}>
         {POINTS.map((key, i) => (
@@ -78,15 +78,15 @@ export function TermsForm({
         <LegalLinks only={['terms', 'privacy', 'legalNotice']} color={colors.accent} />
       </Rise>
       <Rise delay={400}>
-        <Checkbox testID="terms-check" checked={checked} onChange={setChecked} label={t('terms.checkbox')} />
+        <Checkbox testID="terms-check" checked={checked} onChange={setChecked} label={t('emploi.terms.checkbox')} />
       </Rise>
       {error ? <Notice kind="error" message={error} /> : null}
       <View style={{ gap: 4 }}>
-        <Button testID="terms-accept" label={t(update ? 'terms.update.cta' : 'terms.cta')} disabled={!checked} onPress={accept} />
-        {update && onDelete ? <Button testID="terms-delete" label={t('terms.update.delete')} variant="ghost" onPress={onDelete} /> : null}
+        <Button testID="terms-accept" label={t(update ? 'emploi.terms.update.cta' : 'emploi.terms.cta')} disabled={!checked} onPress={accept} />
+        {update && onDelete ? <Button testID="terms-delete" label={t('emploi.terms.update.delete')} variant="ghost" onPress={onDelete} /> : null}
       </View>
       <Small size={13} align="center">
-        Version des conditions : {terms.current_version}
+        Version des conditions : {version}
       </Small>
     </View>
   );
