@@ -11,7 +11,7 @@ import CvView from "./CvView";
 import { IconCheckCircle, IconSend } from "./Icons";
 import { ErrorBox, Loading, Modal, useToast } from "./ui";
 
-// Niveaux de `user_access.level` (échelle nationale) : 6 = Bac+3, 7 = Bac+5, 8 = Bac+8.
+// Niveaux de `user_access.level` (échelle européenne, pas Bac+N) : 6 = Bac+3, 7 = Bac+5, 8 = Bac+8.
 const LEVELS = [null, 6, 7, 8] as const;
 
 function invitationText(o: RecruiterOfferRow): string {
@@ -117,7 +117,7 @@ export default function DirectApproach() {
             ) : null}
             {LEVELS.map((l) => (
               <button key={String(l)} type="button" className="chip" aria-pressed={level === l} onClick={() => setLevel(l)}>
-                {l == null ? "Tous diplômes" : `${levelLabel(l)} et plus`}
+                {l == null ? "Tous diplômes" : l === 8 ? levelLabel(l) : `${levelLabel(l)} et plus`}
               </button>
             ))}
           </div>

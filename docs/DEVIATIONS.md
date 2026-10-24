@@ -503,8 +503,8 @@ de `main` ; il reste dans la branche `archive/dating`.
   `packages/shared/src/emploi.ts`. À garder tel quel après la migration (les formes de `emploi.ts` font foi).
 - **Pile recruteur dans le site, pas dans l'app Expo** (décision E2) : `/recruteur/offres/[id]/pile` est pensée
   pour le téléphone (boutons collés en bas, flèches du clavier sur ordinateur).
-- **Échelle des niveaux de diplôme.** `user_access.level` suit l'échelle nationale (6 = Bac+3, 7 = Bac+5,
-  8 = Bac+8, `levelLabel` de `tiers.ts`). Le commentaire « 1 à 8 : Bac+N » de `DiplomaBadge` et l'exemple
+- **Échelle des niveaux de diplôme.** `user_access.level` suit l'échelle européenne (5 = Bac+2, 6 = Bac+3,
+  7 = Bac+5, 8 = Bac+8, `levelLabel` de `tiers.ts`), pas Bac+N. Le commentaire « 1 à 8 : Bac+N » de `DiplomaBadge` et l'exemple
   « niveau 5 » du §9 du contrat sont à corriger côté base : le filtre d'approche directe envoie `p_min_level`
   6, 7 ou 8, et la règle « critère qui contient bac+N » du §6 doit convertir N vers cette échelle.
 - **Refus après le match.** Le contrat ne dit pas si `decide_application(…, 'rejected')` est permis depuis un
