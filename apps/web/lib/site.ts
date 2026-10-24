@@ -3,7 +3,7 @@ export const SITE = {
   name: "Sapios",
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "contact@sapios.app",
   privacyEmail: process.env.NEXT_PUBLIC_PRIVACY_EMAIL || "confidentialite@sapios.app",
-  privacyUpdatedAt: "26 octobre 2026",
+  privacyUpdatedAt: "24 octobre 2026",
   /**
    * Pages CGU et mentions légales validées par le juriste : `NEXT_PUBLIC_LEGAL_PAGES_READY=true`.
    * Sinon elles restent consultables par adresse (liens de l'app) avec un bandeau « version
@@ -20,3 +20,21 @@ export const SITE_URL: string | null =
 
 /** « sapios.fr » : l'adresse telle qu'on l'écrit sur une image, sans protocole. */
 export const SITE_HOST: string | null = SITE_URL ? new URL(SITE_URL).host.replace(/^www\./, "") : null;
+
+/**
+ * Application candidat (export web d'Expo) : NEXT_PUBLIC_APP_URL, par exemple `https://app.sapios.fr`.
+ * Sans elle, le bouton « Je cherche un emploi » mène à la section « Comment ça marche » du site.
+ */
+export const APP_URL: string | null = (() => {
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString().replace(/\/$/, "") : null;
+  } catch {
+    return null;
+  }
+})();
+
+/** Espace recruteur (même site). */
+export const RECRUITER_PATH = "/recruteur";
