@@ -22,6 +22,21 @@ export function formatDay(iso: string): string {
 }
 
 /** « 31 oct. » (année ajoutée si elle diffère de l'année en cours). */
+/** Tranche d'effectif Sirene (« 100 à 199 salariés ») ; ajoute « salariés » si la tranche ne le dit pas. */
+export function headcountLabel(band: string): string {
+  return /salari/i.test(band) ? band : `${band} salariés`;
+}
+
+/** La même tranche sans le mot « salariés », pour un chiffre clé suivi de son libellé. */
+export function headcountFigure(band: string): string {
+  return band.replace(/\s*salariée?s?\s*$/i, '');
+}
+
+/** Termine une phrase par un point, sans doubler celui d'une abréviation (« 31 oct. »). */
+export function endSentence(text: string): string {
+  return text.endsWith('.') ? text : `${text}.`;
+}
+
 export function formatShortDate(iso: string, now = new Date()): string {
   const d = new Date(iso);
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
@@ -59,6 +74,11 @@ export function remoteLabel(days: number): string {
 /** « à 4 km » ; moins d'un km : « à moins d'un km ». */
 export function distanceLabel(km: number): string {
   return km < 1 ? 'à moins d’un km' : `à ${Math.round(km)} km`;
+}
+
+/** « Paris 11e · à 2 km », ou la ville seule si la distance est inconnue (zone non renseignée). */
+export function placeLabel(place: string, km: number | null): string {
+  return km == null ? place : `${place} · ${distanceLabel(km)}`;
 }
 
 /** Durée en mois → « 1 an 2 mois ». */

@@ -15,7 +15,7 @@ import { Header, Screen } from '@/components/Screen';
 import { Body, Heading, Small, Title } from '@/components/Text';
 import { emploi } from '@/lib/emploi';
 import { errorCode, errorMessage } from '@/lib/errors';
-import { distanceLabel, formatShortDate, remoteLabel } from '@/lib/format';
+import { formatShortDate, headcountLabel, placeLabel, remoteLabel } from '@/lib/format';
 import { back } from '@/lib/nav';
 import { alpha, colors, radius } from '@/lib/theme';
 
@@ -139,7 +139,7 @@ export default function OfferScreen() {
             <Title size={28}>{offer.title}</Title>
           </MaskUp>
           <Pressable accessibilityRole="link" accessibilityLabel={`Page de l’entreprise ${offer.company.display_name}`} onPress={() => router.push({ pathname: '/company/[id]', params: { id: offer.company.id } })}>
-            <CompanyLine name={offer.company.display_name} verified={offer.company.verified} sub={offer.company.headcount_band ? `${offer.company.headcount_band} salariés` : offer.company.naf_label} />
+            <CompanyLine name={offer.company.display_name} verified={offer.company.verified} sub={offer.company.headcount_band ? headcountLabel(offer.company.headcount_band) : offer.company.naf_label} />
           </Pressable>
           <View style={{ alignSelf: 'flex-start', backgroundColor: alpha(colors.accent, 0.08), borderRadius: 14, paddingHorizontal: 14, paddingVertical: 8 }}>
             <Body weight="extrabold" size={22} color={colors.accent}>
@@ -147,7 +147,7 @@ export default function OfferScreen() {
             </Body>
           </View>
           <View style={{ gap: 8 }}>
-            <InfoLine icon={<PinIcon size={18} color={colors.muted} />} text={`${offer.address_label ?? offer.city} · ${distanceLabel(offer.distance_km)}`} />
+            <InfoLine icon={<PinIcon size={18} color={colors.muted} />} text={placeLabel(offer.address_label ?? offer.city, offer.distance_km)} />
             <InfoLine icon={<HomeIcon size={18} color={colors.muted} />} text={remoteLabel(offer.remote_days)} />
             <InfoLine icon={<BriefcaseIcon size={18} color={colors.muted} />} text={`${CONTRACT_LABELS[offer.contract]}${offer.start_label ? ` · ${offer.start_label}` : ''} · ${EXPERIENCE_BAND_LABELS[offer.experience_band]} d’expérience`} />
             <InfoLine icon={<CalendarIcon size={18} color={colors.muted} />} text={`Publiée le ${formatShortDate(offer.published_at)} · jusqu’au ${formatShortDate(offer.expires_at)}`} />

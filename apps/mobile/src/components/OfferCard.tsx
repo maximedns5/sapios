@@ -1,7 +1,7 @@
 import { CONTRACT_LABELS, formatSalaryRange, type OfferCard as Offer, type RequirementMatch } from '@sapios/shared';
 import { View } from 'react-native';
 
-import { distanceLabel, remoteLabel } from '@/lib/format';
+import { placeLabel, remoteLabel } from '@/lib/format';
 import { alpha, colors, radius, shadow } from '@/lib/theme';
 import { CompanyLine } from './Company';
 import { BriefcaseIcon, CheckIcon, HomeIcon, PinIcon } from './Icons';
@@ -73,7 +73,7 @@ export function OfferCardBody({ offer, footer }: { offer: Offer; footer?: React.
           </Body>
         </View>
         <View style={{ gap: 8 }}>
-          <InfoLine icon={<PinIcon size={18} color={colors.muted} />} text={`${offer.city} · ${distanceLabel(offer.distance_km)}`} />
+          <InfoLine icon={<PinIcon size={18} color={colors.muted} />} text={placeLabel(offer.city, offer.distance_km)} />
           <InfoLine icon={<HomeIcon size={18} color={colors.muted} />} text={remoteLabel(offer.remote_days)} />
           <InfoLine icon={<BriefcaseIcon size={18} color={colors.muted} />} text={contract} />
         </View>
