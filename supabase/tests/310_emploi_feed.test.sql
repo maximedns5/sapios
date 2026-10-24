@@ -4,7 +4,7 @@
 begin;
 \ir _helpers.psql
 \ir _emploi_helpers.psql
-select plan(28);
+select plan(29);
 
 do $$
 declare
@@ -90,6 +90,8 @@ select is(pg_temp.met('{"Rust"}'), array[false], 'compétence absente');
 -- Sans niveau vérifié, Bac+N n'est jamais rempli.
 select pg_temp.new_candidate(2, '{SQL}');
 select is(pg_temp.met('{"Bac+3"}', pg_temp.uid(2)), array[false], 'sans diplôme vérifié : Bac+N non rempli');
+select is(pg_temp.met('{"Bac+5 en data ou SQL"}', pg_temp.uid(2)), array[false],
+  'critère Bac+N : une compétence citée dans le critère ne suffit pas sans le niveau');
 
 -- Profil incomplet (moins de 3 compétences) : fil vide.
 select pg_temp.login(pg_temp.uid(2), 'aal1');

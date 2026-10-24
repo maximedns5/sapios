@@ -256,12 +256,12 @@ Texte public : page « Comment nous classons » (site) et CGU. Aucune autre règ
   candidat, contrat dans `contract_types`, lieu de l'offre à moins de `search_radius_km` du centre de la zone. Ordre :
   nombre de correspondances décroissant, puis date de publication décroissante, puis distance croissante.
 - **Correspondances** (`public.emploi_requirement_matches(offer_id, candidate_id)` → `RequirementMatch[]`) : pour chaque
-  critère `must_have` puis `nice_to_have`, `met = true` si, après minuscules, suppression des accents et de la
-  ponctuation (`private.normalize_text`), une compétence ou une langue du candidat est égale au critère ou y figure
-  comme mot(s) entier(s) (« SQL » remplit « Maîtrise de SQL », pas « MySQL ») ; ou si le critère contient `bac+N` et
-  que le niveau vérifié du candidat (échelle européenne) atteint le niveau exigé : Bac+1 ou Bac+2 → 5, Bac+3 ou
-  Bac+4 → 6, Bac+5 → 7, Bac+6 à Bac+8 → 8. Le niveau d'une langue n'est pas comparé. Jamais de score global, jamais
-  de pourcentage.
+  critère `must_have` puis `nice_to_have` : un critère qui contient `bac+N` est rempli seulement si le niveau vérifié
+  du candidat (échelle européenne) atteint le niveau exigé (Bac+1 ou Bac+2 → 5, Bac+3 ou Bac+4 → 6, Bac+5 → 7,
+  Bac+6 à Bac+8 → 8) ; une compétence citée dans ce critère ne suffit pas. Tout autre critère est rempli si, après
+  minuscules, suppression des accents et de la ponctuation (`private.normalize_text`), une compétence ou une langue
+  du candidat est égale au critère ou y figure comme mot(s) entier(s) (« SQL » remplit « Maîtrise de SQL », pas
+  « MySQL »). Le niveau d'une langue n'est pas comparé. Jamais de score global, jamais de pourcentage.
 - **Pile du recruteur** : ordre d'arrivée des candidatures, rien d'autre.
 - **Approche directe** : candidats triés par date d'activation de « Ouvert·e aux opportunités », les plus récents d'abord.
 

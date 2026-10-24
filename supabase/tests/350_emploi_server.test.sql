@@ -3,7 +3,7 @@
 begin;
 \ir _helpers.psql
 \ir _emploi_helpers.psql
-select plan(37);
+select plan(38);
 
 do $$
 declare
@@ -30,6 +30,12 @@ select lives_ok($$select public.invite_candidate(current_setting('t.offer')::uui
   'première invitation de la semaine');
 select throws_ok($$select public.invite_candidate(current_setting('t.offer')::uuid, current_setting('t.num4')::int, 'Bonjour')$$,
   'P0001', 'quota_exceeded', 'quota hebdomadaire atteint');
+
+-- Invitation : le lien de l'email ouvre l'offre dans l'app (/offer/<id>).
+select pg_temp.login_service();
+select is(public.server_emploi_notification('invitation_received', (select i.id from public.invitations i where i.offer_id = current_setting('t.offer')::uuid limit 1)) ->> 'path',
+  '/offer/' || current_setting('t.offer'), 'invitation : lien vers l''offre dans l''app');
+select pg_temp.logout();
 
 -- Invitation : accepter ne postule pas, postuler marque l'invitation.
 select pg_temp.login(pg_temp.uid(3), 'aal1');

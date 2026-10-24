@@ -254,7 +254,7 @@ begin
         'user_id', v_inv.candidate_id,
         'name', (select ci.first_name from public.candidate_identities ci where ci.user_id = v_inv.candidate_id))),
       'vars', jsonb_build_object('offer', v_offer.title, 'company', v_company.display_name),
-      'path', '/offers/' || v_offer.id, 'target_id', v_offer.id);
+      'path', '/offer/' || v_offer.id, 'target_id', v_offer.id);
 
   elsif p_event in ('company_decided', 'deadline_reminder') then
     select * into v_company from public.companies c where c.id = p_id;

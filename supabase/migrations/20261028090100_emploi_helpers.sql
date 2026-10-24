@@ -273,11 +273,11 @@ as $$
 $$;
 
 -- 4. Correspondances (contrat §6) --------------------------------------------------------------------
--- Pour chaque critère indispensable puis apprécié : rempli si une compétence ou une langue du candidat,
--- normalisée (minuscules, sans accents ni ponctuation), est égale au critère ou y figure comme mot(s)
--- entier(s) ; ou si le critère demande « bac+N » et que le niveau vérifié du candidat (échelle européenne
--- de user_access.level : 5 = Bac+2, 6 = Bac+3, 7 = Bac+5, 8 = Bac+8) atteint le niveau de Bac+N
--- (private.bac_level).
+-- Pour chaque critère indispensable puis apprécié : un critère qui demande « bac+N » est rempli seulement si
+-- le niveau vérifié du candidat (échelle européenne de user_access.level : 5 = Bac+2, 6 = Bac+3, 7 = Bac+5,
+-- 8 = Bac+8) atteint le niveau de Bac+N (private.bac_level) ; une compétence citée dans le même critère ne
+-- suffit pas. Tout autre critère est rempli si une compétence ou une langue du candidat, normalisée
+-- (minuscules, sans accents ni ponctuation), est égale au critère ou y figure comme mot(s) entier(s).
 -- Bac+N → niveau européen exigé : Bac+1 ou Bac+2 → 5, Bac+3 ou Bac+4 → 6, Bac+5 → 7, Bac+6 à Bac+8 → 8.
 create function private.bac_level(p_years int)
 returns int
@@ -313,19 +313,23 @@ as $$
     union all
     select r.label, 'nice', 1, r.ord
       from unnest(p_offer.nice_to_have) with ordinality as r(label, ord)
+  ),
+  graded as (
+    select q.*, private.bac_level((substring(lower(extensions.unaccent(q.label)) from 'bac\s*\+\s*([1-8])'))::int) as bac
+      from reqs q
   )
   select coalesce(jsonb_agg(jsonb_build_object(
            'label', q.label,
            'kind', q.kind,
-           'met', exists (
-                    select 1 from terms t
-                     where t.n <> ''
-                       and (' ' || private.normalize_text(q.label) || ' ') like ('% ' || t.n || ' %'))
-                  or coalesce((select l.level from lvl l)
-                              >= private.bac_level((substring(lower(extensions.unaccent(q.label))
-                                                              from 'bac\s*\+\s*([1-8])'))::int), false)
+           'met', case when q.bac is not null
+                       then coalesce((select l.level from lvl l) >= q.bac, false)
+                       else exists (
+                              select 1 from terms t
+                               where t.n <> ''
+                                 and (' ' || private.normalize_text(q.label) || ' ') like ('% ' || t.n || ' %'))
+                  end
          ) order by q.k, q.ord), '[]'::jsonb)
-  from reqs q;
+  from graded q;
 $$;
 
 create function public.emploi_requirement_matches(p_offer uuid, p_candidate uuid)
