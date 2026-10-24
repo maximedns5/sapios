@@ -38,7 +38,7 @@ jobs:
         run: for fn in */index.ts; do deno check --config "$(dirname "$fn")/deno.json" "$fn"; done
       - name: Lint
         working-directory: supabase/functions
-        run: deno lint --config process-diploma/deno.json _shared submit-diploma process-diploma review-diploma notify delete-account purge-diplomas purge-inactive search-books
+        run: deno lint --config process-diploma/deno.json _shared submit-diploma process-diploma review-diploma notify delete-account purge-diplomas purge-inactive search-books company-lookup geocode
       - name: Tests unitaires
         working-directory: supabase/functions
         run: deno test --config process-diploma/deno.json --allow-read --allow-env _shared/*_test.ts process-diploma/*_test.ts

@@ -379,3 +379,37 @@ navigateur sur l'app web et dans des cookies sur le back-office.
     `Content-Security-Policy-Report-Only`, pousser, puis la remettre une fois corrigé.
 - **zod sans `new Function`** : `packages/shared/src/extraction.ts` active `z.config({ jitless: true })`. Sans cela,
   zod teste `new Function` au chargement de ses schémas et la CSP le signale à chaque page de l'app.
+
+## Emploi : base de données (agent base) : pour l'app candidat, l'espace recruteur et le back-office
+
+Contrat à jour : `docs/EMPLOI_CONTRACT.md` ; écarts : `docs/DEVIATIONS.md`, section « Emploi ». À retenir :
+
+- **Niveaux** : échelle européenne (7 = Bac+5) partout, affichée par `levelLabel`.
+- **Lectures directes** : pas de `candidate_id` dans `applications` et `invitations`, pas de `sender_id` dans
+  `application_messages` (utiliser `from_candidate`), pas de colonnes internes de `companies` : un `select('*')` sur
+  ces tables échoue (42501). Lister les colonnes, ou passer par les RPC (recommandé).
+- **App candidat** :
+  - premier lancement : `get_emploi_state` puis `set_account_kind('candidate')` si `kind` est null ;
+    `accept_emploi_terms(terms.required_version)` ; `set_candidate_identity` ; `save_candidate_profile` (création
+    avec les 8 clés obligatoires, `work_authorization` et `looking_for` ensuite) ; `save_cv` (3 compétences pour
+    `candidate.complete`) ;
+  - ville : Edge Function `geocode` `{ q, kind: "city" }` → `{ results: [{ label, city, postcode, lat, lng }] }` ;
+  - photos des offres : bucket privé `offer-photos`, URL signée (`createSignedUrl`) à partir de `storage_path` ;
+  - push : données `{ type: "emploi", event, id }` (id = candidature, offre pour `invitation_received`, compte pour
+    `diploma_verdict`) ;
+  - temps réel : `application_messages` et `interview_slots` sont publiées ; filtrer sur `application_id`.
+- **Espace recruteur** :
+  - inscription : `set_account_kind('recruiter')`, `accept_emploi_terms`, Edge Function `company-lookup` `{ siren }`
+    → `CompanyLookup` (404 `not_found`, 400 `invalid_siren`, 403 `not_recruiter`), puis
+    `register_company(p_siren, p_display_name, p_job_title, p_sirene, p_first_name)` ;
+  - lieu d'une offre : `geocode` `{ q, kind: "address" }` puis `save_offer` avec `city`, `postcode`, `lat`, `lng` ;
+  - photos : upload dans `offer-photos/<company_id>/<uuid>.<ext>`, puis `insert` direct dans `offer_photos`
+    (`offer_id`, `company_id`, `kind`, `storage_path`, `position`, `consent_certified` ; obligatoire à true pour
+    `manager` et `team`) tant que l'offre est `draft` ou `rejected` ; suppression directe aussi ;
+  - redirection d'auth locale : `http://localhost:3000/recruteur/auth/callback` (déjà couverte par `/**`).
+- **Back-office** : `admin_list_companies`, `admin_decide_company`, `admin_list_offers_to_review` (avec `banned_word`),
+  `admin_moderate_photo`, `admin_decide_offer`, `admin_list_offer_reports`, `admin_handle_offer_report`,
+  `admin_emploi_stats` ; comptes directs possibles en aal2 sur `companies`, `offers`, `offer_reports`. La file des
+  diplômes affiche le nom des candidats de l'emploi (`candidate_identities`).
+- **Secrets à poser** (Edge Functions) : `SAPIOS_WEB_URL`. Aucune clé pour `company-lookup` (API publique) ni
+  `geocode` (Géoplateforme) ; ces deux hôtes doivent être joignables depuis les Edge Functions.

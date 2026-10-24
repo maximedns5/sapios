@@ -417,3 +417,44 @@ Nom légal, date de naissance et texte libre des signalements sont chiffrés dan
 3. **`upgrade-insecure-requests`** : posé par le site seulement en HTTPS (pas en local). Sur l'app, Vercel sert
    toujours en HTTPS.
 4. **zod en mode `jitless`** (schéma d'extraction partagé) : même résultat d'analyse, sans `new Function`.
+
+## Emploi : base de données du produit minimal (agent base, 28 oct. 2026)
+
+Écarts et précisions par rapport à `docs/EMPLOI_CONTRACT.md` dans sa version du socle (le contrat est à jour).
+
+1. **Échelle des niveaux.** `user_access.level` est l'échelle européenne de `levelLabel` (5 = Bac+2, 6 = Bac+3,
+   7 = Bac+5, 8 = Bac+8), pas « Bac+N ». La règle `bac+N` des correspondances passe par `private.bac_level` (Bac+1 ou
+   Bac+2 → 5, Bac+3 ou Bac+4 → 6, Bac+5 → 7, Bac+6 à Bac+8 → 8) ; `search_open_candidates.p_min_level` suit la même
+   échelle. Seed : Camille et Yanis niveau 7, Nathan niveau 6.
+2. **Identifiants de compte jamais lisibles par un recruteur** : droits par colonne sans `applications.candidate_id`,
+   `invitations.candidate_id` ni `application_messages.sender_id` (remplacé, pour le côté, par `from_candidate`).
+   Conséquence : ni le candidat ni le recruteur ne filtrent ces tables par ces colonnes en lecture directe ; la RLS
+   suffit (le candidat ne voit que ses lignes) et les écrans passent par les RPC. Les règles qui dépendent d'une
+   candidature passent par `private.application_access` (security definer) pour la même raison.
+3. **Colonnes internes de `companies`** (`sirene`, `email_domain`, `email_domain_generic`, `status_reason`,
+   `created_by`, `verified_by`) : pas de lecture directe, même pour un membre (`get_my_company`) ou un admin
+   (`admin_list_companies`).
+4. **Ajouts.** `register_company(…, p_first_name)` et `update_my_member_profile` (prénom du recruteur, montré au candidat
+   après le match : `company_members.first_name`) ; `applications.decided_by` ; `candidates.open_since` (ordre de
+   l'approche directe) ; erreur `already_applied` dans `invite_candidate` ; clé `location` dans `OFFER_CHECK_KEYS`
+   (ville et coordonnées manquantes) ; `OfferCard.distance_km` peut être null (lecteur sans zone de recherche :
+   recruteur, profil incomplet) ; `get_my_cv_preview` renvoie null sans profil.
+5. **`decide_application`** : refus possible après le match (`interested`, `interview`, `offer_made`), avec motif et
+   message, créneaux ouverts annulés ; `interested` seulement depuis `sent` ou `seen`.
+6. **Brouillons incomplets** : seul le titre est obligatoire ; la contrainte de complétude ne vise que `pending_review` et
+   `published`. Les éléments vides des tableaux (`missions`, `must_have`, `nice_to_have`) sont ignorés.
+7. **`close_offer('archived')`** et la dépublication par la modération répondent aux candidatures en attente avec le
+   motif `other` et un message neutre (« L'entreprise a retiré cette offre », « retirée par l'équipe Sapios ») ; seul
+   `filled` utilise `position_filled`.
+8. **Notifications** : textes dans `supabase/functions/_shared/emploi_notify.ts` (`EMPLOI_TEXTS`), pas dans
+   `app_copy` (non éditables depuis « Textes ») ; données calculées par `server_emploi_notification`, qui renvoie null
+   pour une notification périmée. Pour `message`, l'`id` est celui du message. Push : `{ type: "emploi", event, id }`.
+   Recruteurs : email seulement. Nouveau secret `SAPIOS_WEB_URL`.
+9. **Deno et `packages/shared/src/emploi.ts`** : ce fichier importe ses voisins sans extension, que Deno ne résout pas ;
+   `supabase/functions/_shared/emploi.ts` recopie le strict nécessaire (événements, `CompanyLookup`, `GeoResult`,
+   `isValidSiren`) et un test vérifie que la liste des événements reste identique à la source.
+10. **`work_authorization`** vaut false par défaut (création du profil sans cette réponse, demandée ensuite).
+11. **Suppression d'un recruteur** : `server_prepare_account_deletion`, appelée par `deleteAccount` (donc aussi par
+    `purge-inactive`), archive les offres ouvertes de l'entreprise s'il en était le seul membre et efface les photos.
+12. **Temps réel** : `application_messages` et `interview_slots` ajoutées à `supabase_realtime` (test 001 mis à jour) ;
+    le test des clés étrangères liste les nouveaux auteurs `set null`.

@@ -156,7 +156,12 @@ export type PushData =
   | { type: "match"; match_id: string }
   | { type: "message"; match_id: string; message_id: string }
   | { type: "verdict"; copy_key: string }
-  | { type: "event"; event_id: string };
+  | { type: "event"; event_id: string }
+  /**
+   * Sapios Emploi (EmploiNotifyEvent ou `diploma_verdict`). `id` : la candidature (application_*,
+   * interview_proposed, message), l'offre (invitation_received) ou le compte (diploma_verdict).
+   */
+  | { type: "emploi"; event: string; id: string };
 
 // --- delete-account (JWT utilisateur) ---------------------------------------------------------
 

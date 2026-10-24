@@ -7,6 +7,9 @@ import type { PurgeInactiveResponse } from "./shared.ts";
 import { DIPLOMA_BUCKET, PHOTO_BUCKET } from "./shared.ts";
 import { listObjects, removeObjects } from "./storage.ts";
 
+/** Sapios Emploi : photos des offres, dans le dossier de l'entreprise. */
+export const OFFER_PHOTO_BUCKET = "offer-photos";
+
 export async function deleteAccount(
   db: SupabaseClient,
   userId: string,
@@ -17,6 +20,12 @@ export async function deleteAccount(
     const paths = await listObjects(db, bucket, userId);
     files[bucket] = await removeObjects(db, bucket, paths);
   }
+
+  // Sapios Emploi : recruteur seul membre de son entreprise → offres archivées, photos effacées.
+  const prepared = await db.rpc("server_prepare_account_deletion", { p_user: userId });
+  if (prepared.error) throw prepared.error;
+  const offerPhotos = ((prepared.data as { photo_paths?: string[] } | null)?.photo_paths ?? []).filter(Boolean);
+  if (offerPhotos.length > 0) files[OFFER_PHOTO_BUCKET] = await removeObjects(db, OFFER_PHOTO_BUCKET, offerPhotos);
 
   const logged = await db.from("audit_log").insert({
     actor_id: audit.actorId,
