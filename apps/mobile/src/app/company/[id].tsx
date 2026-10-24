@@ -14,7 +14,7 @@ import { Header, Screen } from '@/components/Screen';
 import { Body, Heading, Small, Title } from '@/components/Text';
 import { emploi } from '@/lib/emploi';
 import { errorCode, errorMessage } from '@/lib/errors';
-import { formatShortDate } from '@/lib/format';
+import { formatShortDate, headcountFigure } from '@/lib/format';
 import { back, openOffer } from '@/lib/nav';
 import { colors, radius } from '@/lib/theme';
 
@@ -87,7 +87,7 @@ export default function Company() {
         </View>
 
         <Rise delay={120} style={{ flexDirection: 'row', gap: 10 }}>
-          {page.headcount_band ? <Figure value={page.headcount_band} label="salariés" /> : null}
+          {page.headcount_band ? <Figure value={headcountFigure(page.headcount_band)} label="salariés" /> : null}
           {page.city ? <Figure value={page.city} label="siège" /> : null}
         </Rise>
         {page.naf_label ? <Small>Activité : {page.naf_label}</Small> : null}

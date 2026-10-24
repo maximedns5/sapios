@@ -1,7 +1,7 @@
 import { APPLICATION_STATUS_LABELS_CANDIDATE, OPEN_STATUSES, type ApplicationStatus, type InterviewSlot, type MyApplication } from '@sapios/shared';
 import { Pressable, View } from 'react-native';
 
-import { daysLeft, formatShortDate, formatSlot } from '@/lib/format';
+import { daysLeft, endSentence, formatShortDate, formatSlot } from '@/lib/format';
 import { alpha, colors, radius } from '@/lib/theme';
 import { CalendarIcon, CheckIcon, ClockIcon, HomeIcon, LockIcon } from './Icons';
 import { Ripple } from './motion';
@@ -66,7 +66,7 @@ export function ClosedNoResponse({ company, dueAt }: { company: string; dueAt: s
   return (
     <View style={{ gap: 10 }}>
       <Body size={14.5} style={{ backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, lineHeight: 21 }}>
-        {company} n’a pas répondu dans le délai promis, échu le {formatShortDate(dueAt)}. Ce n’est pas un refus : votre candidature est close, et ce retard compte dans le délai de réponse affiché de {company}.
+        {company} n’a pas répondu dans le délai promis, échu le {endSentence(formatShortDate(dueAt))} Ce n’est pas un refus : votre candidature est close, et ce retard compte dans le délai de réponse affiché de {company}.
       </Body>
       <AnonymityLine text="Votre CV reste anonyme, et vous pourrez postuler à ses prochaines offres." />
     </View>
