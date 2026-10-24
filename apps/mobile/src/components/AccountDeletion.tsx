@@ -15,7 +15,7 @@ export function useAccountDeletion() {
     const first = await confirm({
       label: 'Suppression définitive',
       title: 'Supprimer votre compte ?',
-      message: 'Profil, photos, diplômes, conversations et jetons de notification seront effacés. C’est irréversible.',
+      message: 'CV, candidatures, conversations, diplôme et jetons de notification seront effacés. Les entreprises ne verront plus rien de vous. C’est irréversible.',
       confirm: 'Continuer',
       destructive: true,
     });
@@ -23,7 +23,7 @@ export function useAccountDeletion() {
     const second = await confirm({
       label: 'Dernière confirmation',
       title: 'Vraiment ?',
-      message: 'Même un Bac+8 ne pourra pas le restaurer.',
+      message: 'Aucune restauration ne sera possible.',
       confirm: 'Supprimer définitivement',
       destructive: true,
       typeToConfirm: 'SUPPRIMER',

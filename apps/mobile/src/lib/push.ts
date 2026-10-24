@@ -1,4 +1,4 @@
-import type { PushData as SharedPushData } from '@sapios/shared';
+import type { EmploiNotifyEvent } from '@sapios/shared';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -12,26 +12,40 @@ export type PushResult = 'registered' | 'denied' | 'unavailable';
 /** Le web n'a pas de push Expo : le module natif est neutralisé, pas supprimé. */
 export const PUSH_SUPPORTED = Platform.OS !== 'web';
 
+/**
+ * Champ data des notifications, lu de façon tolérante : `{ type: "emploi", event, id }` (candidature,
+ * invitation ou offre selon l'événement), `{ type: "verdict" }` pour le badge diplôme.
+ */
+export type PushData = Partial<{
+  type: string;
+  event: EmploiNotifyEvent;
+  id: string;
+  application_id: string;
+  offer_id: string;
+  invitation_id: string;
+}>;
+
 if (PUSH_SUPPORTED) {
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
       const data = notification.request.content.data as PushData | undefined;
       // Pas de bannière pour un message de la conversation déjà ouverte.
-      const silent = data?.type === 'message' && data.match_id != null && data.match_id === activeChatId;
+      const silent = data?.type === 'emploi' && data.event === 'message' && !!activeChatId && applicationOf(data) === activeChatId;
       return { shouldShowBanner: !silent, shouldShowList: !silent, shouldPlaySound: !silent, shouldSetBadge: false };
     },
   });
 }
 
-/** Champ data des notifications (contrat partagé), lu de façon tolérante. */
-export type PushData = Partial<SharedPushData & { match_id: string; message_id: string; copy_key: string; event_id: string }>;
-
 let activeChatId: string | null = null;
-export function setActiveChat(matchId: string | null) {
-  activeChatId = matchId;
+export function setActiveChat(applicationId: string | null) {
+  activeChatId = applicationId;
 }
 export function getActiveChat(): string | null {
   return activeChatId;
+}
+
+function applicationOf(data: PushData): string | null {
+  return data.application_id ?? (data.event && data.event !== 'invitation_received' ? data.id ?? null : null);
 }
 
 export async function pushPermission(): Promise<'granted' | 'denied' | 'undetermined' | 'unavailable'> {
@@ -68,9 +82,12 @@ export async function registerForPush(userId: string, ask = true): Promise<PushR
 /** Route ouverte au tap sur une notification. */
 export function routeForPush(data: PushData | undefined): string | null {
   if (!data?.type) return null;
-  if ((data.type === 'message' || data.type === 'match') && data.match_id) return `/chat/${data.match_id}`;
-  if (data.type === 'verdict') return '/';
-  // Événement : confirmation, place libérée, annulation, rappel la veille (lot 2).
-  if (data.type === 'event' && data.event_id) return `/events/${data.event_id}`;
-  return null;
+  if (data.type === 'verdict') return '/profile';
+  if (data.type !== 'emploi') return null;
+  if (data.event === 'invitation_received') return '/applications';
+  const application = applicationOf(data);
+  if (!application) return '/applications';
+  if (data.event === 'message' || data.event === 'interview_proposed') return `/chat/${application}`;
+  if (data.event === 'application_interested') return `/match/${application}`;
+  return `/applications/${application}`;
 }

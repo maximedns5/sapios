@@ -1,27 +1,27 @@
-import { GENDERS, STUDY_FIELD_LABELS, STUDY_FIELDS, type StudyField } from '@sapios/shared';
+import { EMPLOI_LIMITS, type ContractType, type CvExperience, type CvLanguage, type ExperienceBand } from '@sapios/shared';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { Button } from '@/components/Button';
-import { Chip, ChipRow, OptionCard, RangeSlider } from '@/components/Controls';
+import { Segmented } from '@/components/Controls';
+import { ExperiencesField, LanguagesField, LookingForField, SkillsField } from '@/components/CvFields';
 import { Field } from '@/components/Field';
 import { ArrowRightIcon, CheckIcon } from '@/components/Icons';
-import { LocateButton } from '@/components/LocateButton';
 import { MaskUp, PopIn, Rise, Shockwave, SlideIn, Spinner } from '@/components/motion';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
+import { AvailabilityField, CityField, ContractsField, ExperienceField, RadiusField, RemoteField, SalaryField, type City } from '@/components/SearchFields';
 import { StepHeader } from '@/components/StepHeader';
-import { Body, Eyebrow, Small, Title } from '@/components/Text';
+import { Body, Eyebrow, Label, Small, Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
+import { emploi } from '@/lib/emploi';
 import { errorMessage } from '@/lib/errors';
-import { loadMyIntellect, saveIntellectFlags } from '@/lib/intellect';
-import { AGE_MAX, AGE_MIN, GENDER_SENTENCE, loadOwnAge, loadOwnProfile, saveOwnProfile, SEEKING_LABEL, suggestedAgeRange } from '@/lib/profile';
 import { alpha, colors, ease } from '@/lib/theme';
-import type { Gender } from '@/lib/types';
 
-const BIO_MAX = 500;
-type Step = 'name' | 'gender' | 'seeking' | 'field' | 'where' | 'bio' | 'done';
+type Step = 'role' | 'where' | 'contract' | 'salary' | 'rhythm' | 'experience' | 'skills' | 'more' | 'done';
+const SEARCH: Step[] = ['role', 'where', 'contract', 'salary', 'rhythm', 'experience'];
+const CV: Step[] = ['skills', 'more'];
 
 /** Cercle décoratif d'accent qui grandit à chaque sous-étape. */
 function Blob({ index }: { index: number }) {
@@ -29,7 +29,7 @@ function Blob({ index }: { index: number }) {
   useEffect(() => {
     v.value = withTiming(index, { duration: 900, easing: ease.out });
   }, [index, v]);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateX: -v.value * 6 }, { translateY: v.value * 8 }, { scale: 1 + v.value * 0.16 }] }));
+  const style = useAnimatedStyle(() => ({ transform: [{ translateX: -v.value * 6 }, { translateY: v.value * 8 }, { scale: 1 + v.value * 0.12 }] }));
   return <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: -90, right: -110, width: 280, height: 280, borderRadius: 140, backgroundColor: alpha(colors.accent, 0.1) }, style]} />;
 }
 
@@ -40,7 +40,7 @@ function Intro({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: 
         <Eyebrow>{eyebrow}</Eyebrow>
       </SlideIn>
       <MaskUp delay={80}>
-        <Title size={34}>{title}</Title>
+        <Title size={32}>{title}</Title>
       </MaskUp>
       {sub ? (
         <Rise delay={200}>
@@ -54,66 +54,119 @@ function Intro({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: 
 }
 
 /**
- * Étape 3 : le profil, une question par écran (prénom, genre, recherche, domaine, ville et âge, bio),
- * puis une célébration avant les photos. Tout est enregistré d'un coup à la fin ; « retour » ne perd rien.
+ * Étapes 3 et 4 : la recherche (poste, ville, rayon, contrats, salaire, rythme, expérience), enregistrée d'un
+ * coup, puis le CV (compétences, langues, « Ce que je cherche »). Une question par écran ; « retour » ne perd
+ * rien. Une inscription interrompue reprend au CV si la recherche est déjà enregistrée.
  */
 export default function OnboardingProfile() {
-  const { userId, state, refresh } = useApp();
-  const consent = !!state?.onboarding.consent_sensitive;
-  const steps: Step[] = consent ? ['name', 'gender', 'seeking', 'field', 'where', 'bio'] : ['name', 'gender', 'field', 'where', 'bio'];
-  const [index, setIndex] = useState(0);
-  const [done, setDone] = useState(false);
+  const { refresh } = useApp();
+  const [step, setStep] = useState<Step>('role');
   const [loading, setLoading] = useState(true);
-  const [name, setName] = useState('');
-  const [gender, setGender] = useState<Gender | null>(null);
-  const [seeking, setSeeking] = useState<Gender[]>([]);
-  const [field, setField] = useState<StudyField | null>(null);
-  const [city, setCity] = useState('');
-  const [ages, setAges] = useState<[number, number]>([25, 40]);
-  const [suggested, setSuggested] = useState(false);
-  const [bio, setBio] = useState('');
+  const [role, setRole] = useState('');
+  const [city, setCity] = useState<City | null>(null);
+  const [radius, setRadius] = useState(20);
+  const [contracts, setContracts] = useState<ContractType[]>(['cdi']);
+  const [salary, setSalary] = useState<[number, number]>([38, 46]);
+  const [remote, setRemote] = useState(0);
+  const [available, setAvailable] = useState<string | null>(null);
+  const [experience, setExperience] = useState<ExperienceBand | null>(null);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<CvLanguage[]>([]);
+  const [experiences, setExperiences] = useState<CvExperience[]>([]);
+  const [lookingFor, setLookingFor] = useState('');
+  const [authorized, setAuthorized] = useState<'yes' | 'no' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!userId) return;
-    Promise.all([loadOwnProfile(userId), loadOwnAge(userId), loadMyIntellect(userId).catch(() => null)])
-      .then(([p, age, mine]) => {
-        setField(mine?.studyField ?? null);
-        setName(p.display_name ?? '');
-        setGender(p.gender);
-        setSeeking(p.seeking_genders ?? []);
-        setCity(p.city ?? '');
-        setBio(p.bio ?? '');
-        const untouched = p.age_min === AGE_MIN && p.age_max === AGE_MAX;
-        setAges(untouched && age ? suggestedAgeRange(age) : untouched ? [25, 40] : [p.age_min, p.age_max]);
-        setSuggested(untouched && !!age);
+    emploi
+      .myCv()
+      .then((cv) => {
+        const p = cv.profile;
+        setSkills(cv.skills ?? []);
+        setLanguages(cv.languages ?? []);
+        setExperiences(cv.experiences ?? []);
+        if (!p) return;
+        setRole(p.target_role);
+        setCity({ city: p.search_city, postcode: p.search_postcode, lat: p.search_lat, lng: p.search_lng });
+        setRadius(p.search_radius_km);
+        setContracts(p.contract_types);
+        setSalary([p.salary_min_k, p.salary_max_k]);
+        setRemote(p.remote_days_min);
+        setAvailable(p.available_from);
+        setExperience(p.experience_band);
+        setLookingFor(p.looking_for ?? '');
+        setAuthorized(p.work_authorization ? 'yes' : 'no');
+        // Recherche déjà enregistrée : on reprend au CV.
+        setStep('skills');
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, []);
 
-  if (!userId || !state) return null;
-  const step: Step = done ? 'done' : steps[index];
-  const first = name.trim().split(/\s+/)[0] || 'vous';
+  const inSearch = SEARCH.includes(step);
+  const list = inSearch ? SEARCH : CV;
+  const index = Math.max(0, list.indexOf(step));
+  const headerStep = inSearch ? 3 : 4;
+  const fraction = step === 'done' ? 1 : index / list.length;
 
-  const valid = step === 'name' ? name.trim().length > 0 : step === 'gender' ? !!gender : step === 'seeking' ? seeking.length > 0 : step === 'where' ? city.trim().length > 0 : true;
+  const valid =
+    step === 'role'
+      ? role.trim().length >= 2
+      : step === 'where'
+        ? !!city
+        : step === 'contract'
+          ? contracts.length > 0
+          : step === 'experience'
+            ? !!experience
+            : step === 'skills'
+              ? skills.length >= EMPLOI_LIMITS.skillsMinForProfile
+              : step === 'more'
+                ? authorized != null
+                : true;
 
-  const save = async () => {
+  const saveSearch = async () => {
+    if (!city || !experience) return;
+    await emploi.saveProfile({
+      target_role: role.trim().slice(0, 80),
+      search_city: city.city,
+      search_postcode: city.postcode,
+      search_lat: city.lat,
+      search_lng: city.lng,
+      search_radius_km: radius,
+      contract_types: contracts,
+      salary_min_k: salary[0],
+      salary_max_k: salary[1],
+      remote_days_min: remote,
+      available_from: available,
+      experience_band: experience,
+    });
+  };
+
+  const saveCv = async () => {
+    await emploi.saveCv(experiences, skills, languages);
+    await emploi.saveProfile({ looking_for: lookingFor.trim() || null, work_authorization: authorized === 'yes' });
+  };
+
+  const next = async () => {
+    if (!valid) return;
     setError(null);
-    setSaving(true);
+    const at = list.indexOf(step);
     try {
-      await saveOwnProfile(userId, {
-        display_name: name.trim(),
-        gender,
-        ...(consent ? { seeking_genders: seeking } : {}),
-        age_min: Math.min(...ages),
-        age_max: Math.max(...ages),
-        bio: bio.trim(),
-        city: city.trim(),
-      });
-      if (field) await saveIntellectFlags(userId, { study_field: field });
-      setDone(true);
+      if (step === 'experience') {
+        setSaving(true);
+        await saveSearch();
+        setStep('skills');
+        return;
+      }
+      if (step === 'more') {
+        setSaving(true);
+        await saveCv();
+        setStep('done');
+        setTimeout(() => refresh(), 1600);
+        return;
+      }
+      setStep(list[at + 1]);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -121,127 +174,136 @@ export default function OnboardingProfile() {
     }
   };
 
-  const next = () => {
-    if (!valid) return;
-    if (index < steps.length - 1) setIndex(index + 1);
-    else save();
+  const back = () => {
+    setError(null);
+    if (step === 'skills') setStep('experience');
+    else if (index > 0) setStep(list[index - 1]);
   };
 
-  const fraction = done ? 1 : index / steps.length;
+  const label = step === 'experience' ? 'Enregistrer ma recherche' : step === 'more' ? 'Terminer mon CV' : 'Continuer';
+  const firstStep = step === 'role';
 
   return (
     <Screen
       scroll
-      testID="onboarding-profile"
-      backdrop={<Blob index={done ? steps.length : index} />}
-      header={<StepHeader step={4} fraction={fraction} onBack={!done && index > 0 ? () => setIndex(index - 1) : undefined} />}
+      testID={`onboarding-${step}`}
+      header={<StepHeader step={headerStep} fraction={fraction} onBack={!firstStep && step !== 'done' ? back : undefined} />}
+      backdrop={<Blob index={SEARCH.indexOf(step) >= 0 ? SEARCH.indexOf(step) : SEARCH.length + CV.indexOf(step)} />}
       footer={
-        done ? (
-          <Rise delay={750}>
-            <Button testID="profile-done" label="Ajouter mes photos" onPress={() => refresh()} />
-          </Rise>
-        ) : (
+        step === 'done' ? undefined : (
           <Button
-            testID="profile-next"
-            label={index === steps.length - 1 ? (bio.trim() ? 'Enregistrer' : 'Passer et enregistrer') : step === 'field' && !field ? 'Passer' : 'Continuer'}
-            disabled={!valid}
+            testID="onboarding-next"
+            label={label}
             loading={saving}
+            disabled={!valid}
             onPress={next}
-            trailing={valid ? <ArrowRightIcon size={20} color="#FFFFFF" stroke={2.4} /> : undefined}
+            trailing={<ArrowRightIcon size={20} color={valid ? '#FFFFFF' : colors.muted} stroke={2.4} />}
           />
         )
       }
     >
       {loading ? (
-        <View style={{ paddingTop: 80, alignItems: 'center' }}>
+        <View style={{ paddingTop: 60, alignItems: 'center' }}>
           <Spinner />
         </View>
       ) : (
-        <View key={step} style={{ gap: 22, paddingTop: 28 }}>
-          {step === 'name' ? (
+        <View key={step} style={{ gap: 22, paddingTop: 20 }}>
+          {step === 'role' ? (
             <>
-              <Intro eyebrow="Faisons connaissance" title="Comment vous appelez-vous ?" sub="Votre prénom suffit. Le nom complet, on le garde pour nous." />
-              <Rise delay={300}>
-                <Field testID="display-name" big accessibilityLabel="Prénom affiché" value={name} onChangeText={setName} placeholder="Votre prénom" maxLength={40} autoCapitalize="words" autoComplete="given-name" autoFocus onSubmitEditing={next} />
+              <Intro eyebrow="Votre recherche" title="Quel poste visez-vous ?" sub="L’intitulé que vous chercheriez sur un site d’emploi. Il ouvre votre CV." />
+              <Rise delay={250}>
+                <Field testID="target-role" big value={role} onChangeText={setRole} placeholder="Data analyst" maxLength={80} autoFocus returnKeyType="next" onSubmitEditing={next} accessibilityLabel="Poste visé" />
               </Rise>
-            </>
-          ) : null}
-
-          {step === 'gender' ? (
-            <>
-              <Intro eyebrow={`Ravis de vous rencontrer, ${first}.`} title="Vous êtes…" />
-              <View role="radiogroup" accessibilityLabel="Vous êtes" style={{ gap: 10 }}>
-                {GENDERS.map((g, i) => (
-                  <Rise key={g} delay={180 + i * 70}>
-                    <OptionCard testID={`gender-${g}`} label={GENDER_SENTENCE[g]} active={gender === g} onPress={() => setGender(g)} />
-                  </Rise>
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          {step === 'seeking' ? (
-            <>
-              <Intro eyebrow="Question de cœur" title="Vous aimeriez rencontrer…" sub="Plusieurs choix possibles. Cette réponse reste confidentielle." />
-              <View accessibilityLabel="Vous aimeriez rencontrer" style={{ gap: 10 }}>
-                {GENDERS.map((g, i) => (
-                  <Rise key={g} delay={260 + i * 70}>
-                    <OptionCard
-                      multiple
-                      testID={`seeking-${g}`}
-                      label={SEEKING_LABEL[g]}
-                      active={seeking.includes(g)}
-                      onPress={() => setSeeking((s) => (s.includes(g) ? s.filter((x) => x !== g) : [...s, g]))}
-                    />
-                  </Rise>
-                ))}
-              </View>
-            </>
-          ) : null}
-
-          {step === 'field' ? (
-            <>
-              <Intro eyebrow="Ce qui vous anime" title="Votre domaine" sub="Celui de vos études. Il s’affiche sur votre profil et rapproche les esprits voisins. Modifiable plus tard." />
-              <View role="radiogroup" accessibilityLabel="Votre domaine">
-                <ChipRow>
-                  {STUDY_FIELDS.map((f, i) => (
-                    <Rise key={f} delay={200 + i * 35}>
-                      <Chip radio testID={`field-${f}`} label={STUDY_FIELD_LABELS[f]} active={field === f} onPress={() => setField(field === f ? null : f)} />
-                    </Rise>
-                  ))}
-                </ChipRow>
-              </View>
             </>
           ) : null}
 
           {step === 'where' ? (
             <>
-              <Intro eyebrow="Presque fini" title="Où, et avec qui ?" sub="Votre ville s’affiche sur votre profil. La position, si vous la partagez, sert seulement aux distances." />
-              <Rise delay={250} style={{ gap: 8 }}>
-                <Field testID="city" label="Ville" value={city} onChangeText={setCity} placeholder="Paris" autoCapitalize="words" autoComplete="postal-address-locality" maxLength={60} />
-                <LocateButton />
-              </Rise>
-              <Rise delay={350} style={{ gap: 6 }}>
-                <RangeSlider testID="age-range" label="Âge recherché" min={AGE_MIN} max={AGE_MAX} low={ages[0]} high={ages[1]} onChange={(lo, hi) => setAges([lo, hi])} />
-                <Small>{suggested ? 'Proposé d’après votre âge. ' : ''}Modifiable à tout moment dans votre compte.</Small>
+              <Intro eyebrow="Votre recherche" title="Où cherchez-vous ?" sub="Le centre de votre zone. Les offres affichées sont dans ce rayon ; votre adresse n’est jamais demandée." />
+              <Rise delay={250} style={{ gap: 22 }}>
+                <CityField value={city} onChange={setCity} />
+                <RadiusField value={radius} onChange={setRadius} />
               </Rise>
             </>
           ) : null}
 
-          {step === 'bio' ? (
+          {step === 'contract' ? (
             <>
-              <Intro eyebrow="Dernière touche" title="En quelques mots" sub="Facultatif. Une phrase suffit : elle s’affichera sous votre première photo." />
+              <Intro eyebrow="Votre recherche" title="Quels contrats ?" sub="Plusieurs choix possibles." />
               <Rise delay={250}>
-                <Field
-                  testID="bio"
-                  label="Votre bio"
-                  value={bio}
-                  onChangeText={setBio}
-                  placeholder="Thèse en cours, opinions tranchées sur les notes de bas de page."
-                  multiline
-                  maxLength={BIO_MAX}
-                  counter
-                />
+                <ContractsField value={contracts} onChange={setContracts} />
+              </Rise>
+            </>
+          ) : null}
+
+          {step === 'salary' ? (
+            <>
+              <Intro eyebrow="Votre recherche" title="Quel salaire visez-vous ?" sub="Chaque offre affiche sa fourchette. La vôtre aide le recruteur à voir si vous êtes d’accord dès le départ." />
+              <Rise delay={250}>
+                <SalaryField min={salary[0]} max={salary[1]} onChange={(a, b) => setSalary([a, b])} />
+              </Rise>
+            </>
+          ) : null}
+
+          {step === 'rhythm' ? (
+            <>
+              <Intro eyebrow="Votre recherche" title="Votre rythme" />
+              <Rise delay={200} style={{ gap: 22 }}>
+                <RemoteField value={remote} onChange={setRemote} />
+                <View style={{ gap: 10 }}>
+                  <Label>Disponible</Label>
+                  <AvailabilityField value={available} onChange={setAvailable} />
+                </View>
+              </Rise>
+            </>
+          ) : null}
+
+          {step === 'experience' ? (
+            <>
+              <Intro eyebrow="Votre recherche" title="Combien d’années d’expérience ?" sub="Montrées en tranche, jamais en dates : c’est plus juste, et cela ne dit rien de votre âge." />
+              <Rise delay={250}>
+                <ExperienceField value={experience} onChange={setExperience} />
+              </Rise>
+              {error ? <Notice kind="error" testID="profile-error" message={error} /> : null}
+            </>
+          ) : null}
+
+          {step === 'skills' ? (
+            <>
+              <Intro eyebrow="Votre CV" title="Vos compétences" sub="Trois au moins. Ce sont elles qui remplissent « Vous avez déjà » sur chaque offre." />
+              <Rise delay={250}>
+                <SkillsField value={skills} onChange={setSkills} />
+              </Rise>
+            </>
+          ) : null}
+
+          {step === 'more' ? (
+            <>
+              <Intro eyebrow="Votre CV" title="Derniers détails" sub="Les langues et les expériences sont facultatives ; vous les compléterez quand vous voudrez." />
+              <Rise delay={200} style={{ gap: 22 }}>
+                <View style={{ gap: 10 }}>
+                  <Label>Êtes-vous autorisé·e à travailler en France ?</Label>
+                  <Segmented
+                    testID="work-authorization"
+                    label="Autorisation de travailler en France"
+                    options={[
+                      { value: 'yes', label: 'Oui' },
+                      { value: 'no', label: 'Pas encore' },
+                    ]}
+                    value={authorized ?? ('' as 'yes')}
+                    onChange={setAuthorized}
+                  />
+                  <Small>La seule question administrative que nous posons. Votre nationalité n’est jamais demandée.</Small>
+                </View>
+                <LookingForField value={lookingFor} onChange={setLookingFor} />
+                <View style={{ gap: 10 }}>
+                  <Label>Langues</Label>
+                  <LanguagesField value={languages} onChange={setLanguages} />
+                </View>
+                <View style={{ gap: 10 }}>
+                  <Label>Expériences</Label>
+                  <ExperiencesField value={experiences} onChange={setExperiences} />
+                </View>
               </Rise>
               {error ? <Notice kind="error" testID="profile-error" message={error} /> : null}
             </>
@@ -258,13 +320,13 @@ export default function OnboardingProfile() {
                 </PopIn>
               </View>
               <MaskUp delay={450}>
-                <Title size={34} align="center">
-                  Parfait, {first}.
+                <Title size={32} align="center">
+                  Votre CV est prêt.
                 </Title>
               </MaskUp>
               <Rise delay={600}>
                 <Body secondary align="center">
-                  Il ne reste que vos photos et votre diplôme. Deux minutes, promis.
+                  Anonyme jusqu’au match. Place aux offres.
                 </Body>
               </Rise>
             </View>

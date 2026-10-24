@@ -1,26 +1,27 @@
 import * as Notifications from 'expo-notifications';
-import { router, useGlobalSearchParams, usePathname } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
 import { useApp } from '@/lib/app-state';
 import { PUSH_SUPPORTED, registerForPush, routeForPush, type PushData } from '@/lib/push';
 import { decide, isAllowed, SIGNED_OUT } from '@/lib/routing';
 
+const TABS = ['/offers', '/applications', '/messages', '/profile'];
+
 /**
- * Portail de routage : l'écran affiché découle de la session et de get_my_state().
- * On ne redirige que si l'écran courant n'est pas autorisé pour l'état, ou si le verdict affiché est périmé.
+ * Portail de routage : l'écran affiché découle de la session et de get_emploi_state(). On ne redirige que si
+ * l'écran courant n'est pas autorisé pour l'état. Un recruteur intéressé (avis non lu) ouvre une fois l'écran
+ * « C'est un match » quand le candidat est sur un onglet.
  */
 export function Gate() {
   const { ready, session, state, stateError, seen, userId, refresh } = useApp();
   const pathname = usePathname();
-  const { v: shownVerdict } = useGlobalSearchParams<{ v?: string }>();
   const pendingPush = useRef<string | null>(null);
-  const verdictSig = useRef<string | null>(null);
+  const shownMatch = useRef(new Set<string>());
 
   useEffect(() => {
     if (!ready) return;
     if (!session) {
-      verdictSig.current = null;
       if (!isAllowed(pathname, SIGNED_OUT.allowed)) router.replace(SIGNED_OUT.target);
       return;
     }
@@ -29,12 +30,7 @@ export function Gate() {
       return;
     }
     const route = decide(state, seen);
-    // Palier, niveau ou soumission changés côté serveur (relus au focus ou périodiquement) pendant qu'un
-    // verdict est affiché : on montre le nouveau. Un simple « vu » ne compte pas.
-    const sub = state.latest_submission;
-    const sig = `${userId}|${state.tier}|${state.level}|${state.copy_key}|${sub?.id}|${sub?.status}`;
-    const changed = verdictSig.current !== null && verdictSig.current !== sig;
-    verdictSig.current = sig;
+    if (!route) return;
     if (pendingPush.current) {
       const target = pendingPush.current;
       pendingPush.current = null;
@@ -43,15 +39,25 @@ export function Gate() {
         return;
       }
     }
-    const staleVerdict = changed && pathname === '/verdict' && route.target.startsWith('/verdict?v=') && route.target !== `/verdict?v=${shownVerdict ?? ''}`;
-    if (pathname === '/' || staleVerdict || !isAllowed(pathname, route.allowed)) router.replace(route.target);
-  }, [ready, session, state, stateError, seen, pathname, shownVerdict, userId]);
+    if (pathname === '/' || !isAllowed(pathname, route.allowed)) {
+      router.replace(route.target);
+      return;
+    }
+    // Match : la candidature passe « Intéressé·e », l'identité est révélée au recruteur.
+    if (TABS.includes(pathname)) {
+      const match = state.notices.find((n) => n.kind === 'application_interested' && !shownMatch.current.has(n.id) && !seen.has(`match:${n.id}`));
+      if (match && match.kind === 'application_interested') {
+        shownMatch.current.add(match.id);
+        router.push({ pathname: '/match/[id]', params: { id: match.payload.application_id, notice: match.id } });
+      }
+    }
+  }, [ready, session, state, stateError, seen, pathname]);
 
-  // Jeton push : enregistré sans redemander la permission dès que le profil est actif.
+  // Jeton push : enregistré sans redemander la permission dès que l'inscription est finie.
   useEffect(() => {
-    if (!userId || !state || state.profile_status === 'onboarding') return;
+    if (!userId || !state?.candidate?.complete) return;
     registerForPush(userId, false).catch(() => {});
-  }, [userId, state?.profile_status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, state?.candidate?.complete]);
 
   // Tap sur une notification : rafraîchit l'état puis ouvre l'écran pertinent.
   useEffect(() => {
@@ -59,9 +65,7 @@ export function Gate() {
     const open = (data: PushData | undefined) => {
       const target = routeForPush(data);
       if (!target) return;
-      refresh().then(() => {
-        if (target !== '/') router.push(target);
-      });
+      refresh().then(() => router.push(target));
     };
     const last = Notifications.getLastNotificationResponse();
     if (last) {
@@ -71,10 +75,7 @@ export function Gate() {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       open(response.notification.request.content.data as PushData);
     });
-    const received = Notifications.addNotificationReceivedListener((notification) => {
-      const data = notification.request.content.data as PushData;
-      if (data?.type === 'verdict' || data?.type === 'match' || data?.type === 'event') refresh();
-    });
+    const received = Notifications.addNotificationReceivedListener(() => refresh());
     return () => {
       sub.remove();
       received.remove();

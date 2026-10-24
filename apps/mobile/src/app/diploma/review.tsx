@@ -1,19 +1,19 @@
+import { levelLabel } from '@sapios/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { Button, IconButton } from '@/components/Button';
-import { ProgressBar } from '@/components/Controls';
-import { CapIcon, CheckIcon, GearIcon } from '@/components/Icons';
-import { Dots, PopIn, Rise, Ripple, ScanLine } from '@/components/motion';
+import { CapIcon, CheckIcon, GearIcon, VerifiedBadge } from '@/components/Icons';
+import { Dots, MaskUp, PopIn, Rise, Ripple, ScanLine } from '@/components/motion';
 import { Notice } from '@/components/Notice';
 import { Header, Screen } from '@/components/Screen';
-import { Body, Heading, Small, Title } from '@/components/Text';
+import { Body, Small, Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
-import { profileCompletion } from '@/lib/completion';
 import { useCopy } from '@/lib/copy';
-import { loadOwnProfile } from '@/lib/profile';
+import { goToTab } from '@/lib/nav';
 import { pushPermission, PUSH_SUPPORTED, registerForPush } from '@/lib/push';
+import { isInReview } from '@/lib/types';
 import { colors, radius } from '@/lib/theme';
 
 function formatDate(iso: string): string {
@@ -55,114 +55,120 @@ function Step({ state, title, sub, last }: { state: 'done' | 'current' | 'todo';
   );
 }
 
-/** Attente du verdict : ce qui est fait, ce qui est en cours, le délai, et de quoi s'occuper. */
+/**
+ * Relecture du diplôme : ce qui est fait, ce qui est en cours, le délai. Les offres restent ouvertes pendant
+ * l'attente ; le badge s'ajoute au CV dès la validation.
+ */
 export default function Review() {
   const { t } = useCopy();
   const { state, userId, refresh, loadingState } = useApp();
   const [push, setPush] = useState<'granted' | 'denied' | 'undetermined' | 'unavailable'>('unavailable');
   const [pushMessage, setPushMessage] = useState<string | null>(null);
-  const [bio, setBio] = useState<string | null>(null);
   const sub = state?.latest_submission;
-  const intellect = state?.intellect;
-  const completion = profileCompletion({
-    photos: state?.onboarding.photos_count ?? 0,
-    bio,
-    answers: intellect?.answers ?? 0,
-    books: intellect?.books ?? 0,
-    field: !!intellect?.study_field,
-    thesis: !!intellect?.thesis,
-  });
+  const inReview = isInReview(sub?.status);
+  const diploma = state?.diploma;
 
   useEffect(() => {
-    if (userId) loadOwnProfile(userId).then((p) => setBio(p.bio)).catch(() => {});
     pushPermission().then(setPush);
-  }, [userId]);
+  }, []);
 
-  // Relève l'état toutes les 20 s tant que l'écran est affiché (la notification de verdict prend le relais).
+  // Relève l'état toutes les 20 s tant que la relecture est en cours (la notification prend le relais).
   useFocusEffect(
     useCallback(() => {
+      if (!inReview) return;
       const id = setInterval(() => refresh(), 20000);
       return () => clearInterval(id);
-    }, [refresh]),
+    }, [inReview, refresh]),
   );
 
   const enablePush = async () => {
     if (!userId) return;
     const res = await registerForPush(userId, true);
     setPush(await pushPermission());
-    setPushMessage(res === 'registered' ? 'Vous serez prévenu du verdict.' : res === 'denied' ? 'Notifications refusées. Activez-les dans les réglages.' : 'Notifications indisponibles sur cet appareil.');
+    setPushMessage(res === 'registered' ? 'Vous serez prévenu·e de la réponse.' : res === 'denied' ? 'Notifications refusées. Activez-les dans les réglages.' : 'Notifications indisponibles sur cet appareil.');
   };
 
-  return (
-    <Screen
-      scroll
-      testID="review"
-      header={
-        <Header
-          right={
-            <IconButton label="Compte" onPress={() => router.push('/settings')}>
-              <GearIcon size={20} />
-            </IconButton>
-          }
-        />
+  const header = (
+    <Header
+      onBack={() => goToTab('/profile')}
+      right={
+        <IconButton label="Compte" onPress={() => router.push('/settings')}>
+          <GearIcon size={20} />
+        </IconButton>
       }
-    >
-      <View style={{ gap: 22 }}>
-        <View style={{ alignItems: 'center', gap: 18, paddingTop: 40 }}>
-          <View style={{ width: 104, height: 104, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <Ripple size={104} />
-            <Ripple size={104} delay={1100} />
-            <View style={{ width: 104, height: 104, borderRadius: 52, backgroundColor: colors.surface, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-              <CapIcon size={46} color={colors.accent} stroke={1.8} />
-              <ScanLine height={104} />
-            </View>
-          </View>
-          <Rise delay={100}>
+    />
+  );
+
+  if (!inReview && diploma) {
+    return (
+      <Screen header={header} testID="review-approved" footer={<Button label="Voir les offres" onPress={() => goToTab('/offers')} />}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 14 }}>
+          <PopIn>
+            <VerifiedBadge size={88} />
+          </PopIn>
+          <MaskUp delay={200}>
             <Title size={30} align="center">
-              On vérifie votre diplôme
+              Diplôme vérifié · {levelLabel(diploma.level)}
             </Title>
-          </Rise>
-          <Rise delay={200}>
+          </MaskUp>
+          <Rise delay={350}>
             <Body secondary align="center">
-              {t('review.delay')} {t('review.notice')}
+              Le badge apparaît maintenant sur votre CV anonyme. Il compte dans « Vous avez déjà » quand une offre demande ce niveau.
             </Body>
           </Rise>
         </View>
+      </Screen>
+    );
+  }
 
-        <Rise delay={300} style={{ borderWidth: 1, borderColor: colors.line, borderRadius: radius.card, paddingHorizontal: 20, paddingVertical: 4 }}>
-          <View accessibilityRole="list" accessibilityLabel="Avancement">
-            <Step state="done" title="Diplôme reçu" sub={<Small>{sub ? formatDate(sub.created_at) : '—'}</Small>} />
-            <Step
-              state="current"
-              title="Relecture par notre équipe"
-              sub={
-                <View style={{ flexDirection: 'row' }}>
-                  <Small>En cours</Small>
-                  <Dots />
-                </View>
-              }
-            />
-            <Step state="todo" title="Verdict" last />
+  if (!inReview) {
+    return (
+      <Screen header={header} testID="review-refused" footer={<Button label="Envoyer un autre document" onPress={() => router.replace('/diploma')} disabled={(state?.submissions_left ?? 0) <= 0} />}>
+        <View style={{ gap: 14, paddingTop: 24 }}>
+          <MaskUp>
+            <Title size={30}>{sub?.status === 'needs_more' ? 'Il manque une pièce' : 'Document non retenu'}</Title>
+          </MaskUp>
+          <Body secondary>{sub?.rejection_reason ?? 'Le document ne permet pas de vérifier le diplôme. Vous pouvez en envoyer un autre.'}</Body>
+          <Notice message="Sans badge, toutes les offres restent ouvertes : le diplôme informe le recruteur, il ne ferme aucune porte." />
+          <Button label="Voir les offres" variant="secondary" onPress={() => goToTab('/offers')} />
+        </View>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen scroll header={header} testID="review" footer={<Button testID="review-offers" label="Voir les offres en attendant" onPress={() => goToTab('/offers')} />}>
+      <View style={{ gap: 22, paddingTop: 4 }}>
+        <View style={{ alignItems: 'center', gap: 16 }}>
+          <View style={{ width: 104, height: 104, borderRadius: 52, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <CapIcon size={46} color={colors.accent} stroke={1.8} />
+            <ScanLine height={104} />
           </View>
-        </Rise>
-
-        <Rise delay={450} style={{ backgroundColor: colors.surface, borderRadius: radius.card, padding: 20, gap: 12 }}>
-          <Heading size={17}>Pendant que nous relisons votre diplôme, montrez-nous le reste</Heading>
-          <Body size={14.5} secondary>
-            Trois réponses, quelques livres, votre sujet de thèse : les profils complets reçoivent plus de likes.
+          <Title size={30} align="center">
+            On vérifie votre diplôme
+          </Title>
+          <Body secondary align="center">
+            {t('review.delay')} Vous pouvez postuler dès maintenant : le badge s’ajoutera à vos candidatures.
           </Body>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <ProgressBar value={completion.value} label="Profil complété" />
-            <Body weight="bold" size={13.5}>
-              {Math.round(completion.value * 100)} %
-            </Body>
-          </View>
-          <Button testID="review-complete" label="Compléter mon profil" size="md" onPress={() => router.push('/settings/me')} />
-          <Button testID="review-test" label="Le test d’admission, pour rire" variant="ghost" size="md" onPress={() => router.push('/settings/test')} />
-        </Rise>
+        </View>
 
-        <View style={{ gap: 8 }}>
-          {PUSH_SUPPORTED && push !== 'granted' ? <Button testID="review-push" label="Me prévenir du verdict" variant="secondary" onPress={enablePush} /> : null}
+        <View style={{ borderWidth: 1, borderColor: colors.line, borderRadius: radius.card, paddingHorizontal: 20, paddingVertical: 4 }}>
+          <Step state="done" title="Diplôme reçu" sub={<Small>{sub ? formatDate(sub.created_at) : '—'}</Small>} />
+          <Step
+            state="current"
+            title="Relecture par notre équipe"
+            sub={
+              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                <Small>En cours</Small>
+                <Dots />
+              </View>
+            }
+          />
+          <Step state="todo" title="Badge sur votre CV" last />
+        </View>
+
+        <View style={{ gap: 6 }}>
+          {PUSH_SUPPORTED && push !== 'granted' ? <Button testID="review-push" label="Me prévenir de la réponse" variant="secondary" onPress={enablePush} /> : null}
           {pushMessage ? <Notice message={pushMessage} /> : null}
           <Button testID="review-refresh" label="Actualiser" variant="ghost" loading={loadingState} onPress={() => refresh()} />
           <Small align="center" size={13}>
