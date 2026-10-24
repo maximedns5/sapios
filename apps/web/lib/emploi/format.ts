@@ -91,3 +91,31 @@ export function fmtRemote(days: number): string {
 export function plural(n: number, one: string, many: string): string {
   return `${n} ${n > 1 ? many : one}`;
 }
+
+/** Décalage de Paris (en ms) à un instant donné : heure d'été ou d'hiver. */
+function parisOffsetMs(utcMs: number): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: TZ,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(utcMs));
+  const v = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  return Date.UTC(v("year"), v("month") - 1, v("day"), v("hour"), v("minute"), v("second")) - utcMs;
+}
+
+/**
+ * « 2026-10-29 » + « 10:00 » saisis par le recruteur = 10 h à Paris, quel que soit le fuseau du navigateur
+ * (les créneaux s'affichent ensuite à l'heure de Paris). Renvoie l'instant UTC en millisecondes.
+ */
+export function parisLocalToMs(date: string, time: string): number {
+  const [y = 0, m = 1, d = 1] = date.split("-").map(Number);
+  const [h = 0, min = 0] = time.split(":").map(Number);
+  const wall = Date.UTC(y, m - 1, d, h, min);
+  const first = wall - parisOffsetMs(wall);
+  return wall - parisOffsetMs(first);
+}

@@ -34,6 +34,7 @@ export default function CompanySignup({ email }: { email: string }) {
   const [confirmed, setConfirmed] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [jobTitle, setJobTitle] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -83,6 +84,7 @@ export default function CompanySignup({ email }: { email: string }) {
       p_display_name: displayName.trim(),
       p_job_title: jobTitle.trim(),
       p_sirene: lookup.data,
+      p_first_name: firstName.trim() || null,
     });
     setBusy(false);
     if (error) {
@@ -253,6 +255,22 @@ export default function CompanySignup({ email }: { email: string }) {
             />
           </div>
           <div className="field">
+            <label className="field-label" htmlFor={`${id}-first`}>
+              Votre prénom
+            </label>
+            <input
+              id={`${id}-first`}
+              className="input"
+              required
+              minLength={1}
+              maxLength={40}
+              autoComplete="given-name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+            <p className="hint">Montré aux candidats après le match, avec votre fonction : ils savent à qui ils parlent.</p>
+          </div>
+          <div className="field">
             <label className="field-label" htmlFor={`${id}-job`}>
               Votre fonction
             </label>
@@ -283,7 +301,7 @@ export default function CompanySignup({ email }: { email: string }) {
           <button
             className="btn btn--accent btn--lg"
             type="submit"
-            disabled={busy || displayName.trim().length < 1 || jobTitle.trim().length < 2}
+            disabled={busy || displayName.trim().length < 1 || firstName.trim().length < 1 || jobTitle.trim().length < 2}
           >
             {busy ? "Envoi…" : "Envoyer pour vérification"}
           </button>
