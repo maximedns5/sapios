@@ -19,7 +19,7 @@ recrutement. Il s'appuie sur le plan de pivot, les maquettes (page « Sapios Emp
 | E4 | Aucune photo de candidat, ni avant ni après le match. |
 | E5 | Aucune IA. Classement et correspondances par les règles du §6, affichées. Aucune décision automatique sur un candidat. |
 | E6 | Distance à vol d'oiseau depuis le centre de la zone de recherche du candidat (pas de temps de trajet). Adresse du candidat jamais collectée. |
-| E7 | Diplôme = badge facultatif : on réutilise `submit-diploma`, la revue manuelle et `user_access` (`level`, `institution`, `study_field`). Le palier (`tier`) n'a aucun effet dans l'emploi. |
+| E7 | Diplôme = badge facultatif : on réutilise `submit-diploma`, la revue manuelle et `user_access` (`level`, `institution`, `study_field`). `level` suit l'échelle européenne de `levelLabel` (`tiers.ts`) : 5 = Bac+2, 6 = Bac+3, 7 = Bac+5, 8 = Bac+8. Le palier (`tier`) n'a aucun effet dans l'emploi. |
 | E8 | Un compte est **candidat** ou **recruteur** (`emploi_accounts.kind`), choisi une fois. Un recruteur appartient à une seule entreprise. |
 | E9 | Avant le match, le recruteur ne voit ni prénom, ni nom, ni email, ni âge, ni genre, ni adresse. Le prénom aussi est caché (il trahit souvent le genre). |
 | E10 | À l'échéance, une candidature sans réponse passe en `closed_no_response`, jamais en refus. |
@@ -55,8 +55,9 @@ Toutes les clés vers `auth.users` sont `on delete cascade` sauf mention. « RPC
   `search_city` (1–80), `search_postcode` (5 chiffres, null possible), `search_location geography(Point,4326)`
   arrondie à 3 décimales, `search_radius_km` (5–100, défaut 20), `contract_types contract_type[]` (non vide),
   `salary_min_k`, `salary_max_k` (k€ brut annuel, 15 ≤ min ≤ max ≤ 300), `remote_days_min` (0–5, 0 = indifférent),
-  `available_from date` (null = immédiatement), `experience_band`, `work_authorization bool`, `looking_for` (≤ 250),
-  `open_to_opportunities bool default false`, `show_institution bool default false`, `paused bool default false`,
+  `available_from date` (null = immédiatement), `experience_band`, `work_authorization bool default false`,
+  `looking_for` (≤ 250), `open_to_opportunities bool default false`, `open_since` (date d'activation, posée par
+  trigger : ordre de l'approche directe), `show_institution bool default false`, `paused bool default false`,
   `created_at`, `updated_at`, `last_active_at`. Lecture : soi, admins. Écriture : RPC seulement.
 - `candidate_identities` : `user_id` PK, `first_name` (1–40), `last_name_enc bytea` (pgcrypto, clé `field_key`), `updated_at`.
   Aucune lecture client directe : `get_my_candidate_identity`, puis RPC recruteur **après le match** seulement.
@@ -68,8 +69,11 @@ Toutes les clés vers `auth.users` sont `on delete cascade` sauf mention. « RPC
   `naf_label`, `headcount_band`, `city`, `postcode`, `sirene jsonb` (réponse de `company-lookup` au moment de
   l'inscription), `description` (≤ 1000), `website` (≤ 200), `email_domain` (minuscules), `email_domain_generic bool`,
   `status company_status default 'pending'`, `status_reason`, `verified_at`, `verified_by`, `created_by`
-  (**set null**), `created_at`, `updated_at`. Lecture : membres, admins, et tout compte connecté si `verified`.
-- `company_members` : PK (`company_id`, `user_id`), `user_id unique`, `role`, `job_title` (2–80), `created_at`.
+  (**set null**), `created_at`, `updated_at`. Lecture : membres, admins, et tout compte connecté si `verified`,
+  **sans** `sirene`, `email_domain`, `email_domain_generic`, `status_reason`, `created_by`, `verified_by` (droits par
+  colonne ; un membre les lit par `get_my_company`, un admin par `admin_list_companies`).
+- `company_members` : PK (`company_id`, `user_id`), `user_id unique`, `role`, `job_title` (2–80), `first_name`
+  (≤ 40, facultatif : interlocuteur montré au candidat après le match), `created_at`.
   Lecture : membres de la même entreprise, admins. RPC seulement.
 - `offers` : `id`, `company_id`, `title` (3–80), `contract`, `city`, `postcode`, `address_label` (≤ 200, facultatif),
   `location geography(Point,4326)`, `remote_days` (0–5), `salary_min_k`, `salary_max_k` (mêmes bornes que le candidat),
@@ -78,6 +82,9 @@ Toutes les clés vers `auth.users` sont `on delete cascade` sauf mention. « RPC
   `team_description` (≤ 300), `manager_name` (≤ 80), `manager_title` (≤ 80), `interviews_count` (1–3),
   `response_days` (3, 7 ou 10), `status default 'draft'`, `status_reason`, `submitted_at`, `published_at`,
   `expires_at`, `closed_at`, `created_by` (**set null**), `created_at`, `updated_at`.
+  Un brouillon peut être incomplet (titre seul obligatoire : sans lieu, sans salaire, moins de 3 missions, sans
+  critère) ; la complétude n'est exigée qu'en `pending_review` et `published` (contrainte), par `submit_offer`
+  (`missing`) et `admin_decide_offer`.
   Lecture : membres, admins, tout compte connecté si `published` et entreprise `verified`. Écriture : RPC seulement.
 - `offer_photos` : `id`, `offer_id`, `company_id`, `kind`, `storage_path` (unique, `{company_id}/{uuid}.{ext}`),
   `position`, `consent_certified bool` (obligatoire à `true` pour `manager` et `team`), `moderation photo_moderation
@@ -87,20 +94,23 @@ Toutes les clés vers `auth.users` sont `on delete cascade` sauf mention. « RPC
 - `applications` : `id`, `offer_id`, `company_id`, `candidate_id`, `status default 'sent'`, `note` (≤ 140),
   `note_target` (≤ 60 : `mission:<0-2>`, `must:<i>`, `nice:<i>`, `photo:<uuid>`, `team`, `process`),
   `note_target_label` (≤ 200, texte cité au moment de l'envoi), `invited bool`, `created_at`, `seen_at`, `due_at`
-  (= `created_at` + `response_days` jours), `decided_at`, `interested_at`, `closed_at`, `refusal_reason`,
-  `refusal_message` (≤ 600), `withdrawn_at`, `updated_at`. Unique (`offer_id`, `candidate_id`).
-  Lecture : le candidat (ses lignes), les membres de l'entreprise, admins. RPC seulement.
+  (= `created_at` + `response_days` jours), `decided_at`, `decided_by` (**set null**), `interested_at`, `closed_at`,
+  `refusal_reason`, `refusal_message` (≤ 600), `withdrawn_at`, `updated_at`. Unique (`offer_id`, `candidate_id`).
+  Contrainte : un statut `rejected` a toujours un `refusal_reason`.
+  Lecture : le candidat (ses lignes), les membres de l'entreprise, admins, **sans la colonne `candidate_id`** (droits
+  par colonne : l'identifiant du compte ne sort jamais vers un recruteur). RPC seulement.
 - `application_notes` : `id`, `application_id`, `author_id` (**set null**), `body` (1–1000), `created_at`.
   Lecture : membres, admins. Le candidat les reçoit dans `export_my_emploi_data`.
-- `application_messages` : `id`, `application_id`, `sender_id` (**set null**), `body` (1–2000), `context` (≤ 300),
-  `created_at`, `read_at`. Lecture : le candidat et les membres, **seulement si la candidature est appariée** (ou l'a été).
-  Envoi : `send_application_message`.
+- `application_messages` : `id`, `application_id`, `sender_id` (**set null**, jamais lisible par un client),
+  `from_candidate bool` (côté de l'expéditeur), `body` (1–2000), `context` (≤ 300), `created_at`, `read_at`.
+  Lecture : le candidat et les membres, **seulement si la candidature est appariée** (ou l'a été).
+  Envoi : `send_application_message`. Publiée dans `supabase_realtime`, comme `interview_slots` (la RLS s'applique).
 - `interview_slots` : `id`, `application_id`, `starts_at`, `duration_min` (15–180), `mode`, `location` (≤ 200),
   `with_whom` (≤ 120), `status default 'proposed'`, `created_by` (**set null**), `created_at`, `responded_at`.
   Lecture : le candidat, les membres. RPC seulement.
 - `invitations` : `id`, `offer_id`, `company_id`, `candidate_id`, `message` (≤ 400), `status default 'sent'`,
   `created_by` (**set null**), `created_at`, `responded_at`. Unique (`offer_id`, `candidate_id`). Lecture : le candidat,
-  les membres. RPC seulement.
+  les membres, sans la colonne `candidate_id`. RPC seulement.
 - `company_blocks` : PK (`candidate_id`, `company_id`), `created_at`. Le candidat lit, ajoute et retire ses lignes.
   Effet : l'entreprise ne le voit plus dans l'approche directe et ne peut plus l'inviter.
 - `offer_reports` : `id`, `offer_id`, `reporter_id` (**set null**), `reason offer_report_reason`, `details` (≤ 1000),
@@ -130,12 +140,12 @@ quand il en faut un lève l'erreur adaptée.
 | `accept_emploi_terms(p_version text)` | `void` ; version attendue selon le type de compte ; journalisé `terms.accepted` | `kind_required`, `terms_version_mismatch` |
 | `set_candidate_identity(p_first_name text, p_last_name text)` | `void` (prénom en clair, nom chiffré) | `not_candidate`, `invalid_input` |
 | `get_my_candidate_identity()` | `{ first_name, last_name } \| null` | — |
-| `save_candidate_profile(p jsonb)` | `CandidateProfile` ; crée la ligne au premier appel. Clés : `target_role`, `search_city`, `search_postcode`, `search_lat`, `search_lng`, `search_radius_km`, `contract_types`, `salary_min_k`, `salary_max_k`, `remote_days_min`, `available_from`, `experience_band`, `work_authorization`, `looking_for`, `open_to_opportunities`, `show_institution`, `paused` (toutes facultatives après la création) | `not_candidate`, `terms_required`, `invalid_input` |
+| `save_candidate_profile(p jsonb)` | `CandidateProfile` ; crée la ligne au premier appel, qui exige `target_role`, `search_city`, `search_lat`, `search_lng`, `contract_types`, `salary_min_k`, `salary_max_k`, `experience_band` (`work_authorization` vaut alors false et `looking_for` null). Autres clés : `search_postcode`, `search_radius_km`, `remote_days_min`, `available_from`, `work_authorization`, `looking_for`, `open_to_opportunities`, `show_institution`, `paused`. Clé absente = inchangé ; clé inconnue = `invalid_input`. Position arrondie à 3 décimales. `candidate.complete` devient vrai dès que la ligne existe et que le CV a 3 compétences | `not_candidate`, `terms_required`, `invalid_input` |
 | `save_cv(p_experiences jsonb, p_skills text[], p_languages jsonb)` | `CandidateCv` ; remplace tout | `not_candidate`, `invalid_input` |
 | `get_my_cv()` | `CandidateCv` (vue complète du candidat, identité comprise) | `not_candidate` |
-| `get_my_cv_preview()` | `AnonymousCv` : exactement ce que voit un recruteur avant le match | `not_candidate` |
+| `get_my_cv_preview()` | `AnonymousCv` : exactement ce que voit un recruteur avant le match ; null tant que le profil de recherche n'existe pas | `not_candidate` |
 | `get_offer_feed(p_limit int default 20)` | `setof jsonb` `OfferCard`, ordre du §6 ; vide si le profil est incomplet | `not_candidate` |
-| `get_offer(p_id uuid)` | `OfferDetail` | `not_found` |
+| `get_offer(p_id uuid)` | `OfferDetail` ; lisible si publiée, ou par un membre de l'entreprise et un admin (aperçu « comme un candidat » : `distance_km` null, `can_apply` false, toutes les photos) | `not_found` |
 | `get_company(p_id uuid)` | `CompanyPage` (entreprise `verified` et ses offres publiées) | `not_found` |
 | `search_companies(p_q text)` | `setof jsonb` `CompanyHit` (10 au plus, entreprises vérifiées) | `invalid_input` |
 | `pass_offer(p_id uuid)` | `void` | `not_candidate`, `not_found` |
@@ -144,7 +154,7 @@ quand il en faut un lève l'erreur adaptée.
 | `get_my_applications()` | `setof jsonb` `MyApplication`, les plus récentes d'abord | `not_candidate` |
 | `get_my_application(p_id uuid)` | `MyApplicationDetail` | `not_found` |
 | `get_application_messages(p_id uuid)` | `setof jsonb` `ApplicationMessage`, du plus ancien au plus récent ; marque lus les messages reçus | `not_found`, `not_matched` |
-| `send_application_message(p_id uuid, p_body text, p_context text default null)` | `uuid` | `not_found`, `not_matched`, `invalid_input` |
+| `send_application_message(p_id uuid, p_body text, p_context text default null)` | `uuid` ; `not_matched` aussi sur une candidature appariée puis close (`rejected`, `withdrawn`) | `not_found`, `not_matched`, `invalid_input` |
 | `get_my_conversations()` | `setof jsonb` `ConversationSummary` (candidat ou recruteur : candidatures appariées) | — |
 | `accept_interview_slot(p_slot_id uuid)` | `void` ; les autres créneaux proposés passent `declined`, la candidature passe `interview` | `not_found`, `invalid_status` |
 | `get_my_invitations()` | `setof jsonb` `Invitation` | `not_candidate` |
@@ -158,42 +168,56 @@ quand il en faut un lève l'erreur adaptée.
 
 | Fonction | Retour | Erreurs |
 |---|---|---|
-| `register_company(p_siren text, p_display_name text, p_job_title text, p_sirene jsonb)` | `uuid` ; entreprise `pending`, membre `owner` ; domaine de l'email du compte, signalé s'il est dans `generic_email_domains` ; journalisé | `not_recruiter`, `terms_required`, `invalid_siren`, `already_member`, `company_exists` |
+| `register_company(p_siren text, p_display_name text, p_job_title text, p_sirene jsonb, p_first_name text default null)` | `uuid` ; entreprise `pending`, membre `owner` ; raison sociale, NAF, effectif, ville et code postal recopiés de `p_sirene` (`CompanyLookup`) ; domaine de l'email du compte, signalé s'il est dans `generic_email_domains` ; journalisé | `not_recruiter`, `terms_required`, `invalid_siren`, `already_member`, `company_exists`, `invalid_input` |
+| `update_my_member_profile(p_first_name text default null, p_job_title text default null)` | `void` ; null = inchangé, chaîne vide = prénom effacé | `not_member`, `invalid_input` |
 | `get_my_company()` | `MyCompany` | `not_member` |
 | `update_company_profile(p_display_name text default null, p_description text default null, p_website text default null)` | `void` | `not_member`, `invalid_input` |
-| `save_offer(p_id uuid, p_fields jsonb)` | `uuid` (`p_id` null = création en `draft`) ; modifiable en `draft` ou `rejected` (repasse `draft`) | `not_member`, `not_editable`, `invalid_input` |
+| `save_offer(p_id uuid, p_fields jsonb)` | `uuid` (`p_id` null = création en `draft`, `title` obligatoire) ; modifiable en `draft` ou `rejected` (repasse `draft`). Clés : `title`, `contract`, `city`, `postcode`, `address_label`, `lat` et `lng` (ensemble ; null les deux = effacer), `remote_days`, `salary_min_k`, `salary_max_k`, `start_label`, `experience_band`, `missions`, `must_have`, `nice_to_have` (éléments vides ignorés), `language_justification`, `team_description`, `manager_name`, `manager_title`, `interviews_count`, `response_days`. Clé absente = inchangé, null = effacé. Brouillon incomplet accepté | `not_member`, `not_found`, `not_editable`, `invalid_input` |
 | `get_offer_for_edit(p_id uuid)` | `OfferDraft` | `not_member`, `not_found` |
-| `submit_offer(p_id uuid)` | `OfferCheck` : `{ ok, missing: OfferCheckKey[] }` ; passe `pending_review` seulement si `missing` est vide | `not_member`, `not_editable` |
-| `close_offer(p_id uuid, p_reason text /* filled\|archived */)` | `int` : candidatures `sent` et `seen` passées `rejected` avec le motif `position_filled` et un message par défaut (décision humaine du recruteur) | `not_member`, `invalid_status` |
+| `submit_offer(p_id uuid)` | `OfferCheck` : `{ ok, missing: OfferCheckKey[] }` (clé `location` en plus : ville et coordonnées) ; passe `pending_review` seulement si `missing` est vide. Langue : un critère indispensable qui nomme une langue exige une justification d'au moins 10 caractères | `not_member`, `not_found`, `not_editable` |
+| `close_offer(p_id uuid, p_reason text /* filled\|archived */)` | `int` : candidatures `sent` et `seen` passées `rejected` (décision humaine du recruteur), motif `position_filled` pour `filled`, `other` avec « L'entreprise a retiré cette offre » pour `archived` ; `filled` depuis `published` ou `expired` seulement | `not_member`, `not_found`, `invalid_status`, `invalid_input` |
 | `list_company_offers()` | `setof jsonb` `RecruiterOfferRow` | `not_member` |
 | `list_offer_applications(p_offer_id uuid)` | `setof jsonb` `PipelineCard` (tableau de suivi) | `not_member`, `not_found` |
 | `get_offer_pile(p_offer_id uuid, p_limit int default 20)` | `setof jsonb` `PileCard` : candidatures `sent` et `seen`, de la plus ancienne à la plus récente (ordre d'arrivée, rien d'autre) | `not_member`, `not_found` |
 | `mark_application_seen(p_id uuid)` | `void` (`sent` → `seen`, `seen_at`) | `not_member`, `not_found` |
-| `decide_application(p_id uuid, p_decision text /* interested\|rejected */, p_reason refusal_reason default null, p_message text default null)` | `{ status, identity: { first_name, last_name } \| null }` ; refus : motif et message (20 à 600 caractères) obligatoires | `not_member`, `not_found`, `invalid_status`, `reason_required`, `message_required` |
+| `decide_application(p_id uuid, p_decision text /* interested\|rejected */, p_reason refusal_reason default null, p_message text default null)` | `{ status, identity: { first_name, last_name } \| null }`. `interested` depuis `sent` ou `seen` seulement. `rejected` depuis `sent`, `seen`, `interested`, `interview` ou `offer_made` (refus après le match possible : créneaux ouverts annulés), jamais depuis `hired`, `rejected`, `closed_no_response`, `withdrawn` ; motif et message (20 à 600 caractères) obligatoires | `not_member`, `not_found`, `invalid_status`, `reason_required`, `message_required`, `invalid_input` |
 | `move_application(p_id uuid, p_status application_status /* interview\|offer_made\|hired */)` | `void` ; uniquement vers l'avant depuis un statut apparié ; `hired` passe l'offre `filled` si le recruteur le demande ensuite avec `close_offer` | `not_member`, `invalid_transition` |
 | `get_recruiter_application(p_id uuid)` | `RecruiterApplication` | `not_member`, `not_found` |
 | `add_application_note(p_id uuid, p_body text)` | `uuid` | `not_member`, `invalid_input` |
 | `propose_interview_slots(p_id uuid, p_slots jsonb)` | `int` ; 1 à 5 créneaux `{ starts_at, duration_min, mode, location, with_whom }` dans le futur | `not_member`, `not_matched`, `invalid_input` |
-| `search_open_candidates(p_offer_id uuid, p_min_level int default null, p_skill text default null)` | `setof jsonb` `OpenCandidate` (50 au plus) : candidats `open_to_opportunities`, non en pause, sans blocage de l'entreprise, sans candidature sur cette offre, dont la zone de recherche couvre le lieu de l'offre | `not_member`, `not_found`, `offer_not_published` |
-| `invite_candidate(p_offer_id uuid, p_number int, p_message text)` | `uuid` ; `invitation_weekly_quota` par entreprise et par semaine glissante | `not_member`, `not_found`, `offer_not_published`, `already_invited`, `quota_exceeded`, `invalid_input` |
+| `search_open_candidates(p_offer_id uuid, p_min_level int default null, p_skill text default null)` | `setof jsonb` `OpenCandidate` (50 au plus) : candidats `open_to_opportunities`, non en pause, au profil complet, sans blocage de l'entreprise, sans candidature sur cette offre, dont la zone de recherche couvre le lieu de l'offre. `p_min_level` : échelle européenne (7 = Bac+5) ; `p_skill` : contenu dans une compétence, sans accents ni casse | `not_member`, `not_found`, `offer_not_published` |
+| `invite_candidate(p_offer_id uuid, p_number int, p_message text)` | `uuid` ; `invitation_weekly_quota` par entreprise et par semaine glissante | `not_member`, `not_found`, `offer_not_published`, `already_invited`, `already_applied`, `quota_exceeded`, `invalid_input` |
 
 ### Admin (`is_admin()`, donc aal2)
+
+Un admin lit aussi `companies`, `offers`, `offer_photos`, `offer_reports`, `applications` (sans `candidate_id`),
+`emploi_accounts`, `candidates` et le CV en lecture directe (comptes du menu du back-office), toujours en aal2.
 
 | Fonction | Retour | Erreurs |
 |---|---|---|
 | `admin_list_companies(p_status company_status default 'pending')` | `setof jsonb` `AdminCompany` (plus anciennes d'abord) | `forbidden` |
 | `admin_decide_company(p_id uuid, p_decision text /* verify\|reject\|suspend */, p_reason text default null)` | `void` ; motif obligatoire pour `reject` et `suspend` ; avis au recruteur ; journalisé | `forbidden`, `not_found`, `reason_required`, `invalid_decision` |
 | `admin_list_offers_to_review()` | `setof jsonb` `AdminOfferReview` (`pending_review`, plus anciennes d'abord) | `forbidden` |
-| `admin_moderate_photo(p_photo_id uuid, p_decision text /* approve\|reject */, p_reason text default null)` | `void` | `forbidden`, `not_found`, `reason_required` |
-| `admin_decide_offer(p_id uuid, p_decision text /* publish\|reject */, p_reason text default null)` | `void` ; publier exige une entreprise `verified`, aucune photo `pending` et au moins une photo `workplace` `approved` ; `published_at = now()`, `expires_at = now() + offer_lifetime_days` | `forbidden`, `not_found`, `reason_required`, `company_not_verified`, `photos_pending`, `photo_required`, `invalid_status` |
+| `admin_moderate_photo(p_photo_id uuid, p_decision text /* approve\|reject */, p_reason text default null)` | `void` ; journalisé | `forbidden`, `not_found`, `reason_required`, `invalid_decision` |
+| `admin_decide_offer(p_id uuid, p_decision text /* publish\|reject */, p_reason text default null)` | `void` ; publier exige une entreprise `verified`, aucune photo `pending` et au moins une photo `workplace` `approved` ; `published_at = now()`, `expires_at = now() + offer_lifetime_days` | `forbidden`, `not_found`, `reason_required`, `company_not_verified`, `photos_pending`, `photo_required`, `invalid_status`, `invalid_decision` |
 | `admin_list_offer_reports(p_status report_status default 'open')` | `setof jsonb` `AdminOfferReport` | `forbidden` |
-| `admin_handle_offer_report(p_id uuid, p_status report_status, p_unpublish bool default false, p_reason text default null)` | `void` ; `p_unpublish` passe l'offre `archived` avec le motif | `forbidden`, `not_found`, `reason_required` |
+| `admin_handle_offer_report(p_id uuid, p_status report_status, p_unpublish bool default false, p_reason text default null)` | `void` ; `p_unpublish` passe l'offre `archived` avec le motif, et les candidatures en attente reçoivent « Cette offre a été retirée par l'équipe Sapios » ; journalisé | `forbidden`, `not_found`, `reason_required`, `invalid_input` |
 | `admin_emploi_stats()` | `jsonb` `AdminEmploiStats` | `forbidden` |
 
 `admin_list_submissions` et `admin_get_submission` renvoient, pour un candidat sans `profile_private`, `legal_name` =
 prénom et nom de `candidate_identities` (déchiffré) et `display_name` = prénom.
 
 ### Serveur et tâches
+
+Réservées à `service_role` :
+- `server_emploi_notification(p_event text, p_id uuid)` → `jsonb` `{ event, variant, audience, recipients: [{ user_id,
+  name }], vars, path, target_id }` ou null (notification périmée) : ce que `notify` envoie. Événement en plus :
+  `diploma_verdict` (`p_id` = compte ; null pour un compte qui n'est pas de l'emploi). Pour `message`, `p_id` est
+  l'identifiant du **message**.
+- `server_prepare_account_deletion(p_user uuid)` → `jsonb { company_id, sole_member, photo_paths }` : appelée par
+  `delete-account` et `purge-inactive` avant la suppression ; recruteur seul membre : offres ouvertes `archived`,
+  candidatures en attente closes avec une réponse, lignes `offer_photos` effacées (fichiers effacés par l'API Storage).
+- `emploi_requirement_matches(p_offer uuid, p_candidate uuid)` → `RequirementMatch[]` (contrôles et tests).
 
 - `private.close_overdue_applications()` : `sent`/`seen` dont `due_at` est passé → `closed_no_response`, `closed_at`,
   avis `application_closed` et `notify`. Offres `published` dont `expires_at` est passé → `expired`.
@@ -218,7 +242,7 @@ prénom et nom de `candidate_identities` (déchiffré) et `display_name` = prén
 |---|---|---|---|
 | `company-lookup` | JWT d'un compte recruteur | `{ siren }` | `CompanyLookup` ; relais vers `https://recherche-entreprises.api.gouv.fr/search?q=<siren>` ; erreurs `invalid_siren` (400), `not_found` (404), `rate_limited` (429, 10 par minute), `upstream_unavailable` (502) |
 | `geocode` | JWT utilisateur | `{ q, kind: "city" \| "address" }` (2 à 120 caractères) | `{ results: GeoResult[] }` (5 au plus) ; Géoplateforme `https://data.geopf.fr/geocodage/search` (`type=municipality` pour `city`) ; erreurs `invalid_query`, `rate_limited` (30 par minute), `upstream_unavailable` |
-| `notify` | en-tête `x-sapios-secret` | + `{ type: "emploi", event: EmploiNotifyEvent, id }` | push (candidats, app Expo) et email (Resend). Liens : `<SAPIOS_APP_URL>/applications/<id>` pour le candidat, `<SAPIOS_WEB_URL>/recruteur/offres/<offer_id>/suivi?c=<application_id>` pour le recruteur. Le verdict de diplôme d'un compte emploi envoie le texte `emploi.verdict.*`, jamais celui du dating |
+| `notify` | en-tête `x-sapios-secret` | + `{ type: "emploi", event: EmploiNotifyEvent, id }` | `{ sent, emailed }` ; push aux candidats (app Expo) et email (Resend) aux candidats et aux recruteurs, détail au §8 |
 | `delete-account` | JWT utilisateur | `{}` | inchangé ; un recruteur seul membre de son entreprise : ses offres `published` passent `archived`, l'entreprise reste (pour l'historique des candidats), ses photos sont supprimées |
 
 Ni la recherche ni la réponse de `company-lookup` et `geocode` ne sont journalisées. CSP : rien à ajouter, les clients
@@ -232,9 +256,12 @@ Texte public : page « Comment nous classons » (site) et CGU. Aucune autre règ
   candidat, contrat dans `contract_types`, lieu de l'offre à moins de `search_radius_km` du centre de la zone. Ordre :
   nombre de correspondances décroissant, puis date de publication décroissante, puis distance croissante.
 - **Correspondances** (`public.emploi_requirement_matches(offer_id, candidate_id)` → `RequirementMatch[]`) : pour chaque
-  critère `must_have` puis `nice_to_have`, `met = true` si, après minuscules, suppression des accents et des espaces en
-  trop, une compétence ou une langue du candidat est égale au critère ou contenue dedans (mot entier), ou si le critère
-  contient `bac+N` et que le niveau vérifié du candidat est ≥ N. Jamais de score global, jamais de pourcentage.
+  critère `must_have` puis `nice_to_have`, `met = true` si, après minuscules, suppression des accents et de la
+  ponctuation (`private.normalize_text`), une compétence ou une langue du candidat est égale au critère ou y figure
+  comme mot(s) entier(s) (« SQL » remplit « Maîtrise de SQL », pas « MySQL ») ; ou si le critère contient `bac+N` et
+  que le niveau vérifié du candidat (échelle européenne) atteint le niveau exigé : Bac+1 ou Bac+2 → 5, Bac+3 ou
+  Bac+4 → 6, Bac+5 → 7, Bac+6 à Bac+8 → 8. Le niveau d'une langue n'est pas comparé. Jamais de score global, jamais
+  de pourcentage.
 - **Pile du recruteur** : ordre d'arrivée des candidatures, rien d'autre.
 - **Approche directe** : candidats triés par date d'activation de « Ouvert·e aux opportunités », les plus récents d'abord.
 
@@ -249,9 +276,30 @@ photo. Après le match (`interested` et suivants) : prénom et nom en plus, rien
 ## 8. Notifications (`EmploiNotifyEvent`)
 
 `application_interested`, `application_rejected`, `application_closed`, `interview_proposed`, `invitation_received`
-(au candidat) ; `interview_accepted`, `company_decided`, `offer_decided`, `deadline_reminder` (au recruteur, email) ;
-`message` (à l'autre partie). `id` = l'identifiant de la candidature, de l'invitation, de l'entreprise ou de l'offre selon
-l'événement. Textes dans `docs/EMAILS.md`, section « Emploi ».
+(au candidat : push et email) ; `interview_accepted`, `company_decided`, `offer_decided`, `deadline_reminder` (au
+recruteur : email seulement, pas de push sur le web) ; `message` (au candidat : push seulement ; au recruteur : email).
+
+`id` de l'appel à `notify` : la candidature (`application_*`, `interview_proposed`, `interview_accepted`),
+l'invitation (`invitation_received`), l'entreprise (`company_decided`, `deadline_reminder`), l'offre
+(`offer_decided`), le **message** (`message`).
+
+Données du push : `{ type: "emploi", event, id }` (`PushData`, `functions.ts`), avec `id` = ce que l'app ouvre : la
+candidature (`application_*`, `interview_proposed`, `message`), l'offre (`invitation_received`), le compte
+(`diploma_verdict`).
+
+Liens des emails : `<SAPIOS_APP_URL>/applications/<id>` ou `/offers/<id>` (candidat) ;
+`<SAPIOS_WEB_URL>/recruteur/offres/<offer_id>/suivi?c=<application_id>`, `/recruteur/offres/<offer_id>` ou `/recruteur`
+(recruteur). Nouveau secret d'Edge Functions : `SAPIOS_WEB_URL` (sans lui, emails recruteurs sans lien).
+
+Verdict de diplôme d'un compte emploi : `review-diploma` appelle `notify` comme avant (`type: "verdict"`), et le texte
+de l'emploi remplace celui du dating. Clés de texte (dans `supabase/functions/_shared/emploi_notify.ts`, objet
+`EMPLOI_TEXTS`, **pas** dans `app_copy`, donc non éditables depuis « Textes ») :
+`diploma_verdict.approved` (verdict validé, « le badge {level} apparaît sur votre CV », niveau affiché par
+`levelLabel`), `diploma_verdict.rejected` (`copy_key` `verdict.rejected`), `diploma_verdict.needs_more` (`copy_key`
+`verdict.needs_more`). Les autres clés : `application_interested`, `application_rejected`, `application_closed`,
+`interview_proposed`, `invitation_received`, `message.to_candidate`, `message.to_recruiter`, `interview_accepted`,
+`company_decided.verified|rejected|suspended`, `offer_decided.published|rejected`, `deadline_reminder`. Textes complets :
+`docs/EMAILS.md`, section « Emploi ».
 
 ## 9. Comptes de test (seed local)
 
@@ -260,8 +308,12 @@ Mot de passe `sapios-test-password`. Les SIREN du seed commencent par `999` et r
 | Email | Rôle |
 |---|---|
 | `admin@sapios.test` | admin (inchangé) |
-| `camille@sapios.test` | candidate, n° 0427, Master Économétrie vérifié (niveau 5), Paris, ouverte aux opportunités |
-| `candidat2@sapios.test`, `candidat3@sapios.test` | candidats n° 0431 et n° 0388 |
+| `camille@sapios.test` | candidate, n° 0427, Master Économétrie vérifié (niveau 7 = Bac+5), Paris, ouverte aux opportunités ; match avec Maison Verte (3 créneaux proposés, un message), candidature vue chez Rail&Co, refus motivé d'Atelier Lumen, candidature close sans réponse chez Nordia |
+| `candidat2@sapios.test`, `candidat3@sapios.test` | candidats n° 0431 (Master Statistique, niveau 7) et n° 0388 (Licence, niveau 6, invité par Rail&Co), tous deux dans la pile de Maison Verte |
 | `nouveau@sapios.test` | compte candidat sans profil (inscription à faire) |
 | `thomas@maisonverte.test` | recruteur `owner` de Maison Verte (`verified`), offre « Data analyst junior » publiée avec photos |
-| `rh@ateliernova.test` | recruteur d'Atelier Nova (`pending`) |
+| `rh@ateliernova.test` | recruteur d'Atelier Nova (`pending`), une offre en vérification avec une photo à modérer |
+| `rh@atelierlumen.test`, `rh@railco.test`, `rh@nordia.test` | recruteurs d'Atelier Lumen (Lyon), Rail&Co (La Défense) et Nordia (Paris 9e), vérifiées, une offre publiée chacune ; un signalement ouvert sur l'offre de Nordia |
+
+Photos des offres : `supabase/seed/offer-photos/{company_id}/*.jpg` (images de synthèse), envoyées dans le bucket par
+`supabase db reset` (`[storage.buckets.offer-photos]` de `config.toml`).

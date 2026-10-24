@@ -47,7 +47,8 @@ select ok(
 
 select is(
   (select array_agg(tablename::text order by tablename) from pg_publication_tables where pubname = 'supabase_realtime'),
-  array['matches', 'messages'], 'publication supabase_realtime limitée à messages et matches');
+  array['application_messages', 'interview_slots', 'matches', 'messages'],
+  'publication supabase_realtime limitée aux messages, matches et créneaux d''entretien');
 
 select results_eq(
   $$select id, public from storage.buckets where id in ('diplomas', 'photos') order by id$$,
@@ -73,6 +74,8 @@ select has_trigger('public', 'matches', 'matches_notify', 'trigger notify sur le
 -- Exceptions : referrals.referrer_id (on delete set null) garde la priorité du filleul quand le
 -- parrain supprime son compte (lot 2) ; reports.reporter_id et reports.target_id (on delete set null)
 -- gardent les signalements, pseudonymisés, après la suppression d'un compte (conformité).
+-- Emploi (docs/EMPLOI_CONTRACT.md §2) : les auteurs côté entreprise ou modération (recruteur, admin,
+-- signaleur) passent à null ; l'offre, la candidature et l'historique du candidat restent.
 select is(
   (select array_agg(cl.relname::text || '.' || a.attname::text order by cl.relname::text || '.' || a.attname::text)
      from pg_constraint con
@@ -81,8 +84,11 @@ select is(
      join pg_attribute a on a.attrelid = con.conrelid and a.attnum = any (con.conkey)
     where con.contype = 'f' and n.nspname = 'public'
       and con.confrelid = 'auth.users'::regclass and con.confdeltype <> 'c'),
-  array['referrals.referrer_id', 'reports.reporter_id', 'reports.target_id'],
-  'clés étrangères vers auth.users en cascade, sauf referrals.referrer_id et les deux de reports');
+  array['application_messages.sender_id', 'application_notes.author_id', 'applications.decided_by',
+        'companies.created_by', 'companies.verified_by', 'interview_slots.created_by', 'invitations.created_by',
+        'offer_reports.handled_by', 'offer_reports.reporter_id', 'offers.created_by',
+        'referrals.referrer_id', 'reports.reporter_id', 'reports.target_id'],
+  'clés étrangères vers auth.users en cascade, sauf les auteurs listés (set null)');
 
 select is(
   (select count(*)::int from pg_constraint con where con.conrelid = 'public.audit_log'::regclass and con.contype = 'f'),

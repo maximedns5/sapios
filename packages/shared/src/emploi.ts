@@ -2,6 +2,7 @@
 // Une RPC qui renvoie un type de ce fichier renvoie exactement ces champs, avec ces noms.
 
 import type { StudyField } from "./intellect";
+import type { PhotoModeration, ReportStatus } from "./tiers";
 
 // Enums -----------------------------------------------------------------------------------------
 
@@ -38,8 +39,6 @@ export type InterviewMode = "visio" | "onsite";
 export type SlotStatus = "proposed" | "accepted" | "declined" | "cancelled";
 export type InvitationStatus = "sent" | "applied" | "declined";
 export type EmploiAccountKind = "candidate" | "recruiter";
-export type PhotoModeration = "pending" | "approved" | "rejected";
-export type ReportStatus = "open" | "actioned" | "dismissed";
 
 export const LANGUAGE_LEVELS = ["a2", "b1", "b2", "c1", "c2"] as const;
 export type LanguageLevel = (typeof LANGUAGE_LEVELS)[number];
@@ -182,6 +181,7 @@ export const EMPLOI_LIMITS = {
 export const OFFER_CHECK_KEYS = [
   "company_not_verified",
   "title",
+  "location",
   "salary",
   "missions",
   "must_have",
@@ -195,6 +195,7 @@ export type OfferCheckKey = (typeof OFFER_CHECK_KEYS)[number];
 export const OFFER_CHECK_LABELS: Record<OfferCheckKey, string> = {
   company_not_verified: "Entreprise en attente de vérification",
   title: "Intitulé du poste",
+  location: "Lieu de travail",
   salary: "Fourchette de salaire",
   missions: "Les 3 missions",
   must_have: "Au moins un critère indispensable",
@@ -280,7 +281,7 @@ export function isValidSiren(siren: string): boolean {
 // Formes renvoyées par les RPC -----------------------------------------------------------------------
 
 export interface DiplomaBadge {
-  /** 1 à 8 : Bac+N. */
+  /** Niveau européen : 5 = Bac+2, 6 = Bac+3, 7 = Bac+5, 8 = Bac+8 (levelLabel dans tiers.ts). */
   level: number;
   study_field: StudyField | null;
   /** null si le candidat masque son établissement (vue recruteur) ou s'il est inconnu. */
@@ -424,7 +425,8 @@ export interface OfferCard {
   company: CompanySummary;
   contract: ContractType;
   city: string;
-  distance_km: number;
+  /** null si la zone de recherche du lecteur est inconnue (profil incomplet, recruteur). */
+  distance_km: number | null;
   remote_days: number;
   salary_min_k: number;
   salary_max_k: number;
