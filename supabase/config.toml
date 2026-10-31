@@ -119,18 +119,11 @@ enabled = true
 file_size_limit = "50MiB"
 
 # Buckets privés : la source de vérité est la migration 20261021090700_storage.sql (mêmes valeurs).
-# En local, les photos des profils seedés sont envoyées depuis ./seed/photos/{user_id}/seed-N.jpg.
 [storage.buckets.diplomas]
 public = false
 file_size_limit = "15MiB"
 allowed_mime_types = ["application/pdf", "image/jpeg", "image/png", "image/webp"]
 objects_path = "./seed/diplomas"
-
-[storage.buckets.photos]
-public = false
-file_size_limit = "10MiB"
-allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
-objects_path = "./seed/photos"
 
 # Sapios Emploi : photos des offres (migration 20261028090000_emploi_tables.sql), seed local
 # dans ./seed/offer-photos/{company_id}/*.jpg.
@@ -489,8 +482,8 @@ verify_jwt = false
 [functions.purge-inactive]
 verify_jwt = false
 
-[functions.search-books]
-verify_jwt = true
+[functions.purge-dating-photos]
+verify_jwt = false
 
 [functions.company-lookup]
 verify_jwt = true

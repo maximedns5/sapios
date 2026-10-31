@@ -81,7 +81,7 @@ select is(
   jsonb_build_object('user_id', pg_temp.uid(4), 'tier', null, 'level', null, 'copy_key', 'verdict.rejected'),
   'refus : copy verdict.rejected, aucun palier');
 select pg_temp.login(pg_temp.uid(4));
-select is(public.get_my_state() -> 'latest_submission' ->> 'rejection_reason', 'Nom illisible',
+select is(public.get_emploi_state() -> 'latest_submission' ->> 'rejection_reason', 'Nom illisible',
   'le membre voit le motif de refus');
 select is_empty($$select 1 from public.user_access$$, 'refus : toujours aucun palier');
 

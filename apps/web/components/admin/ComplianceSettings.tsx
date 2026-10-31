@@ -29,8 +29,8 @@ const RETENTION = [
   },
   {
     key: "report_retention_days",
-    label: "Signalements après suppression du compte visé",
-    help: "Conservés pseudonymisés, puis effacés.",
+    label: "Signalements d’offres traités",
+    help: "Signalements classés ou ayant donné lieu à une action, effacés ensuite.",
     def: 365,
     min: 30,
     max: 1825,
@@ -41,14 +41,6 @@ const RETENTION = [
     help: "Décisions de modération et changements de réglages.",
     def: 1825,
     min: 365,
-    max: 3650,
-  },
-  {
-    key: "banned_identity_retention_days",
-    label: "Empreintes des comptes bannis",
-    help: "Empêchent le retour d’une personne exclue. Jamais lisibles en clair.",
-    def: 1095,
-    min: 90,
     max: 3650,
   },
   {

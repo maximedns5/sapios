@@ -7,22 +7,27 @@ import type { CopyRow } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
 import { Empty, ErrorNotice, Loading, PageHead, SuccessNotice } from "./ui";
 
-// Clés que l'emploi lit dans `app_copy` : l'écran des CGU. Les emails et notifications de l'emploi, dont le
-// verdict du diplôme, vivent dans `notify` (`_shared/emploi_notify.ts`, EMAILS.md §11) et ne s'éditent pas ici.
-// Les textes de l'app candidat ont un repli local ; les clés du dating restent éditables tant qu'elles existent.
-const REQUIRED_KEYS = ["terms.title", "terms.lead"];
+// Clés lues dans `app_copy` : email et avis d'inactivité, pied des emails, délai de revue des diplômes.
+// Les emails et notifications de l'emploi, dont le verdict du diplôme, vivent dans `notify`
+// (`_shared/emploi_notify.ts`, EMAILS.md §11) ; les textes de l'app candidat (`emploi.*`) ont un repli local.
+const REQUIRED_KEYS = [
+  "email.footer",
+  "email.inactivity.subject",
+  "email.inactivity.title",
+  "email.inactivity.body",
+  "email.inactivity.cta",
+  "notice.inactivity.title",
+  "notice.inactivity.body",
+  "review.delay",
+];
 const LOCALE = "fr";
 
 // Groupe d'une clé = préfixe avant le premier point ; le libellé dit où le texte apparaît.
 const GROUP_LABELS: Record<string, string> = {
   emploi: "Emploi",
   email: "Emails",
-  push: "Notifications",
-  safety: "Sécurité",
-  terms: "CGU",
   notice: "Avis",
-  scan: "Analyse du diplôme (ancienne app)",
-  verdict: "Verdicts (ancienne app)",
+  review: "Revue des diplômes",
 };
 
 /** Emplacements remplis par l'app ({title}, {count}…) : à garder tels quels. */
@@ -155,7 +160,7 @@ function NewCopy({ existing, onCreated }: { existing: Set<string>; onCreated: (r
             className="input"
             value={key}
             onChange={(e) => setKey(e.target.value)}
-            placeholder="ex. verdict.custom"
+            placeholder="ex. emploi.feed.empty"
             list={`${id}-missing`}
             autoCapitalize="none"
             spellCheck={false}

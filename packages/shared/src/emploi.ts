@@ -1,7 +1,7 @@
 // Sapios Emploi : formes JSON des RPC et libellés partagés (docs/EMPLOI_CONTRACT.md).
 // Une RPC qui renvoie un type de ce fichier renvoie exactement ces champs, avec ces noms.
 
-import type { StudyField } from "./intellect";
+import type { StudyField } from "./study";
 import type { PhotoModeration, ReportStatus } from "./tiers";
 
 // Enums -----------------------------------------------------------------------------------------

@@ -48,16 +48,6 @@ export function TierBadge({ tier }: { tier: AccessTier | null | undefined }) {
   return <span className={solid ? "badge badge--solid" : "badge"}>{TIER_LABELS[tier] ?? tier}</span>;
 }
 
-/** Lot 2 : la personne a utilisé une lettre de recommandation ; sa demande passe devant, jamais le diplôme. */
-export function ReferredMark({ by }: { by: string | null | undefined }) {
-  return (
-    <span className="prio-mark">
-      <span className="badge badge--solid">Prioritaire</span>
-      <span className="muted">{by ? `Recommandé·e par ${by}` : "Recommandé·e (parrain parti)"}</span>
-    </span>
-  );
-}
-
 export function Loading({ label = "Chargement" }: { label?: string }) {
   return (
     <p className="loading" role="status">

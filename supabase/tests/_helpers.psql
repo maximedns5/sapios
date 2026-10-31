@@ -31,39 +31,18 @@ begin
 end;
 $$;
 
--- Membre prêt à l'emploi (profil complet, 2 photos approuvées, palier). Par défaut à Reykjavik,
--- loin des membres seedés à Paris, pour que le feed ne voie que les comptes du test.
-create function pg_temp.new_member(
-  p_n int,
-  p_tier public.access_tier,
-  p_gender public.gender default 'woman',
-  p_seeking public.gender[] default '{man}',
-  p_age int default 30,
-  p_age_min int default 18,
-  p_age_max int default 99,
-  p_lat double precision default 64.1466,
-  p_lng double precision default -21.9426,
-  p_status public.profile_status default 'active'
-)
+-- Compte candidat (Sapios Emploi) avec identité chiffrée et, si `p_tier` est fourni, un diplôme vérifié
+-- dans user_access (7 = Bac+5 pour standard, 8 pour unlimited, 6 pour waitlist, 5 sinon).
+create function pg_temp.new_member(p_n int, p_tier public.access_tier default null)
 returns uuid
 language plpgsql
 as $$
 declare
   v uuid := pg_temp.new_user(p_n);
 begin
-  update public.profiles
-     set display_name = 'Membre ' || p_n, gender = p_gender, seeking_genders = p_seeking,
-         age_min = p_age_min, age_max = p_age_max, city = 'Reykjavik',
-         location = extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography,
-         status = p_status
-   where id = v;
-  perform private.store_identity(v, 'Membre Test ' || p_n,
-    ((now() at time zone 'Europe/Paris')::date - make_interval(years => p_age) - interval '10 days')::date);
-  update public.profile_private
-     set consent_sensitive_at = now(), consent_version = 'test'
-   where user_id = v;
-  insert into public.profile_photos (user_id, storage_path, position, moderation_status)
-  values (v, v::text || '/a.jpg', 0, 'approved'), (v, v::text || '/b.jpg', 1, 'approved');
+  insert into public.emploi_accounts (user_id, kind) values (v, 'candidate');
+  insert into public.candidate_identities (user_id, first_name, last_name_enc)
+  values (v, 'Membre', private.encrypt_text('Test ' || p_n));
   if p_tier is not null then
     insert into public.user_access (user_id, level, tier, copy_key)
     values (v, case p_tier when 'unlimited' then 8 when 'standard' then 7 when 'waitlist' then 6 else 5 end,
