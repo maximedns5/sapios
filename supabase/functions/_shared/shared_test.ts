@@ -13,12 +13,12 @@ Deno.test("chaque fonction a un deno.json identique (même version de zod)", asy
     FUNCTIONS.map((f) => Deno.readTextFile(new URL(`${f}/deno.json`, functionsDir)).then(JSON.parse)),
   );
   for (const c of configs) assertEquals(c, configs[0]);
-  assertEquals(configs[0].imports["zod/v4"], "npm:zod@3.25.76/v4");
+  assertEquals(configs[0].imports["zod/v4"], "npm:zod@4.6.7/v4");
 });
 
 Deno.test("la version de zod des fonctions est celle du paquet partagé", async () => {
   const lock = await Deno.readTextFile(new URL("../../../pnpm-lock.yaml", import.meta.url));
-  assert(/^\s{2}zod@3\.25\.76:/m.test(lock), "pnpm-lock.yaml ne résout plus zod@3.25.76 : mettre à jour les deno.json");
+  assert(/^\s{2}zod@4\.6\.7:/m.test(lock), "pnpm-lock.yaml ne résout plus zod@4.6.7 : mettre à jour les deno.json");
 });
 
 Deno.test("packages/shared : seuls des imports compatibles Deno dans les fichiers importés par les fonctions", async () => {
