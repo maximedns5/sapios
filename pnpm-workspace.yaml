@@ -5,3 +5,7 @@ onlyBuiltDependencies:
   - supabase
   - esbuild
   - sharp
+# zod < 4.6.6 : GHSA-mrhx-c7xc-m3w5. L'outil Expo (@expo/cli, jamais embarqué dans l'app) demande
+# encore zod 3 ; ses deux schémas n'utilisent que des fonctions identiques en zod 4.
+overrides:
+  "@expo/cli>zod": 4.6.7
