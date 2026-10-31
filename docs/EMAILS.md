@@ -5,15 +5,16 @@ Deux familles d'emails, un seul fournisseur : **Resend**.
 | Email | Qui l'envoie | Par où | Réglage |
 |---|---|---|---|
 | Code de connexion, confirmation d'inscription | Supabase Auth | SMTP de Resend | dashboard Supabase (§5 et §6) |
-| Verdict de diplôme, nouveau match | Edge Function `notify` | API HTTP de Resend | secrets des Edge Functions (§4) |
-| Événements (lot 2) : place confirmée, place libérée, annulation, rappel la veille | Edge Function `notify` | API HTTP de Resend | secrets des Edge Functions (§4) |
+| Sapios Emploi : candidatures, entretiens, entreprises, offres, verdict du diplôme (§11) | Edge Function `notify` | API HTTP de Resend | secrets des Edge Functions (§4) |
+| Avertissement d'inactivité (conformité) | Edge Function `notify` | API HTTP de Resend | secrets des Edge Functions (§4) |
 
-Pas d'email pour les nouveaux messages : le badge de l'app suffit (suite possible, §10).
+Les emails du produit de rencontre retiré (match, événements, verdict du dating) n'existent plus (migration
+`20261031090000_nettoyage_dating`, code dans la branche `archive/dating`).
 
 Pourquoi : le SMTP intégré de Supabase n'envoie qu'aux membres de l'équipe du projet, à raison de quelques
 emails par heure. Sans SMTP personnalisé, un membre ordinaire ne reçoit jamais son code de connexion. Et
-l'app membre publiée sur le web n'a pas de notifications push : l'email prend le relais pour le verdict et
-le match.
+l'app candidat publiée sur le web n'a pas de notifications push : l'email prend le relais (verdict du diplôme,
+décisions sur les candidatures, entretiens).
 
 **En local**, rien à faire :
 - les codes de connexion arrivent dans Mailpit, http://127.0.0.1:54324 (`supabase/config.toml`) ;
@@ -31,8 +32,8 @@ General → Project ID*), et `<app membre>` l'adresse publique de l'app membre s
 
 1. Créer un compte sur https://resend.com (au nom du porteur du projet, pas d'un prestataire).
 2. Offre gratuite, à vérifier au moment de l'inscription sur https://resend.com/pricing : environ
-   3 000 emails par mois, **100 par jour**, un seul domaine. Les codes de connexion et les emails de verdict
-   et de match comptent ensemble : prévoir l'offre payante avant l'ouverture au public.
+   3 000 emails par mois, **100 par jour**, un seul domaine. Les codes de connexion et les emails de
+   `notify` comptent ensemble : prévoir l'offre payante avant l'ouverture au public.
 
 ## 2. Domaine d'envoi
 
@@ -63,20 +64,22 @@ General → Project ID*), et `<app membre>` l'adresse publique de l'app membre s
 La **même clé** sert deux fois : secret `RESEND_API_KEY` des Edge Functions (§4) et mot de passe SMTP de
 Supabase Auth (§5).
 
-## 4. Secrets des Edge Functions (verdict et match)
+## 4. Secrets des Edge Functions (emails de `notify`)
 
 | Secret | Valeur | Rôle |
 |---|---|---|
 | `RESEND_API_KEY` | `re_…` | Active le canal email. Vide : push seuls |
 | `EMAIL_FROM` | `Sapios <bonjour@mail.<domaine>>` | Expéditeur, obligatoirement sur le domaine vérifié. Vide : push seuls |
-| `SAPIOS_APP_URL` | `https://<app membre>` (sans `/` final) | Liens des emails : `/` pour le verdict, `/chat/<match>` pour le match. Vide : emails sans lien |
+| `SAPIOS_APP_URL` | `https://<app candidat>` (sans `/` final) | Liens des emails aux candidats. Vide : emails sans lien |
+| `SAPIOS_WEB_URL` | `https://<site>` (sans `/` final) | Liens des emails aux recruteurs (`/recruteur/…`). Vide : emails sans lien |
 
 ```sh
 npx supabase secrets set --project-ref <ref> \
   RESEND_API_KEY=re_xxxxxxxx \
   EMAIL_FROM='Sapios <bonjour@mail.<domaine>>' \
-  SAPIOS_APP_URL=https://<app membre>
-npx supabase secrets list --project-ref <ref>   # les trois noms doivent apparaître
+  SAPIOS_APP_URL=https://<app candidat> \
+  SAPIOS_WEB_URL=https://<site>
+npx supabase secrets list --project-ref <ref>   # les quatre noms doivent apparaître
 ```
 
 Ou dans le dashboard : *Edge Functions → Secrets* (selon la version : *Project Settings → Edge Functions*).
@@ -175,7 +178,8 @@ valeurs locales de `config.toml` (`site_url = http://localhost:3000`, redirectio
      -d '{"type":"verdict","user_id":"<uuid du compte>","copy_key":"verdict.standard"}'
    # → {"sent":0,"emailed":1}   (sent = push acceptés par Expo, emailed = emails acceptés par Resend)
    ```
-3. **Match.** Deux comptes de test se likent : chacun reçoit « Nouveau match ».
+3. **Emploi.** Un recruteur de test clique « Intéressé » sur la candidature d'un compte candidat de test : le
+   candidat reçoit « C'est un match » (§11).
 4. **Journaux** : dashboard → *Edge Functions* → `notify` (ou `review-diploma`) → *Logs*.
 
 | Journal | Cause | Correction |
@@ -192,40 +196,29 @@ Les journaux portent l'identifiant du compte, jamais son adresse.
 
 ## 8. Textes
 
-Back-office → **Textes** → groupe `email` (créés par la migration `20261021091000_email_copy.sql`, jamais
-écrasés ensuite) :
+Back-office → **Textes** → groupes `email` et `notice` :
 
 | Clé | Rôle |
 |---|---|
-| `email.verdict.subject`, `email.verdict.title`, `email.verdict.body`, `email.verdict.cta` | Email de verdict : sujet, titre (en inversion noir/blanc), texte, bouton |
-| `email.match.subject`, `email.match.title`, `email.match.body`, `email.match.cta` | Email de match |
+| `email.inactivity.subject`, `email.inactivity.title`, `email.inactivity.body`, `email.inactivity.cta` | Email d'avertissement d'inactivité (`{name}`, `{date}`) |
 | `email.footer` | Pied de page commun |
-| `email.event.registered.*`, `email.event.promoted.*`, `email.event.cancelled.*`, `email.event.reminder.*` (`subject`, `title`, `body`), `email.event.cta` | Emails d'événement (migration `20261024090300_lot2_copy.sql`) |
 
-Variables : `{name}` = prénom affiché du **destinataire** (« Bonjour » s'il n'en a pas) ; `{verdict}` = texte
-de son verdict (`verdict.standard`, `verdict.refused`…). Événements : `{title}`, `{date}` (« samedi 14 novembre à
-19 h 30 », heure de Paris), `{reason}` (motif d'annulation). Une ligne vide sépare deux paragraphes. Pas de HTML :
-tout est échappé. Un texte vidé retombe sur un texte de repli codé dans `_shared/email.ts`. Effet immédiat.
+`{name}` = prénom du **destinataire** (« Bonjour » s'il n'en a pas). Une ligne vide sépare deux paragraphes. Pas de
+HTML : tout est échappé. Un texte vidé retombe sur un texte de repli codé dans `_shared/email.ts`. Les textes de
+l'emploi sont dans `_shared/emploi_notify.ts` (§11).
 
 Le gabarit (`supabase/functions/_shared/email_template.ts`) suit la charte : noir `#0B0B0B` et blanc cassé
 `#F4F3EF` uniquement, titre en Didot, étiquette en capitales monospace, version texte jointe.
 
 ## 9. Données personnelles
 
-- **Événement** : prénom du destinataire, titre, date et, pour une annulation, le motif. Jamais le lieu exact (il
-  reste dans l'application, réservé aux inscrits), jamais les autres inscrits. Une notification périmée (désinscrit
-  entre-temps, événement annulé depuis) ne part pas.
-
-- **Verdict** : prénom du destinataire, texte de **son** verdict, lien vers l'app. Ni niveau, ni diplôme, ni
-  motif de refus.
-- **Match** : prénom du destinataire seulement. Jamais le prénom ni la photo de l'autre personne : avec le
-  genre du destinataire, il suffirait à deviner une orientation (donnée sensible, brief §9).
-- Jamais d'email à un compte banni (`profiles.status`, ou `banned_until` côté Auth), supprimé, anonyme ou
-  dont l'adresse n'est pas confirmée. L'adresse est lue au moment de l'envoi par l'API admin d'Auth, côté
-  serveur, et n'est stockée nulle part ailleurs.
-- **Resend devient sous-traitant** (adresse email, contenu des emails) : l'ajouter à la politique de
-  confidentialité (`apps/web/app/confidentialite`), accepter son DPA (https://resend.com/legal/dpa) et
-  garder la région UE.
+- **Inactivité** : prénom du destinataire, date de suppression annoncée, lien vers l'app.
+- Emploi : voir §11 (jamais le nom d'un candidat avant le match).
+- Jamais d'email à un compte supprimé, anonyme, suspendu côté Auth (`banned_until`) ou dont l'adresse n'est pas
+  confirmée. L'adresse est lue au moment de l'envoi par l'API admin d'Auth, côté serveur, et n'est stockée nulle
+  part ailleurs.
+- **Resend devient sous-traitant** (adresse email, contenu des emails) : le citer dans la politique de
+  confidentialité, accepter son DPA (https://resend.com/legal/dpa) et garder la région UE.
 - Pas encore de préférence « ne plus recevoir d'emails » : le pied de page renvoie à la suppression du compte.
 
 **Sign in with Apple, « Masquer mon adresse »** : les adresses `@privaterelay.appleid.com` ne relaient que les

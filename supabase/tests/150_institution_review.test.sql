@@ -1,15 +1,14 @@
--- Lot 1, établissement vérifié : saisi par le modérateur à la validation (apply_diploma_review),
--- recopié dans user_access, jamais lu par le feed dans degree_submissions ; rattrapage par
--- admin_set_member_institution ; affiché seulement sur option (D2).
+-- Établissement vérifié : saisi par le modérateur à la validation (apply_diploma_review), recopié dans
+-- user_access (badge du candidat) ; rattrapage par admin_set_member_institution.
 begin;
 \ir _helpers.psql
-select plan(14);
+select plan(11);
 
 do $$
 begin
-  perform pg_temp.new_member(1, null, 'woman', '{man}');
-  perform pg_temp.new_member(2, 'unlimited', 'man', '{woman}');   -- modérateur
-  perform pg_temp.new_member(3, 'standard', 'man', '{woman}');
+  perform pg_temp.new_member(1);
+  perform pg_temp.new_member(2, 'unlimited');   -- modérateur
+  perform pg_temp.new_member(3, 'standard');
   insert into public.admins (user_id, role) values (pg_temp.uid(2), 'moderator');
   insert into public.degree_submissions (id, user_id, storage_path, mime, status)
   values (pg_temp.uid(901), pg_temp.uid(1), pg_temp.uid(1)::text || '/master.pdf', 'application/pdf', 'needs_review'),
@@ -24,8 +23,8 @@ select throws_ok(
          pg_temp.uid(903), pg_temp.uid(2), repeat('x', 201)),
   'P0001', 'invalid_institution', 'établissement trop long : refusé');
 select is(
-  public.apply_diploma_review(pg_temp.uid(901), pg_temp.uid(2), 'approve', 7, null, '  Sciences Po  ', 'law') ->> 'tier',
-  'standard', 'approbation avec établissement et domaine');
+  public.apply_diploma_review(pg_temp.uid(901), pg_temp.uid(2), 'approve', 7, null, '  Sciences Po  ', 'law') ->> 'level',
+  '7', 'approbation avec établissement et domaine');
 select results_eq(
   $$select institution_verified, field_verified::text from public.degree_submissions where id = pg_temp.uid(901)$$,
   $$values ('Sciences Po'::text, 'law'::text)$$,
@@ -34,8 +33,6 @@ select results_eq(
   $$select institution, study_field::text from public.user_access where user_id = pg_temp.uid(1)$$,
   $$values ('Sciences Po'::text, 'law'::text)$$,
   'recopiés dans user_access');
-select is((select study_field::text from public.profiles where id = pg_temp.uid(1)), 'law',
-  'le domaine vérifié devient celui du profil (vide jusque-là)');
 select is(public.apply_diploma_review(pg_temp.uid(902), pg_temp.uid(2), 'approve', 6, null, 'Université de Lille', 'history') ->> 'level',
   '7', 'diplôme inférieur : le niveau acquis reste');
 select results_eq(
@@ -45,20 +42,6 @@ select results_eq(
 select lives_ok(
   format($$select public.apply_diploma_review(%L, %L, 'reject', null, 'Illisible')$$, pg_temp.uid(903), pg_temp.uid(2)),
   'appel à 5 arguments toujours accepté');
-
--- Affichage sur option ------------------------------------------------------------------------
-select pg_temp.logout();
-update public.profiles set gender = 'woman', seeking_genders = '{man}' where id = pg_temp.uid(1);
-select pg_temp.login(pg_temp.uid(3));
-select is((select institution from public.get_feed(50) where id = pg_temp.uid(1)), null,
-  'établissement masqué par défaut');
-select pg_temp.login(pg_temp.uid(1));
-update public.profiles set show_institution = true where id = pg_temp.uid(1);
-select pg_temp.login(pg_temp.uid(3));
-select results_eq(
-  $$select institution, field_verified from public.get_feed(50) where id = pg_temp.uid(1)$$,
-  $$values ('Sciences Po'::text, true)$$,
-  'établissement affiché sur option, domaine vérifié');
 
 -- Back-office ---------------------------------------------------------------------------------
 select pg_temp.login(pg_temp.uid(2));

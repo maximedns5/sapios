@@ -13,7 +13,7 @@ recrutement. Il s'appuie sur le plan de pivot, les maquettes (page « Sapios Emp
 
 | # | Décision |
 |---|---|
-| E1 | Le dating est archivé dans la branche `archive/dating` (= `7b99f96`). Sur `main`, ses écrans et pages de back-office disparaissent. Ses objets en base restent intacts pour l'instant (aucun `drop`) ; une migration de nettoyage viendra plus tard, sur accord explicite. |
+| E1 | Le dating est archivé dans la branche `archive/dating` (= `7b99f96`). Sur `main`, ses écrans et pages de back-office ont disparu, puis la migration `20261031090000_nettoyage_dating` (accord explicite de l'utilisateur) a supprimé ses objets en base ; seule `waitlist_signups` reste, sans collecte. |
 | E2 | L'app Expo est réservée aux **candidats**. Le site Next (`apps/web`) porte le site public, l'**espace recruteur** `/recruteur` (bureau + pile en version mobile) et le back-office `/admin`. |
 | E3 | Pilote : CDI et CDD seulement, France, gratuit pour tous (aucune facturation dans ce produit minimal). |
 | E4 | Aucune photo de candidat, ni avant ni après le match. |
@@ -128,7 +128,7 @@ Toutes les clés vers `auth.users` sont `on delete cascade` sauf mention. « RPC
 Mêmes règles que `docs/CONTRACT.md` §3 : `security definer`, `set search_path = ''`, `execute` à `authenticated`
 seulement, erreurs `raise exception '<code>' using errcode = 'P0001'`. Erreurs communes : `not_candidate`,
 `not_recruiter`, `not_member`, `forbidden`, `invalid_input`, `not_found`, `terms_required`, `rate_limited`.
-Toute RPC appelée par un compte supprimé, banni (`profiles.status = 'banned'` s'il existe) ou sans `emploi_accounts`
+Toute RPC appelée par un compte supprimé ou sans `emploi_accounts`
 quand il en faut un lève l'erreur adaptée.
 
 ### Compte et candidat

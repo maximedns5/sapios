@@ -1,3 +1,8 @@
+> **31 octobre 2026 — Nettoyage du dating.** La migration `20261031090000_nettoyage_dating` supprime tout le produit de
+> rencontre (profils, photos, likes, matchs, messages, signalements de membres, profil intellectuel, lettres de
+> recommandation, événements) ; son code reste dans la branche `archive/dating`. Les sections qui en parlent
+> ci-dessous sont historiques. Gardés : la plateforme commune (`docs/CONTRACT.md`), Sapios Emploi et la liste
+> d'attente de l'ancienne landing (`waitlist_signups`, sans collecte, en attente d'une décision).
 
 ## Edge Functions et `packages/shared` (agent fonctions)
 

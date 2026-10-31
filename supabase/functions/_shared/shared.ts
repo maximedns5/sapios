@@ -4,4 +4,4 @@ export * from "../../../packages/shared/src/tiers.ts";
 export * from "../../../packages/shared/src/extraction.ts";
 export * from "../../../packages/shared/src/signals.ts";
 export * from "../../../packages/shared/src/functions.ts";
-export * from "../../../packages/shared/src/intellect.ts";
+export * from "../../../packages/shared/src/study.ts";

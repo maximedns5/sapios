@@ -8,7 +8,7 @@ import { ageFrom, confidenceValue, fmtAgo, fmtDateTime, levelText, pct, STATUS_L
 import { compareNames, NAME_MATCH_LABELS } from "@/lib/admin/names";
 import type { SubmissionRow } from "@/lib/admin/types";
 import { createClient } from "@/lib/supabase/client";
-import { Empty, ErrorNotice, Loading, PageHead, ReferredMark, StatusBadge } from "./ui";
+import { Empty, ErrorNotice, Loading, PageHead, StatusBadge } from "./ui";
 
 const FILTERS: SubmissionStatus[] = ["needs_review", "pending", "processing", "needs_more", "approved", "rejected"];
 
@@ -137,12 +137,6 @@ export default function SubmissionsQueue({ status }: { status: SubmissionStatus 
                         {row.legal_name ?? "Nom légal absent"}
                         {age != null ? ` · ${age} ans` : ""}
                       </span>
-                      {row.referred ? (
-                        <>
-                          <br />
-                          <ReferredMark by={row.referred_by} />
-                        </>
-                      ) : null}
                     </td>
                     <td data-label="Diplôme extrait" className="span">
                       {ex ? (

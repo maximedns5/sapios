@@ -7,15 +7,6 @@ export type AccessTier = (typeof ACCESS_TIERS)[number];
 export const SUBMISSION_STATUSES = ["pending", "processing", "needs_review", "approved", "rejected", "needs_more"] as const;
 export type SubmissionStatus = (typeof SUBMISSION_STATUSES)[number];
 
-export const PROFILE_STATUSES = ["onboarding", "active", "paused", "banned"] as const;
-export type ProfileStatus = (typeof PROFILE_STATUSES)[number];
-
-export const GENDERS = ["woman", "man", "nonbinary"] as const;
-export type Gender = (typeof GENDERS)[number];
-
-export const SWIPE_DIRECTIONS = ["like", "pass"] as const;
-export type SwipeDirection = (typeof SWIPE_DIRECTIONS)[number];
-
 export const PHOTO_MODERATION_STATUSES = ["pending", "approved", "rejected"] as const;
 export type PhotoModeration = (typeof PHOTO_MODERATION_STATUSES)[number];
 

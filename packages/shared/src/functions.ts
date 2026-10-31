@@ -1,7 +1,7 @@
 // Corps et réponses des Edge Functions (contrat §5). Erreurs : `{ error: "<code>" }`.
 // Seuls des imports de type sont permis ici (effacés à la compilation) : les Edge Functions
 // importent aussi ce fichier.
-import type { StudyField } from "./intellect.ts";
+import type { StudyField } from "./study.ts";
 import type { AccessTier, SubmissionStatus } from "./tiers.ts";
 
 export const EDGE_FUNCTIONS = {
@@ -11,7 +11,6 @@ export const EDGE_FUNCTIONS = {
   notify: "notify",
   deleteAccount: "delete-account",
   purgeDiplomas: "purge-diplomas",
-  searchBooks: "search-books",
 } as const;
 
 /** En-tête du secret partagé des fonctions appelées par la base. */
@@ -32,7 +31,6 @@ export type CommonErrorCode =
 // --- Diplômes : fichiers acceptés (brief §4.1) ------------------------------------------------
 
 export const DIPLOMA_BUCKET = "diplomas";
-export const PHOTO_BUCKET = "photos";
 
 export const DIPLOMA_MIME_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"] as const;
 export type DiplomaMime = (typeof DIPLOMA_MIME_TYPES)[number];
@@ -133,30 +131,19 @@ export type ReviewDiplomaErrorCode =
 
 // --- notify (secret interne) ------------------------------------------------------------------
 
-/** Notifications d'une inscription à un événement (lot 2) ; le rappel de la veille est à part. */
-export const EVENT_NOTIFY_KINDS = ["registered", "promoted", "cancelled"] as const;
-export type EventNotifyKind = (typeof EVENT_NOTIFY_KINDS)[number];
-
 export type NotifyRequest =
-  | { type: "match"; match_id: string }
-  | { type: "message"; message_id: string }
+  /** Décision sur un diplôme (review-diploma) : texte de Sapios Emploi. */
   | { type: "verdict"; user_id: string; copy_key: string }
-  | { type: "event"; kind: EventNotifyKind; registration_id: string }
-  | { type: "event_reminder"; event_id: string }
   /** Compte inactif averti (conformité) : email seulement, `delete_after` au format AAAA-MM-JJ. */
   | { type: "inactivity"; user_id: string; delete_after: string };
 export interface NotifyResponse {
   /** Notifications push acceptées par Expo. */
   sent: number;
-  /** Emails acceptés par Resend (verdict, match, événements) ; 0 si le canal email est désactivé. */
+  /** Emails acceptés par Resend ; 0 si le canal email est désactivé. */
   emailed: number;
 }
 /** Champ `data` des notifications Expo reçues par l'app. */
 export type PushData =
-  | { type: "match"; match_id: string }
-  | { type: "message"; match_id: string; message_id: string }
-  | { type: "verdict"; copy_key: string }
-  | { type: "event"; event_id: string }
   /**
    * Sapios Emploi (EmploiNotifyEvent ou `diploma_verdict`). `id` : la candidature (application_*,
    * interview_proposed, message), l'offre (invitation_received) ou le compte (diploma_verdict).
@@ -187,27 +174,3 @@ export interface PurgeInactiveResponse {
   /** Comptes revenus entre la liste et la suppression, ou en échec (journalisé). */
   skipped: number;
 }
-
-// --- search-books (JWT utilisateur) : relais vers Open Library ---------------------------------
-// Open Library ne voit que le texte cherché et l'adresse du serveur, jamais celle du membre.
-
-export const BOOK_SEARCH_MIN_LENGTH = 2;
-export const BOOK_SEARCH_MAX_LENGTH = 100;
-export const BOOK_SEARCH_MAX_RESULTS = 8;
-/** Quota par membre : nombre de recherches par fenêtre de `BOOK_SEARCH_WINDOW_SECONDS`. */
-export const BOOK_SEARCH_LIMIT = 30;
-export const BOOK_SEARCH_WINDOW_SECONDS = 60;
-
-export interface SearchBooksRequest {
-  q: string;
-}
-export interface BookSuggestion {
-  title: string;
-  author: string | null;
-  /** Identifiant d'œuvre Open Library (`OL123W`), enregistré dans `profile_books.ol_work_id`. */
-  ol_work_id: string | null;
-}
-export interface SearchBooksResponse {
-  results: BookSuggestion[];
-}
-export type SearchBooksErrorCode = CommonErrorCode | "invalid_query" | "rate_limited" | "upstream_unavailable";

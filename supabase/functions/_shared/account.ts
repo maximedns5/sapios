@@ -1,10 +1,10 @@
 // Suppression complète d'un compte, partagée par `delete-account` (à la demande du membre) et
 // `purge-inactive` (compte inactif averti, conformité) : fichiers par l'API Storage, trace dans
 // `audit_log` (sans clé étrangère : elle survit), puis l'utilisateur d'authentification. La cascade
-// SQL efface le reste ; les signalements gardent un pseudonyme (migration conformité).
+// SQL efface le reste.
 import type { SupabaseClient } from "./deps.ts";
 import type { PurgeInactiveResponse } from "./shared.ts";
-import { DIPLOMA_BUCKET, PHOTO_BUCKET } from "./shared.ts";
+import { DIPLOMA_BUCKET } from "./shared.ts";
 import { listObjects, removeObjects } from "./storage.ts";
 
 /** Sapios Emploi : photos des offres, dans le dossier de l'entreprise. */
@@ -16,10 +16,7 @@ export async function deleteAccount(
   audit: { actorId: string | null; action: string },
 ): Promise<void> {
   const files: Record<string, number> = {};
-  for (const bucket of [PHOTO_BUCKET, DIPLOMA_BUCKET]) {
-    const paths = await listObjects(db, bucket, userId);
-    files[bucket] = await removeObjects(db, bucket, paths);
-  }
+  files[DIPLOMA_BUCKET] = await removeObjects(db, DIPLOMA_BUCKET, await listObjects(db, DIPLOMA_BUCKET, userId));
 
   // Sapios Emploi : recruteur seul membre de son entreprise → offres archivées, photos effacées.
   const prepared = await db.rpc("server_prepare_account_deletion", { p_user: userId });

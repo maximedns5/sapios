@@ -1,3 +1,7 @@
+> **Archivé.** Ce brief décrit l'application de rencontre d'origine, retirée le 31 octobre 2026 (migration
+> `20261031090000_nettoyage_dating`, code dans la branche `archive/dating`). Le produit actuel est Sapios Emploi :
+> voir `docs/EMPLOI_CONTRACT.md`.
+
 # Sapios — Brief produit & architecture (pour agent de code)
 
 > **À l'agent qui lit ce document.** Lis-le en entier avant d'écrire du code. Il décrit le produit, les règles métier non négociables, le modèle de données et l'ordre de construction. La section **11. Décisions ouvertes** liste ce qui n'est pas tranché. Si tu as besoin d'une de ces décisions pour avancer, **demande** au lieu de deviner.
