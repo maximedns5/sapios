@@ -242,7 +242,8 @@ Deno.test("clés de l'email d'inactivité : créées par une migration idempoten
   let sql = "";
   for await (const entry of Deno.readDir(dir)) {
     const content = await Deno.readTextFile(new URL(entry.name, dir));
-    if (content.includes("'email.inactivity.subject'")) sql = content;
+    // La migration qui crée les textes (et pas celle du nettoyage, qui les cite pour les garder).
+    if (content.includes("('email.inactivity.subject', 'fr',")) sql = content;
   }
   assert(sql, "aucune migration ne crée les textes de l'email d'inactivité");
   for (const key of INACTIVITY_EMAIL_COPY_KEYS) assertStringIncludes(sql, `('${key}', 'fr',`);
