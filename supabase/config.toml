@@ -482,9 +482,6 @@ verify_jwt = false
 [functions.purge-inactive]
 verify_jwt = false
 
-[functions.purge-dating-photos]
-verify_jwt = false
-
 [functions.company-lookup]
 verify_jwt = true
 

@@ -5,6 +5,7 @@ import { AppState as RNAppState, Platform } from 'react-native';
 
 import { emploi } from './emploi';
 import { AppError } from './errors';
+import { DIPLOMA_INTRO_KEY } from './routing';
 import { supabase } from './supabase';
 import type { AppState } from './types';
 
@@ -20,7 +21,7 @@ type AppContext = {
   stateError: AppError | null;
   loadingState: boolean;
   refresh: () => Promise<AppState | null>;
-  /** Écrans déjà montrés une fois (clé locale par utilisateur) : invitation au diplôme, matchs. */
+  /** Écrans déjà montrés une fois (clé locale par utilisateur) : matchs. */
   seen: Set<string>;
   markSeen: (key: string) => Promise<void>;
   /** local : efface la session sans appel serveur (compte déjà supprimé). */
@@ -120,6 +121,28 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (Platform.OS === 'web') window.removeEventListener('focus', onFocus);
     };
   }, [refresh, userId]);
+
+  // Ancienne clé locale de l'invitation au diplôme : reprise une fois sur le compte, puis effacée de l'appareil.
+  const migratingPrompt = useRef(false);
+  useEffect(() => {
+    if (!userId || !state?.candidate || !seen.has(DIPLOMA_INTRO_KEY) || migratingPrompt.current) return;
+    migratingPrompt.current = true;
+    const onAccount = state.candidate.diploma_prompt_dismissed
+      ? Promise.resolve()
+      : emploi.dismissDiplomaPrompt().then(() => refresh().then(() => undefined));
+    onAccount
+      .then(() => {
+        const next = new Set(seen);
+        next.delete(DIPLOMA_INTRO_KEY);
+        setSeen(next);
+        return AsyncStorage.setItem(`sapios.seen.${userId}`, JSON.stringify([...next]));
+      })
+      // Échec (hors ligne) : la clé reste, nouvel essai à la prochaine lecture de l'état.
+      .catch(() => {})
+      .finally(() => {
+        migratingPrompt.current = false;
+      });
+  }, [userId, state, seen, refresh]);
 
   const markSeen = useCallback(
     async (key: string) => {

@@ -175,14 +175,14 @@ isOneToOne: false
                   ]
                 },"candidates": {
                   Row: {
-                    "available_from": string | null,"contract_types": (Database["public"]['Enums']["contract_type"])[],"created_at": string,"experience_band": Database["public"]['Enums']["experience_band"],"last_active_at": string,"looking_for": string | null,"number": number,"open_since": string | null,"open_to_opportunities": boolean,"paused": boolean,"remote_days_min": number,"salary_max_k": number,"salary_min_k": number,"search_city": string,"search_location": unknown,"search_postcode": string | null,"search_radius_km": number,"show_institution": boolean,"target_role": string,"updated_at": string,"user_id": string,"work_authorization": boolean
+                    "available_from": string | null,"contract_types": (Database["public"]['Enums']["contract_type"])[],"created_at": string,"diploma_prompt_dismissed_at": string | null,"experience_band": Database["public"]['Enums']["experience_band"],"last_active_at": string,"looking_for": string | null,"number": number,"open_since": string | null,"open_to_opportunities": boolean,"paused": boolean,"remote_days_min": number,"salary_max_k": number,"salary_min_k": number,"search_city": string,"search_location": unknown,"search_postcode": string | null,"search_radius_km": number,"show_institution": boolean,"target_role": string,"updated_at": string,"user_id": string,"work_authorization": boolean
                   }
                   ComputedFields: never
                   Insert: {
-                    "available_from"?: string | null,"contract_types": (Database["public"]['Enums']["contract_type"])[],"created_at"?: string,"experience_band": Database["public"]['Enums']["experience_band"],"last_active_at"?: string,"looking_for"?: string | null,"number"?: number,"open_since"?: string | null,"open_to_opportunities"?: boolean,"paused"?: boolean,"remote_days_min"?: number,"salary_max_k": number,"salary_min_k": number,"search_city": string,"search_location": unknown,"search_postcode"?: string | null,"search_radius_km"?: number,"show_institution"?: boolean,"target_role": string,"updated_at"?: string,"user_id": string,"work_authorization"?: boolean
+                    "available_from"?: string | null,"contract_types": (Database["public"]['Enums']["contract_type"])[],"created_at"?: string,"diploma_prompt_dismissed_at"?: string | null,"experience_band": Database["public"]['Enums']["experience_band"],"last_active_at"?: string,"looking_for"?: string | null,"number"?: number,"open_since"?: string | null,"open_to_opportunities"?: boolean,"paused"?: boolean,"remote_days_min"?: number,"salary_max_k": number,"salary_min_k": number,"search_city": string,"search_location": unknown,"search_postcode"?: string | null,"search_radius_km"?: number,"show_institution"?: boolean,"target_role": string,"updated_at"?: string,"user_id": string,"work_authorization"?: boolean
                   }
                   Update: {
-                    "available_from"?: string | null,"contract_types"?: (Database["public"]['Enums']["contract_type"])[],"created_at"?: string,"experience_band"?: Database["public"]['Enums']["experience_band"],"last_active_at"?: string,"looking_for"?: string | null,"number"?: number,"open_since"?: string | null,"open_to_opportunities"?: boolean,"paused"?: boolean,"remote_days_min"?: number,"salary_max_k"?: number,"salary_min_k"?: number,"search_city"?: string,"search_location"?: unknown,"search_postcode"?: string | null,"search_radius_km"?: number,"show_institution"?: boolean,"target_role"?: string,"updated_at"?: string,"user_id"?: string,"work_authorization"?: boolean
+                    "available_from"?: string | null,"contract_types"?: (Database["public"]['Enums']["contract_type"])[],"created_at"?: string,"diploma_prompt_dismissed_at"?: string | null,"experience_band"?: Database["public"]['Enums']["experience_band"],"last_active_at"?: string,"looking_for"?: string | null,"number"?: number,"open_since"?: string | null,"open_to_opportunities"?: boolean,"paused"?: boolean,"remote_days_min"?: number,"salary_max_k"?: number,"salary_min_k"?: number,"search_city"?: string,"search_location"?: unknown,"search_postcode"?: string | null,"search_radius_km"?: number,"show_institution"?: boolean,"target_role"?: string,"updated_at"?: string,"user_id"?: string,"work_authorization"?: boolean
                   }
                   Relationships: [
                     
@@ -630,6 +630,9 @@ isOneToOne: false
 { Args: { "p_days": number }; Returns: {
               "id": string,"storage_path": string
             }[]
+                           },
+"dismiss_diploma_prompt":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "emploi_requirement_matches":
 { Args: { "p_candidate": string,"p_offer": string }; Returns: Json

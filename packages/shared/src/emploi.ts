@@ -322,6 +322,8 @@ export interface EmploiState {
     complete: boolean;
     paused: boolean;
     open_to_opportunities: boolean;
+    /** Invitation « Vérifions votre diplôme » écartée (mémorisée sur le compte, `dismiss_diploma_prompt`). */
+    diploma_prompt_dismissed: boolean;
   } | null;
   diploma: DiplomaBadge | null;
   latest_submission: { id: string; status: string; created_at: string; rejection_reason: string | null } | null;

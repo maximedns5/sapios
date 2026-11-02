@@ -82,14 +82,14 @@ Réservées à `service_role` :
 Tâches `pg_cron` : `process-diploma` (chaque minute), `purge-diplomas` (3 h 17 UTC), `retention-daily`
 (3 h 41 UTC : avertit les comptes inactifs — avis et email `notify` `inactivity` —, purge signalements d'offres
 traités, journal et avis lus échus, puis `private.run_emploi_retention()`), `purge-inactive` (3 h 53 UTC), et
-celles de l'emploi. Transitoire : `purge-dating-photos` (toutes les 10 min) vide puis supprime le bucket `photos`
-d'un projet existant et se désinscrit dès qu'il n'existe plus.
+celles de l'emploi. La tâche transitoire `purge-dating-photos`, qui vidait le bucket `photos` du dating, est retirée
+par `20261102090000_rappel_diplome_fin_purge_photos` dès que ce bucket n'existe plus.
 
 ## 4. Storage
 
 - `diplomas` (privé) : `{user_id}/{uuid}.{ext}`, `insert` par le propriétaire dans son dossier, aucune lecture
   client. `offer-photos` : voir `docs/EMPLOI_CONTRACT.md` §4.
-- `photos` (dating) : plus aucune règle d'accès ; supprimé par `purge-dating-photos`.
+- `photos` (dating) : supprimé ; la fonction transitoire qui le vidait n'existe plus.
 
 ## 5. Edge Functions
 
@@ -104,7 +104,6 @@ Réponses JSON. Erreurs : `{ "error": "<code>" }`.
 | `delete-account` | JWT utilisateur | `{ deleted: true }` |
 | `purge-diplomas`, `purge-inactive` | `x-sapios-secret` | conservation |
 | `company-lookup`, `geocode` | JWT utilisateur | voir `docs/EMPLOI_CONTRACT.md` §5 |
-| `purge-dating-photos` | `x-sapios-secret` | transitoire : `{ removed, bucket_deleted }` |
 
 Secret partagé : `SAPIOS_INTERNAL_SECRET` côté Edge Functions, même valeur dans Vault (`internal_secret`) côté
 base. URL de base pour `pg_net` : Vault `project_url`.
