@@ -53,6 +53,8 @@ export const emploi = {
   state: () => call<EmploiState>('get_emploi_state'),
   setAccountKind: (kind: 'candidate' | 'recruiter') => call<void>('set_account_kind', { p_kind: kind }),
   acceptTerms: (version: string) => call<void>('accept_emploi_terms', { p_version: version }),
+  /** « Plus tard » sur l'invitation au diplôme : mémorisé sur le compte, valable sur tous les appareils. */
+  dismissDiplomaPrompt: () => call<void>('dismiss_diploma_prompt'),
 
   setIdentity: (firstName: string, lastName: string) => call<void>('set_candidate_identity', { p_first_name: firstName, p_last_name: lastName }),
   myIdentity: () => call<{ first_name: string; last_name: string } | null>('get_my_candidate_identity'),

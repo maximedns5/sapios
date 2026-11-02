@@ -9,7 +9,7 @@ Sapios Emploi : recrutement à l'aveugle, diplôme vérifié. Contrat du produit
 | `supabase/migrations` | Schéma Postgres, RLS, fonctions SQL, Storage, file `pgmq`, `pg_cron`, Realtime |
 | `supabase/seed.sql`, `supabase/seed/` | Comptes de test, entreprises, offres et photos de démonstration, diplôme de démonstration |
 | `supabase/tests` | Tests pgTAP |
-| `supabase/functions` | Edge Functions Deno : `submit-diploma`, `process-diploma`, `review-diploma`, `notify`, `delete-account`, `purge-diplomas`, `purge-inactive`, `company-lookup`, `geocode`, et la fonction transitoire `purge-dating-photos` |
+| `supabase/functions` | Edge Functions Deno : `submit-diploma`, `process-diploma`, `review-diploma`, `notify`, `delete-account`, `purge-diplomas`, `purge-inactive`, `company-lookup` et `geocode` |
 | `supabase/templates` | Emails d'authentification (lien + code à 6 chiffres), à recopier dans le dashboard des projets hébergés |
 | `packages/shared` | Enums, schéma d'extraction zod, signaux, types des Edge Functions, types générés de la base |
 | `apps/web` | Next.js : site public (`/`), pages légales, espace recruteur (`/recruteur`), back-office (`/admin`) |

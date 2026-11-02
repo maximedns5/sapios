@@ -58,6 +58,7 @@ Toutes les clés vers `auth.users` sont `on delete cascade` sauf mention. « RPC
   `available_from date` (null = immédiatement), `experience_band`, `work_authorization bool default false`,
   `looking_for` (≤ 250), `open_to_opportunities bool default false`, `open_since` (date d'activation, posée par
   trigger : ordre de l'approche directe), `show_institution bool default false`, `paused bool default false`,
+  `diploma_prompt_dismissed_at` (invitation « Vérifions votre diplôme » écartée, sur le compte et non sur l'appareil),
   `created_at`, `updated_at`, `last_active_at`. Lecture : soi, admins. Écriture : RPC seulement.
 - `candidate_identities` : `user_id` PK, `first_name` (1–40), `last_name_enc bytea` (pgcrypto, clé `field_key`), `updated_at`.
   Aucune lecture client directe : `get_my_candidate_identity`, puis RPC recruteur **après le match** seulement.
@@ -135,7 +136,8 @@ quand il en faut un lève l'erreur adaptée.
 
 | Fonction | Retour | Erreurs |
 |---|---|---|
-| `get_emploi_state()` | `EmploiState` | — |
+| `get_emploi_state()` | `EmploiState` ; `candidate.diploma_prompt_dismissed` dit si l'invitation au diplôme est écartée | — |
+| `dismiss_diploma_prompt()` | `void` ; « Plus tard » ou diplôme envoyé : l'invitation ne revient sur aucun appareil ; idempotent, la première date est gardée ; la date figure dans `export_my_emploi_data` | `not_candidate`, `profile_incomplete` |
 | `set_account_kind(p_kind emploi_account_kind)` | `void` ; une seule fois | `kind_already_set` |
 | `accept_emploi_terms(p_version text)` | `void` ; version attendue selon le type de compte ; journalisé `terms.accepted` | `kind_required`, `terms_version_mismatch` |
 | `set_candidate_identity(p_first_name text, p_last_name text)` | `void` (prénom en clair, nom chiffré) | `not_candidate`, `invalid_input` |

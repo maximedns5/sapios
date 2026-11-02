@@ -25,7 +25,10 @@ export const APP_PATHS = [
 /** Zones à sous-routes dynamiques (correspondance par préfixe). */
 const PREFIXED = ['/offer', '/apply', '/applications', '/chat', '/match', '/interview', '/company', '/report', '/settings', '/onboarding', '/diploma'];
 
-/** Clé locale : l'invitation « Vérifions votre diplôme » a été vue (passée ou suivie). */
+/**
+ * Ancienne clé locale de l'invitation « Vérifions votre diplôme ». L'écart est désormais mémorisé sur le compte
+ * (`dismiss_diploma_prompt`) ; la clé n'est plus lue que le temps d'être reprise sur le compte (app-state).
+ */
 export const DIPLOMA_INTRO_KEY = 'diploma-intro';
 
 export function decide(state: AppState, seen: Set<string>): Route | null {
@@ -41,9 +44,10 @@ export function decide(state: AppState, seen: Set<string>): Route | null {
   if (!state.identity_set) return { target: '/onboarding/identity', allowed: ['/onboarding/identity', '/settings'] };
   if (!state.candidate || !state.candidate.complete) return { target: '/onboarding/profile', allowed: ['/onboarding/profile', '/settings'] };
 
-  // Diplôme facultatif : proposé une fois après l'inscription, jamais imposé.
+  // Diplôme facultatif : proposé une fois après l'inscription, jamais imposé ; l'écart vaut pour tous les appareils.
   const noDiploma = !state.diploma && !state.latest_submission;
-  if (noDiploma && !seen.has(DIPLOMA_INTRO_KEY)) return { target: '/diploma?intro=1', allowed: [...APP_PATHS] };
+  const dismissed = state.candidate.diploma_prompt_dismissed || seen.has(DIPLOMA_INTRO_KEY);
+  if (noDiploma && !dismissed) return { target: '/diploma?intro=1', allowed: [...APP_PATHS] };
   return { target: '/offers', allowed: [...APP_PATHS] };
 }
 

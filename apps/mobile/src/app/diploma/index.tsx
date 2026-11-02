@@ -17,7 +17,6 @@ import { useApp } from '@/lib/app-state';
 import { CAMERA_AVAILABLE, diplomaFromFile, formatBytes, pickAnyWeb, pickFromCamera, pickFromLibrary, pickPdf, submitDiploma, type DiplomaPick, type SubmitStep } from '@/lib/diploma';
 import { AppError, errorMessage } from '@/lib/errors';
 import { emploi } from '@/lib/emploi';
-import { DIPLOMA_INTRO_KEY } from '@/lib/routing';
 import { useCopy } from '@/lib/copy';
 import { alpha, colors, radius } from '@/lib/theme';
 
@@ -45,7 +44,7 @@ function PromiseLine({ text }: { text: string }) {
  * une fois à la fin de l'inscription (`?intro=1`, avec « Plus tard »), puis depuis le profil.
  */
 export default function DiplomaUpload() {
-  const { userId, state, refresh, markSeen } = useApp();
+  const { userId, state, refresh } = useApp();
   const { intro } = useLocalSearchParams<{ intro?: string }>();
   const { t } = useCopy();
   const [legalName, setLegalName] = useState<string | null>(null);
@@ -69,10 +68,16 @@ export default function DiplomaUpload() {
   const blocked = left <= 0;
   const first = !!intro && !hasBadge && !sub;
 
-  /** « Plus tard » : l'invitation ne revient pas ; le badge reste disponible depuis le profil. */
+  /** « Plus tard » : l'invitation ne revient sur aucun appareil ; le badge reste disponible depuis le profil. */
   const skip = async () => {
-    await markSeen(DIPLOMA_INTRO_KEY);
-    router.replace('/offers');
+    setError(null);
+    try {
+      await emploi.dismissDiplomaPrompt();
+      await refresh();
+      router.replace('/offers');
+    } catch (e) {
+      setError(errorMessage(e));
+    }
   };
 
   const choose = async (fn: () => Promise<DiplomaPick | null>) => {
@@ -90,7 +95,7 @@ export default function DiplomaUpload() {
     setError(null);
     try {
       const id = await submitDiploma(userId, pick, setStep);
-      await markSeen(DIPLOMA_INTRO_KEY);
+      await emploi.dismissDiplomaPrompt().catch(() => {});
       await refresh();
       router.replace({ pathname: '/diploma/analysis', params: { submission: id, kind: pick.kind, name: pick.name, size: pick.size != null ? String(pick.size) : '' } });
     } catch (e) {
