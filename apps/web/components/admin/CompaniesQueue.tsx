@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useId, useState } from "react";
-import { COMPANY_STATUS_LABELS, type AdminCompany, type CompanyStatus } from "@sapios/shared";
+import { COMPANY_STATUS_LABELS, EDGE_FUNCTIONS, type AdminCompany, type CompanyStatus } from "@sapios/shared";
+import { errorCode } from "@/lib/admin/errors";
 import { fmtDateTime } from "@/lib/admin/format";
-import { describeEmploiError } from "@/lib/emploi/errors";
+import { describeEmploiError, emploiErrorMessage } from "@/lib/emploi/errors";
 import { COMPANY_FILTERS } from "@/lib/emploi/filters";
 import { rpc } from "@/lib/emploi/rpc";
 import { createClient } from "@/lib/supabase/client";
@@ -204,7 +205,76 @@ function CompanyCard({ company: c, onDone }: { company: AdminCompany; onDone: (m
             </button>
           ) : null}
         </div>
+        {c.owner ? <MfaReset userId={c.owner.user_id} who={c.owner.email ?? c.owner.job_title} /> : null}
       </div>
     </section>
+  );
+}
+
+/**
+ * Téléphone perdu : retire les applications d'authentification du recruteur (Edge Function admin-reset-mfa,
+ * session aal2, journalisé). À faire seulement après avoir vérifié son identité, par l'adresse de son compte.
+ */
+function MfaReset({ userId, who }: { userId: string; who: string }) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  async function reset() {
+    if (reason.trim().length < 3) {
+      setError("Indiquez comment l’identité du recruteur a été vérifiée.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const { data, error } = await createClient().functions.invoke<{ removed: number }>(EDGE_FUNCTIONS.adminResetMfa, {
+      body: { user_id: userId, reason: reason.trim() },
+    });
+    setBusy(false);
+    if (error || !data) {
+      setError(error ? emploiErrorMessage(await errorCode(error)) : "Réponse vide du serveur.");
+      return;
+    }
+    setOpen(false);
+    setReason("");
+    setDone(
+      data.removed > 0
+        ? `Double authentification retirée (${data.removed} application${data.removed > 1 ? "s" : ""}). Le recruteur peut en enregistrer une nouvelle.`
+        : "Ce recruteur n’avait pas de double authentification.",
+    );
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 10 }}>
+      {done ? <SuccessNotice>{done}</SuccessNotice> : null}
+      {open ? (
+        <>
+          <div className="field">
+            <label className="label" htmlFor={`${id}-mfa`}>
+              Double authentification de {who} : comment son identité a-t-elle été vérifiée ? (journalisé)
+            </label>
+            <textarea id={`${id}-mfa`} className="input" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </div>
+          {error ? <ErrorNotice message={error} /> : null}
+          <div className="form-actions">
+            <button type="button" className="btn" onClick={reset} disabled={busy}>
+              {busy ? "Retrait…" : "Confirmer le retrait"}
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={() => setOpen(false)} disabled={busy}>
+              Annuler
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="form-actions">
+          <button type="button" className="btn btn--ghost" onClick={() => { setDone(null); setOpen(true); }}>
+            Téléphone perdu : retirer la double authentification
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

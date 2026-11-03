@@ -487,3 +487,6 @@ verify_jwt = true
 
 [functions.geocode]
 verify_jwt = true
+
+[functions.admin-reset-mfa]
+verify_jwt = true

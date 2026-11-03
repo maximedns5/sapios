@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Bienvenue" };
 // Premier passage : le compte devient recruteur, puis accepte les conditions recruteurs.
 export default async function WelcomePage() {
   const { user, state, error, step } = await loadRecruiterContext();
-  if (step === "login") redirect(STEP_PATH.login);
+  if (step === "login" || step === "mfa") redirect(STEP_PATH[step]);
   if (step === "company" || step === "space") redirect(STEP_PATH[step]);
   return (
     <RecruiterWelcome

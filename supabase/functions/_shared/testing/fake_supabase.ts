@@ -137,6 +137,8 @@ export class FakeSupabase {
   /** Comptes d'authentification lus par `auth.admin.getUserById`. */
   users: Record<string, Row> = {};
   authCalls: string[] = [];
+  /** Facteurs MFA par compte, lus et supprimés par `auth.admin.mfa`. */
+  factors: Record<string, Row[]> = {};
 
   constructor(private rpcHandlers: Record<string, RpcHandler> = {}) {}
 
@@ -151,6 +153,17 @@ export class FakeSupabase {
               ? { data: { user: structuredClone(user) }, error: null }
               : { data: { user: null }, error: { message: "User not found", status: 404, code: "user_not_found" } },
           );
+        },
+        mfa: {
+          listFactors: ({ userId }: { userId: string }) => {
+            this.authCalls.push(`mfa.list:${userId}`);
+            return Promise.resolve({ data: { factors: structuredClone(this.factors[userId] ?? []) }, error: null });
+          },
+          deleteFactor: ({ id, userId }: { id: string; userId: string }) => {
+            this.authCalls.push(`mfa.delete:${userId}:${id}`);
+            this.factors[userId] = (this.factors[userId] ?? []).filter((f) => f.id !== id);
+            return Promise.resolve({ data: { id }, error: null });
+          },
         },
       },
     };

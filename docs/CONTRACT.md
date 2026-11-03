@@ -104,6 +104,7 @@ Réponses JSON. Erreurs : `{ "error": "<code>" }`.
 | `delete-account` | JWT utilisateur | `{ deleted: true }` |
 | `purge-diplomas`, `purge-inactive` | `x-sapios-secret` | conservation |
 | `company-lookup`, `geocode` | JWT utilisateur | voir `docs/EMPLOI_CONTRACT.md` §5 |
+| `admin-reset-mfa` | JWT admin (aal2) | retire la double authentification d'un recruteur (téléphone perdu), voir `docs/EMPLOI_CONTRACT.md` §5 |
 
 Secret partagé : `SAPIOS_INTERNAL_SECRET` côté Edge Functions, même valeur dans Vault (`internal_secret`) côté
 base. URL de base pour `pg_net` : Vault `project_url`.
