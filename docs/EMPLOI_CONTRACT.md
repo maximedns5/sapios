@@ -100,12 +100,19 @@ Toutes les clés vers `auth.users` sont `on delete cascade` sauf mention. « RPC
   Contrainte : un statut `rejected` a toujours un `refusal_reason`.
   Lecture : le candidat (ses lignes), les membres de l'entreprise, admins, **sans la colonne `candidate_id`** (droits
   par colonne : l'identifiant du compte ne sort jamais vers un recruteur). RPC seulement.
-- `application_notes` : `id`, `application_id`, `author_id` (**set null**), `body` (1–1000), `created_at`.
-  Lecture : membres, admins. Le candidat les reçoit dans `export_my_emploi_data`.
+- `application_notes` : `id`, `application_id`, `author_id` (**set null**), `body_enc` (texte de 1 à 1000 caractères,
+  **chiffré**), `created_at`. Lecture directe : membres, admins, **métadonnées seulement** (`body_enc` jamais lisible par
+  un client). Le texte passe par `get_recruiter_application` ; le candidat le reçoit dans `export_my_emploi_data`.
 - `application_messages` : `id`, `application_id`, `sender_id` (**set null**, jamais lisible par un client),
-  `from_candidate bool` (côté de l'expéditeur), `body` (1–2000), `context` (≤ 300), `created_at`, `read_at`.
-  Lecture : le candidat et les membres, **seulement si la candidature est appariée** (ou l'a été).
-  Envoi : `send_application_message`. Publiée dans `supabase_realtime`, comme `interview_slots` (la RLS s'applique).
+  `from_candidate bool` (côté de l'expéditeur), `body_enc` (texte de 1 à 2000 caractères, **chiffré**), `context_enc`
+  (≤ 300, **chiffré**), `created_at`, `read_at`. Lecture directe : le candidat et les membres, **seulement si la
+  candidature est appariée** (ou l'a été), **métadonnées seulement**. Le texte passe par `get_application_messages`,
+  `get_my_conversations` (aperçu) et `export_my_emploi_data`. Envoi : `send_application_message`. Publiée dans
+  `supabase_realtime`, comme `interview_slots` (la RLS s'applique) : l'événement ne porte que les colonnes lisibles,
+  jamais le texte, et le client relit la conversation par la RPC.
+- **Chiffrement** (migration `20261103090000_chiffrement_messages_notes`) : `body_enc`, `context_enc` des messages et
+  `body_enc` des notes, comme `candidate_identities.last_name_enc` (pgcrypto `pgp_sym_encrypt`, AES-256, clé Vault
+  `field_key`). Seules des RPC des participants déchiffrent ; aucune RPC d'admin ne lit les messages ni les notes.
 - `interview_slots` : `id`, `application_id`, `starts_at`, `duration_min` (15–180), `mode`, `location` (≤ 200),
   `with_whom` (≤ 120), `status default 'proposed'`, `created_by` (**set null**), `created_at`, `responded_at`.
   Lecture : le candidat, les membres. RPC seulement.

@@ -83,7 +83,7 @@ select is(public.server_emploi_notification('diploma_verdict', pg_temp.uid(2)) -
 select pg_temp.logout();
 update public.applications set status = 'rejected', refusal_reason = 'other', refusal_message = 'Message de refus assez long.',
        closed_at = now() - interval '200 days' where id = current_setting('t.app')::uuid;
-insert into public.application_notes (application_id, author_id, body) values (current_setting('t.app')::uuid, pg_temp.uid(10), 'Note');
+insert into public.application_notes (application_id, author_id, body_enc) values (current_setting('t.app')::uuid, pg_temp.uid(10), private.encrypt_text('Note'));
 select ok((private.run_retention() -> 'emploi' ->> 'applications')::int >= 1, 'conservation : candidature purgée');
 select is((select note from public.applications where id = current_setting('t.app')::uuid), null, 'mot effacé');
 select is((select count(*)::int from public.application_messages where application_id = current_setting('t.app')::uuid), 0,

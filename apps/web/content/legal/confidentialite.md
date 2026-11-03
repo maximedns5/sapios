@@ -172,7 +172,7 @@ Le vivier et l’archive de preuve sont des choix de l’entreprise, d’après 
 Vos données sont protégées par un cloisonnement strict dans la base, le chiffrement des champs les plus sensibles et une double authentification pour l’équipe.
 
 - **Un accès limité à ce qui vous est destiné.** Chaque table de la base est protégée par des règles d’accès ligne par ligne : un recruteur ne lit que les candidatures reçues sur ses offres, et seulement leur version anonyme avant le match.
-- **Le chiffrement des champs sensibles.** Votre nom et le texte des signalements sont chiffrés dans la base en AES-256. La clé est conservée à part, dans un coffre de secrets.
+- **Le chiffrement des champs sensibles.** Votre nom, vos messages avec les recruteurs et les notes internes des recruteurs sur votre candidature sont chiffrés dans la base en AES-256. La clé est conservée à part, dans un coffre de secrets. Seuls les participants à la candidature lisent les messages ; l’équipe Sapios n’y a pas accès.
 - **Des documents protégés.** Les diplômes et les extraits Kbis sont déposés dans un stockage privé. L’équipe les consulte par des liens temporaires valables cinq minutes.
 - **Une équipe sous contrôle.** Les comptes de l’équipe Sapios doivent passer une double authentification pour accéder aux outils de vérification et de modération. Chaque décision est journalisée.
 - **Une connexion sans mot de passe** pour les membres, par un code ou un lien envoyé par email.
