@@ -252,8 +252,8 @@ les liens de l'espace recruteur).
 | `application_closed` | candidat | « {company} n'a pas répondu à temps : votre candidature à « {offer} » est close. » | {company} n'a pas répondu dans le délai promis | Voir des offres proches |
 | `interview_proposed` | candidat | « {company} vous propose des créneaux d'entretien. » | {company} vous propose un entretien | Choisir un créneau |
 | `invitation_received` | candidat | « {company} vous invite à postuler : « {offer} ». » | {company} vous invite à postuler | Voir l'offre |
-| `message.to_candidate` | candidat | « Nouveau message de {company}. » | (pas d'email) | |
-| `message.to_recruiter` | recruteur | | Nouveau message de {candidate} ({offer}) | Répondre |
+| `message.to_candidate` | candidat | « Nouveau message de {company}. » (jamais le texte) | (pas d'email) | |
+| `message.to_recruiter` | recruteur | | Nouveau message de {candidate} ({offer}), sans le texte | Répondre |
 | `interview_accepted` | recruteur | | Entretien confirmé avec {candidate} | Voir la candidature |
 | `company_decided.verified` | recruteur | | {company} est vérifiée | Ouvrir l'espace recruteur |
 | `company_decided.rejected` | recruteur | | Vérification de {company} (corps : `{reason}`) | Ouvrir l'espace recruteur |

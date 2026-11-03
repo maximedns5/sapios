@@ -356,15 +356,16 @@ select '88888888-8888-4888-8888-000000000001', date_trunc('day', now()) + d, 45,
        now() - interval '20 hours'
   from (values (interval '6 days 9 hours 30 minutes'), (interval '7 days 14 hours'), (interval '8 days 11 hours')) s(d);
 
-insert into public.application_messages (application_id, sender_id, from_candidate, body, context, created_at, read_at) values
+-- Messages et notes sont chiffrés en base (20261103090000_chiffrement_messages_notes).
+insert into public.application_messages (application_id, sender_id, from_candidate, body_enc, context_enc, created_at, read_at) values
   ('88888888-8888-4888-8888-000000000001', '55555555-5555-4555-8555-000000000011', false,
-   'Bonjour Camille, votre réponse sur les prévisions au quart d’heure a beaucoup plu à Inès. Je vous propose trois créneaux pour un premier entretien.',
-   'Les prévisions au quart d’heure, c’est exactement ce que je fais en alternance avec les ventes.',
+   private.encrypt_text('Bonjour Camille, votre réponse sur les prévisions au quart d’heure a beaucoup plu à Inès. Je vous propose trois créneaux pour un premier entretien.'),
+   private.encrypt_text('Les prévisions au quart d’heure, c’est exactement ce que je fais en alternance avec les ventes.'),
    now() - interval '20 hours', null);
 
-insert into public.application_notes (application_id, author_id, body, created_at) values
+insert into public.application_notes (application_id, author_id, body_enc, created_at) values
   ('88888888-8888-4888-8888-000000000001', '55555555-5555-4555-8555-000000000011',
-   'Très bon échange par écrit, à confirmer en entretien sur la partie prévision.', now() - interval '20 hours');
+   private.encrypt_text('Très bon échange par écrit, à confirmer en entretien sur la partie prévision.'), now() - interval '20 hours');
 
 insert into public.member_notices (user_id, kind, payload, created_at) values
   ('55555555-5555-4555-8555-000000000001', 'application_interested',

@@ -549,3 +549,22 @@ de `main` ; il reste dans la branche `archive/dating`.
 - **Signaler une conversation ou une invitation** : la base ne prévoit que `report_offer` ; les CGU renvoient ces
   signalements vers l'email de contact.
 - **Liste d'attente** : le formulaire est retiré, la table `waitlist_signups` n'est pas touchée.
+
+## Sécurité : chiffrement des messages et des notes internes (3 nov. 2026)
+
+- **Colonnes chiffrées** : `application_messages.body` et `.context` deviennent `body_enc` / `context_enc`,
+  `application_notes.body` devient `body_enc` (pgcrypto, AES-256, clé Vault `field_key`, comme le nom du candidat). La
+  migration chiffre les lignes existantes avant de supprimer le clair ; vérifiée sur une base dans l'état de staging
+  (message et note déchiffrés identiques à l'original, aucun fragment du texte dans le bytea).
+- **Contrôles de longueur** : les `check` suivaient les colonnes en clair ; ils restent dans `send_application_message`
+  (1 à 2000, contexte 300) et `add_application_note` (1 à 1000), seuls chemins d'écriture.
+- **Droits** : `application_notes` avait un `select` sur toute la table (il aurait couvert `body_enc`) ; il devient un
+  droit par colonne (`id`, `application_id`, `author_id`, `created_at`). Les admins gardent la lecture des métadonnées
+  des notes, jamais le texte ; aucune RPC d'admin ne lit les messages.
+- **Temps réel** : Realtime n'envoie que les colonnes lisibles par le rôle (`has_column_privilege`), donc un événement
+  sans texte. L'app relisait déjà la conversation par `get_application_messages` ; le bandeau « Nouveau message »
+  prend son aperçu dans `get_my_conversations` (qui ne marque pas lu) et filtre ses propres messages par
+  `from_candidate` (`sender_id` n'a jamais été lisible par un client). L'espace recruteur garde sa relecture toutes les
+  20 s par la RPC.
+- **Notifications** : `notify` ne lisait déjà pas le texte (push et emails « Nouveau message de … ») ; inchangé.
+

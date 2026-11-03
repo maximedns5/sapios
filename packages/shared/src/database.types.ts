@@ -81,14 +81,14 @@ export type Database = {
                   ]
                 },"application_messages": {
                   Row: {
-                    "application_id": string,"body": string,"context": string | null,"created_at": string,"from_candidate": boolean,"id": string,"read_at": string | null,"sender_id": string | null
+                    "application_id": string,"body_enc": string,"context_enc": string | null,"created_at": string,"from_candidate": boolean,"id": string,"read_at": string | null,"sender_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "application_id": string,"body": string,"context"?: string | null,"created_at"?: string,"from_candidate": boolean,"id"?: string,"read_at"?: string | null,"sender_id"?: string | null
+                    "application_id": string,"body_enc": string,"context_enc"?: string | null,"created_at"?: string,"from_candidate": boolean,"id"?: string,"read_at"?: string | null,"sender_id"?: string | null
                   }
                   Update: {
-                    "application_id"?: string,"body"?: string,"context"?: string | null,"created_at"?: string,"from_candidate"?: boolean,"id"?: string,"read_at"?: string | null,"sender_id"?: string | null
+                    "application_id"?: string,"body_enc"?: string,"context_enc"?: string | null,"created_at"?: string,"from_candidate"?: boolean,"id"?: string,"read_at"?: string | null,"sender_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -101,14 +101,14 @@ isOneToOne: false
                   ]
                 },"application_notes": {
                   Row: {
-                    "application_id": string,"author_id": string | null,"body": string,"created_at": string,"id": string
+                    "application_id": string,"author_id": string | null,"body_enc": string,"created_at": string,"id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "application_id": string,"author_id"?: string | null,"body": string,"created_at"?: string,"id"?: string
+                    "application_id": string,"author_id"?: string | null,"body_enc": string,"created_at"?: string,"id"?: string
                   }
                   Update: {
-                    "application_id"?: string,"author_id"?: string | null,"body"?: string,"created_at"?: string,"id"?: string
+                    "application_id"?: string,"author_id"?: string | null,"body_enc"?: string,"created_at"?: string,"id"?: string
                   }
                   Relationships: [
                     {
