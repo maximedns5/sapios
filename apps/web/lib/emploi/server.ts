@@ -4,11 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { errorCode } from "./errors";
 import { rpc } from "./rpc";
 
-/** Où en est un compte dans le parcours recruteur : connexion, bienvenue (type et conditions), entreprise, espace. */
-export type RecruiterStep = "login" | "welcome" | "company" | "space";
+/**
+ * Où en est un compte dans le parcours recruteur : connexion, double authentification (si le compte en a une),
+ * bienvenue (type et conditions), entreprise, espace.
+ */
+export type RecruiterStep = "login" | "mfa" | "welcome" | "company" | "space";
 
 export const STEP_PATH: Record<RecruiterStep, string> = {
   login: "/recruteur/connexion",
+  mfa: "/recruteur/double-authentification",
   welcome: "/recruteur/bienvenue",
   company: "/recruteur/inscription",
   space: "/recruteur/offres",
@@ -36,6 +40,10 @@ export async function loadRecruiterContext(): Promise<RecruiterContext> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { user: null, state: null, error: null, step: "login" };
+  // Application d'authentification enregistrée : code à 6 chiffres avant tout le reste. La base refuse de
+  // toute façon les RPC recruteur en aal1 (`mfa_required`).
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") return { user, state: null, error: null, step: "mfa" };
   const { data, error } = await rpc<EmploiState>(supabase, "get_emploi_state");
   if (error) return { user, state: null, error: await errorCode(error), step: "welcome" };
   return { user, state: data, error: null, step: stepFor(user, data) };

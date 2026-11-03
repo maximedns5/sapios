@@ -568,3 +568,21 @@ de `main` ; il reste dans la branche `archive/dating`.
   20 s par la RPC.
 - **Notifications** : `notify` ne lisait déjà pas le texte (push et emails « Nouveau message de … ») ; inchangé.
 
+## Sécurité : double authentification facultative des recruteurs (3 nov. 2026)
+
+- **Activation dans l'espace recruteur** (`/recruteur/securite`, menu « Sécurité ») : application TOTP de Supabase Auth
+  (QR code, clé, premier code), second appareil, retrait. Même parcours que le back-office, aux couleurs de l'espace
+  (`components/recruteur/RecruiterTotpEnroll.tsx`) ; les fonctions de `lib/admin/mfa.ts` sont réutilisées telles quelles.
+- **Connexion** : un compte avec un facteur vérifié et une session aal1 passe par `/recruteur/double-authentification`
+  avant tout le reste (étape `mfa` de `loadRecruiterContext`, donc toutes les gardes serveur). Une RPC qui répond
+  `mfa_required` (session restée en aal1 ailleurs) renvoie aussi vers cette page (`lib/emploi/rpc.ts`).
+- **Base** : la règle tient dans `private.mfa_ok(uid)` (facteur vérifié ⇒ claim `aal` = `aal2`), appelée par les
+  quatre aides d'appartenance à une entreprise. Aucune RPC recruteur n'est redéfinie : elles passent toutes par ces aides.
+  `get_emploi_state` reste lisible en aal1 (aiguillage du site), sans les compteurs de l'entreprise.
+- **Suppression du compte** : `delete-account` exige aussi aal2 pour un compte protégé (`public.mfa_session_ok()` évaluée
+  avec le JWT du membre).
+- **Téléphone perdu** : `admin-reset-mfa` (admin en aal2) supprime les facteurs d'un recruteur par l'API Auth admin,
+  journalisé, depuis la fiche entreprise du back-office (motif obligatoire). Jamais pour un compte admin, qui se
+  réinitialise dans Supabase.
+- **Pas d'obligation par entreprise** dans ce produit minimal (une entreprise = un recruteur au pilote).
+

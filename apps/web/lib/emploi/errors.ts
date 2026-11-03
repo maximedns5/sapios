@@ -15,6 +15,8 @@ const MESSAGES: Record<string, string> = {
   kind_required: "Choisissez d’abord le type de compte.",
   terms_version_mismatch: "Les conditions ont changé entre-temps : relisez la nouvelle version.",
   rate_limited: "Trop de demandes d’un coup. Réessayez dans une minute.",
+  mfa_required: "Double authentification requise : saisissez le code de votre application.",
+  misconfigured: "Fonction serveur mal configurée.",
   invalid_siren: "Ce numéro SIREN n’est pas valide : 9 chiffres, vérifiés par une clé de contrôle.",
   invalid_query: "Recherche trop courte ou trop longue.",
   upstream_unavailable: "Le service public de recherche ne répond pas. Réessayez dans un instant.",

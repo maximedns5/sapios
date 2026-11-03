@@ -175,6 +175,13 @@ quand il en faut un lève l'erreur adaptée.
 
 ### Recruteur
 
+**Double authentification facultative** (migration `20261103100000_mfa_recruteurs`) : un recruteur qui a un facteur
+TOTP vérifié (`auth.mfa_factors`) doit être en session **aal2**. Sinon toute RPC de cette section lève `mfa_required`
+(`private.require_member`, `private.member_company`, `private.application_side`), les règles d'accès des membres
+(`private.is_company_member`) ne montrent rien, `export_my_emploi_data` lève `mfa_required` et `get_emploi_state` garde le
+nom et le statut de l'entreprise sans compteurs. Sans facteur vérifié, rien ne change ; les candidats ne sont pas
+concernés. `mfa_session_ok()` → `bool` : la session courante suffit-elle (pas de facteur vérifié, ou aal2) ?
+
 | Fonction | Retour | Erreurs |
 |---|---|---|
 | `register_company(p_siren text, p_display_name text, p_job_title text, p_sirene jsonb, p_first_name text default null)` | `uuid` ; entreprise `pending`, membre `owner` ; raison sociale, NAF, effectif, ville et code postal recopiés de `p_sirene` (`CompanyLookup`) ; domaine de l'email du compte, signalé s'il est dans `generic_email_domains` ; journalisé | `not_recruiter`, `terms_required`, `invalid_siren`, `already_member`, `company_exists`, `invalid_input` |
@@ -252,7 +259,8 @@ Réservées à `service_role` :
 | `company-lookup` | JWT d'un compte recruteur | `{ siren }` | `CompanyLookup` ; relais vers `https://recherche-entreprises.api.gouv.fr/search?q=<siren>` ; erreurs `invalid_siren` (400), `not_found` (404), `rate_limited` (429, 10 par minute), `upstream_unavailable` (502) |
 | `geocode` | JWT utilisateur | `{ q, kind: "city" \| "address" }` (2 à 120 caractères) | `{ results: GeoResult[] }` (5 au plus) ; Géoplateforme `https://data.geopf.fr/geocodage/search` (`type=municipality` pour `city`) ; erreurs `invalid_query`, `rate_limited` (30 par minute), `upstream_unavailable` |
 | `notify` | en-tête `x-sapios-secret` | + `{ type: "emploi", event: EmploiNotifyEvent, id }` | `{ sent, emailed }` ; push aux candidats (app Expo) et email (Resend) aux candidats et aux recruteurs, détail au §8 |
-| `delete-account` | JWT utilisateur | `{}` | inchangé ; un recruteur seul membre de son entreprise : ses offres `published` passent `archived`, l'entreprise reste (pour l'historique des candidats), ses photos sont supprimées |
+| `delete-account` | JWT utilisateur | `{}` | inchangé ; un recruteur seul membre de son entreprise : ses offres `published` passent `archived`, l'entreprise reste (pour l'historique des candidats), ses photos sont supprimées. Compte avec un facteur MFA vérifié : session aal2 exigée, sinon `mfa_required` (403) |
+| `admin-reset-mfa` | JWT d'un admin en aal2 (`is_admin()`) | `{ user_id, reason }` (motif de 3 à 500 caractères) | `{ removed }` : facteurs MFA du recruteur supprimés par l'API Auth admin, journalisé `recruiter.mfa_reset` ; erreurs `invalid_input` (400), `forbidden` (403 : pas admin, ou compte visé admin), `not_found` (404 : pas membre d'une entreprise) |
 
 Ni la recherche ni la réponse de `company-lookup` et `geocode` ne sont journalisées. CSP : rien à ajouter, les clients
 n'appellent que Supabase.

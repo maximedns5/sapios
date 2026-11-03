@@ -720,6 +720,9 @@ isOneToOne: false
 "mark_diploma_purged":
 { Args: { "p_id": string }; Returns: undefined
                            },
+"mfa_session_ok":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "move_application":
 { Args: { "p_id": string,"p_status": Database["public"]['Enums']["application_status"] }; Returns: undefined
                            },

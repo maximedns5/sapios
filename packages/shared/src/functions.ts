@@ -11,6 +11,8 @@ export const EDGE_FUNCTIONS = {
   notify: "notify",
   deleteAccount: "delete-account",
   purgeDiplomas: "purge-diplomas",
+  /** Réinitialisation de la double authentification d'un recruteur par un admin (aal2). */
+  adminResetMfa: "admin-reset-mfa",
 } as const;
 
 /** En-tête du secret partagé des fonctions appelées par la base. */

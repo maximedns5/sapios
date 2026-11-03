@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { CompanyStatus } from "@sapios/shared";
-import { IconAlert, IconBuilding, IconCard, IconChat, IconClock, IconOffers, IconSearch, IconTeam } from "./Icons";
+import { IconAlert, IconBuilding, IconCard, IconChat, IconClock, IconLock, IconOffers, IconSearch, IconTeam } from "./Icons";
 import SignOutButton from "./SignOutButton";
 
 const NAV = [
@@ -15,6 +15,7 @@ const NAV = [
 const NAV_COMPANY = [
   { href: "/recruteur/entreprise", label: "Entreprise", icon: IconBuilding },
   { href: "/recruteur/entreprise#equipe", label: "Équipe", icon: IconTeam },
+  { href: "/recruteur/securite", label: "Sécurité", icon: IconLock },
 ] as const;
 
 function initials(name: string | null, fallback: string): string {
