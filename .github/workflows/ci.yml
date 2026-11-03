@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.121.0  # même version que la devDependency `supabase` : « latest » change de comportement sans prévenir
       - name: Démarrer la stack locale
         run: supabase start -x studio,logflare,vector,imgproxy,mailpit
       - name: Reconstruire la base (migrations + seed)

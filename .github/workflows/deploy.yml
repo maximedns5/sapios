@@ -55,7 +55,7 @@ jobs:
       - uses: supabase/setup-cli@v1
         if: steps.guard.outputs.ready == 'true'
         with:
-          version: latest
+          version: 2.121.0  # même version que la devDependency `supabase` : « latest » change de comportement sans prévenir
 
       - name: Lier le projet
         if: steps.guard.outputs.ready == 'true'
@@ -63,7 +63,7 @@ jobs:
 
       - name: Appliquer les migrations
         if: steps.guard.outputs.ready == 'true'
-        run: supabase db push
+        run: supabase db push --linked
 
       - name: Déployer les Edge Functions
         if: steps.guard.outputs.ready == 'true'
