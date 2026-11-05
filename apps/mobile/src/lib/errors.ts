@@ -72,6 +72,12 @@ const MESSAGES: Record<string, string> = {
   already_verified_higher: 'Vous avez déjà un niveau validé égal ou supérieur.',
   upload_failed: 'L’envoi du fichier a échoué. Réessayez.',
   file_unreadable: 'Fichier illisible. Choisissez-en un autre.',
+  // Import de CV (lu sur l'appareil)
+  cv_too_large: 'CV trop lourd : 5 Mo maximum.',
+  cv_unsupported: 'Format non pris en charge : choisissez un PDF, un fichier Word (.docx) ou un XML Europass.',
+  cv_unreadable: 'Nous n’arrivons pas à lire ce fichier. Essayez de l’enregistrer à nouveau en PDF, ou remplissez votre CV à la main.',
+  cv_encrypted: 'Ce PDF est protégé par un mot de passe. Enregistrez-en une version sans protection.',
+  cv_web_only: 'L’import de CV est disponible dans le navigateur.',
   heic_unsupported: 'Ce navigateur ne lit pas le format HEIC (iPhone). Envoyez votre diplôme en JPEG, PNG ou PDF.',
   photo_type: 'Format refusé : choisissez une image JPEG, PNG ou WEBP.',
   // Messages

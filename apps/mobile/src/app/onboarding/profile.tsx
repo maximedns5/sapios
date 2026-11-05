@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { Button } from '@/components/Button';
 import { Segmented } from '@/components/Controls';
 import { ExperiencesField, LanguagesField, LookingForField, SkillsField } from '@/components/CvFields';
+import { CvImportButton } from '@/components/CvImportButton';
 import { Field } from '@/components/Field';
 import { ArrowRightIcon, CheckIcon } from '@/components/Icons';
 import { MaskUp, PopIn, Rise, Shockwave, SlideIn, Spinner } from '@/components/motion';
@@ -77,6 +78,8 @@ export default function OnboardingProfile() {
   const [authorized, setAuthorized] = useState<'yes' | 'no' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Un CV importé a pu proposer un autre poste visé ou une autre tranche d'expérience.
+  const [imported, setImported] = useState(false);
 
   useEffect(() => {
     emploi
@@ -145,7 +148,9 @@ export default function OnboardingProfile() {
 
   const saveCv = async () => {
     await emploi.saveCv(experiences, skills, languages);
-    await emploi.saveProfile({ looking_for: lookingFor.trim() || null, work_authorization: authorized === 'yes' });
+    // Poste visé et expérience repris d'un CV importé : enregistrés ici, avec le reste du CV.
+    const patch = imported ? { target_role: role.trim().slice(0, 80), ...(experience ? { experience_band: experience } : {}) } : {};
+    await emploi.saveProfile({ looking_for: lookingFor.trim() || null, work_authorization: authorized === 'yes', ...patch });
   };
 
   const next = async () => {
@@ -271,7 +276,20 @@ export default function OnboardingProfile() {
           {step === 'skills' ? (
             <>
               <Intro eyebrow="Votre CV" title="Vos compétences" sub="Trois au moins. Ce sont elles qui remplissent « Vous avez déjà » sur chaque offre." />
-              <Rise delay={250}>
+              <Rise delay={250} style={{ gap: 18 }}>
+                <CvImportButton
+                  current={{ skills, languages, experiences }}
+                  currentRole={role || null}
+                  currentBand={experience}
+                  onApply={({ parts, profile }) => {
+                    setSkills(parts.skills);
+                    setLanguages(parts.languages);
+                    setExperiences(parts.experiences);
+                    if (profile.target_role) setRole(profile.target_role);
+                    if (profile.experience_band) setExperience(profile.experience_band);
+                    if (profile.target_role || profile.experience_band) setImported(true);
+                  }}
+                />
                 <SkillsField value={skills} onChange={setSkills} />
               </Rise>
             </>

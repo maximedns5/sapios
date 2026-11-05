@@ -334,3 +334,24 @@ Mot de passe `sapios-test-password`. Les SIREN du seed commencent par `999` et r
 
 Photos des offres : `supabase/seed/offer-photos/{company_id}/*.jpg` (images de synthèse), envoyées dans le bucket par
 `supabase db reset` (`[storage.buckets.offer-photos]` de `config.toml`).
+
+## 10. Import de CV (lecture sur l'appareil, sans IA)
+
+- **Où** : `@sapios/shared/cv-import` (règles et dictionnaires, aucune dépendance au DOM ni au réseau) ; extraction
+  dans l'app web (`apps/mobile/src/lib/cvImport.ts`) : pdf.js 6.4.299 (copié dans `public/pdfjs/` par
+  `scripts/copy-pdfjs.mjs` au build, chargé seulement à l'import d'un PDF), fflate pour le DOCX, XML Europass tel quel.
+- **Le fichier ne quitte jamais l'appareil** : ni envoi, ni stockage, ni journal. Aucune RPC ni table nouvelle ;
+  l'écran de relecture (`/settings/cv-import`) rend les éléments gardés à l'écran appelant, qui les enregistre avec
+  `save_cv` et `save_candidate_profile` (poste visé, tranche d'expérience) par son propre bouton.
+- **Déterministe** : même fichier et même date de référence, même résultat (`parseCv(source, { referenceDate })`) ;
+  la date du jour à Paris est lue par l'app, jamais par le lecteur. Version des règles : `CV_IMPORT_RULES_VERSION`.
+- **Formats** : Europass (XML 3.x « SkillsPassport » et 2020 « Candidate », seul ou joint au PDF), export LinkedIn
+  (rubriques et dates FR/EN), CV générique PDF ou DOCX (rubriques, plages de dates, règles d'intitulé et d'employeur),
+  5 Mo au plus, 8 pages lues. PDF scanné sans texte : message, pas d'OCR.
+- **Jamais lus ni gardés** : nom et prénom, photo, date de naissance et âge, adresse, nationalité, situation familiale,
+  genre, email, téléphone ; une ligne qui en contient est retirée entière, et l'écran de relecture dit ce qui a été écarté.
+  Les niveaux de langue ressortent en CECRL (A2 à C2), jamais « natif » ni « langue maternelle ».
+- **Fusion** (`mergeCv`) : « Ajouter » garde l'existant et complète sans doublon dans les limites du CV ; « Remplacer »
+  remplace rubrique par rubrique celles que l'import alimente.
+- **Tests** : `deno test --unstable-sloppy-imports --no-config packages/shared/src/cv-import/` (CI, job Edge Functions).
+

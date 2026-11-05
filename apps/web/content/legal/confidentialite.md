@@ -33,7 +33,7 @@ Nous ne collectons que ce qui sert à rapprocher un candidat et un poste, à vé
 
 - **Compte :** adresse email de connexion, prénom et nom, déclaration que vous avez 18 ans ou plus, version des CGU acceptée.
 - **Votre recherche :** poste visé, zone de recherche (ville et rayon), types de contrat, télétravail souhaité, prétentions salariales, date de disponibilité et tranche d’expérience. Votre adresse n’est pas demandée : les distances sont calculées depuis le centre de la ville choisie.
-- **Votre CV :** expériences (intitulé, employeur, dates ; le nom de l’employeur peut être masqué), compétences et langues, votre réponse à la question « Ce que je cherche dans mon prochain poste », votre autorisation de travailler en France, en oui ou non.
+- **Votre CV :** expériences (intitulé, employeur, dates ; le nom de l’employeur peut être masqué), compétences et langues, votre réponse à la question « Ce que je cherche dans mon prochain poste », votre autorisation de travailler en France, en oui ou non. Si vous importez un CV existant (PDF, Word ou Europass), le fichier est lu sur votre appareil, jamais envoyé ni gardé : seuls les éléments que vous gardez après relecture rejoignent votre CV.
 - **Votre diplôme :** le document envoyé, supprimé après la décision ; le niveau, le domaine et l’établissement validés, ce dernier affiché seulement si vous l’activez.
 - **Vos candidatures :** offres choisies, mot facultatif (140 caractères), point de l’offre auquel vous répondez, statuts et dates, motif poli en cas de refus.
 - **Vos échanges :** messages, créneaux d’entretien proposés et choisis.

@@ -586,3 +586,16 @@ de `main` ; il reste dans la branche `archive/dating`.
   réinitialise dans Supabase.
 - **Pas d'obligation par entreprise** dans ce produit minimal (une entreprise = un recruteur au pilote).
 
+## Emploi · import de CV déterministe (5 nov. 2026)
+
+- **Aucune donnée nouvelle en base** : l'import ne crée ni table, ni colonne, ni RPC ; il préremplit l'écran et les
+  RPC existantes enregistrent après relecture.
+- **pdf.js hors bundle** : copié depuis `pdfjs-dist` (version figée) dans `apps/mobile/public/pdfjs/` au build
+  (`buildCommand` de `vercel.json`, scripts `web` et `export:web`), chargé par un module de même origine : la CSP
+  (`script-src 'self'`, `worker-src 'self' blob:`) n'a pas changé. pdf.js 6 n'utilise plus `eval`.
+- **Pas d'OCR** : un PDF scanné (image seule) affiche un message ; le candidat remplit à la main.
+- **Pas de rubrique « Formation » au CV** : la formation détectée est montrée à la relecture avec un lien vers la
+  vérification du diplôme, sans être enregistrée.
+- **Données de test** : CV synthétiques dans `packages/shared/src/cv-import/fixtures.ts` (personnes et entreprises
+  fictives).
+

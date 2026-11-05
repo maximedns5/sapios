@@ -7,6 +7,7 @@ import { AnonymousCvCard } from '@/components/AnonymousCvCard';
 import { Button } from '@/components/Button';
 import { Segmented, Switch } from '@/components/Controls';
 import { ExperiencesField, LanguagesField, LookingForField, SkillsField } from '@/components/CvFields';
+import { CvImportButton } from '@/components/CvImportButton';
 import { Field } from '@/components/Field';
 import { MaskUp, Rise, Spinner } from '@/components/motion';
 import { Notice } from '@/components/Notice';
@@ -14,6 +15,7 @@ import { useOverlay } from '@/components/Overlay';
 import { Header, Screen } from '@/components/Screen';
 import { Body, Heading, Small, Title } from '@/components/Text';
 import { useApp } from '@/lib/app-state';
+import type { CvImportApply } from '@/lib/cvImportStore';
 import { emploi } from '@/lib/emploi';
 import { errorMessage } from '@/lib/errors';
 import { colors, radius } from '@/lib/theme';
@@ -56,6 +58,8 @@ export default function CvScreen() {
   const [experiences, setExperiences] = useState<CvExperience[]>([]);
   const [lookingFor, setLookingFor] = useState('');
   const [showInstitution, setShowInstitution] = useState(false);
+  // Poste visé et tranche d'expérience proposés par un import, enregistrés avec le CV.
+  const [profilePatch, setProfilePatch] = useState<CvImportApply['profile']>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -88,7 +92,8 @@ export default function CvScreen() {
       const identityChanged = cv?.identity && (first.trim() !== cv.identity.first_name || last.trim() !== cv.identity.last_name);
       if (identityChanged && first.trim() && last.trim()) await emploi.setIdentity(first.trim(), last.trim());
       await emploi.saveCv(experiences, skills, languages);
-      await emploi.saveProfile({ looking_for: lookingFor.trim() || null, show_institution: showInstitution });
+      await emploi.saveProfile({ looking_for: lookingFor.trim() || null, show_institution: showInstitution, ...profilePatch });
+      setProfilePatch({});
       await refresh();
       toast('CV enregistré.');
       setMode('preview');
@@ -131,6 +136,18 @@ export default function CvScreen() {
           </Rise>
         ) : (
           <Rise style={{ gap: 24 }}>
+            <CvImportButton
+              current={{ skills, languages, experiences }}
+              currentRole={profilePatch.target_role ?? cv.profile?.target_role ?? null}
+              currentBand={profilePatch.experience_band ?? cv.profile?.experience_band ?? null}
+              showDiplomaLink
+              onApply={({ parts, profile }) => {
+                setSkills(parts.skills);
+                setLanguages(parts.languages);
+                setExperiences(parts.experiences);
+                setProfilePatch((p) => ({ ...p, ...profile }));
+              }}
+            />
             <View style={{ gap: 12 }}>
               <Heading size={18}>Identité</Heading>
               <Small>Comme sur votre diplôme. Révélée à l’entreprise au match seulement.</Small>
