@@ -9,3 +9,5 @@ expo-env.d.ts
 /ios
 /android
 .metro-health-check*
+# Copié depuis pdfjs-dist par scripts/copy-pdfjs.mjs (import de CV)
+/public/pdfjs/

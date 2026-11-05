@@ -42,6 +42,10 @@ jobs:
       - name: Tests unitaires
         working-directory: supabase/functions
         run: deno test --config process-diploma/deno.json --allow-read --allow-env _shared/*_test.ts process-diploma/*_test.ts
+      - name: Import de CV (lecteur déterministe, packages/shared)
+        run: |
+          deno test --unstable-sloppy-imports --no-lock --no-config packages/shared/src/cv-import/
+          deno lint --no-config packages/shared/src/cv-import/
 
   apps:
     name: Web et mobile

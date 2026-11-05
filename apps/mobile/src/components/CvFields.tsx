@@ -115,7 +115,7 @@ function fromMonth(iso: string | null): string {
 }
 
 /** Formulaire d'une expérience (ajout ou modification). Les dates restent privées : le recruteur voit une durée. */
-function ExperienceForm({ initial, onSave, onCancel }: { initial?: CvExperience; onSave: (e: CvExperience) => void; onCancel: () => void }) {
+export function ExperienceForm({ initial, onSave, onCancel }: { initial?: CvExperience; onSave: (e: CvExperience) => void; onCancel: () => void }) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [employer, setEmployer] = useState(initial?.employer ?? '');
   const [hidden, setHidden] = useState(initial?.employer_hidden ?? false);
